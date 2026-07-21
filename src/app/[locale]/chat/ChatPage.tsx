@@ -156,8 +156,8 @@ export default function ChatPageClient() {
 
     if (error) { console.error('Error loading convs:', error); return }
 
-    const otroIds = [...new Set(convs?.map((c: any) => c.user1_id === uid ? c.user2_id : c.user1_id).filter(Boolean) || [])]
-    const prodIds = [...new Set(convs?.filter((c: any) => c.producto_id).map((c: any) => c.producto_id as string) || [])]
+    const otroIds = Array.from(new Set(convs?.map((c: any) => c.user1_id === uid ? c.user2_id : c.user1_id).filter(Boolean) || []))
+    const prodIds = Array.from(new Set(convs?.filter((c: any) => c.producto_id).map((c: any) => c.producto_id as string) || []))
 
     // Also fetch profiles/products for URL params if they exist
     if (vendedorId && !otroIds.includes(vendedorId)) otroIds.push(vendedorId)
