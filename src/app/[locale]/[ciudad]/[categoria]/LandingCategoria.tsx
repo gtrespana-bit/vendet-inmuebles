@@ -2,7 +2,7 @@ import LocalLink from '@/components/LocalLink'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
 import { MapPin, ChevronRight } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+import { getTranslations } from 'next-intl/server'
 import { Suspense } from 'react'
 
 interface Props {
@@ -86,7 +86,7 @@ function ProductosGrid({ productos, categoriaNombre, ciudadNombre, t }: { produc
 }
 
 export default async function LandingCategoria({ ciudadSlug, ciudadNombre, categoriaSlug, categoriaNombre }: Props) {
-  const t = useTranslations('catLanding')
+  const t = await getTranslations('catLanding')
   const productos = await getProductos(ciudadNombre, categoriaSlug)
 
   // Categorias relacionadas para la ciudad
