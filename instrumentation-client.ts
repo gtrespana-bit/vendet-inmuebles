@@ -12,5 +12,3 @@ Sentry.init({
   // Don't send PII
   sendDefaultPii: false,
 })
-
-export const onRouterTransitionStart = Sentry.captureRouterTransitionStart
