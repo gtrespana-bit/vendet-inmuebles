@@ -1,11 +1,10 @@
-import { createClient } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import LocalLink from '@/components/LocalLink';
 
 export const dynamic = 'force-dynamic';
 
 export default async function TestDBPage({ params }: { params: { locale: string } }) {
   const { locale } = await params;
-  const supabase = await createClient();
   
   // Consultar las primeras 5 propiedades activas directamente
   const { data: propiedades, error } = await supabase
