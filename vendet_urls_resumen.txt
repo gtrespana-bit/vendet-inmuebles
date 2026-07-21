@@ -1,0 +1,14 @@
+# RESUMEN DE Vendet.online URLs para Google Search Console
+# Generado: 2026-05-10 15:30:58
+
+=== PÁGINAS PRINCIPALES (14 URLs) ===
+Contenido principal, páginas informativas críticas para SEO.
+
+=== CIUDADES SOLO (12 URLs) ===
+Landing pages genéricas por ciudad, sin categoría específica.
+
+=== CIUDAD × CATEGORÍA (96 URLs) ===
+Landing pages locales específicas — las más importantes para SEO local.
+Ejemplo: https://vendet.online/caracas/tecnologia, https://vendet.online/maracaibo/materiales
+
+TOTAL ESTIMADO: 122 URLs
