@@ -132,7 +132,13 @@ function urlBase64ToUint8Array(base64: string) {
   const padding = '='.repeat((4 - (base64.length % 4)) % 4)
   const base64Str = (base64 + padding).replace(/-/g, '+').replace(/_/g, '/')
   const rawData = atob(base64Str)
-  return new Uint8Array([...rawData].map(c => c.charCodeAt(0)))
+  
+  // Fix: Use for loop instead of spread operator to avoid TS iteration error
+  const uint8Array = new Uint8Array(rawData.length)
+  for (let i = 0; i < rawData.length; i++) {
+    uint8Array[i] = rawData.charCodeAt(i)
+  }
+  return uint8Array
 }
 
 export default function PushNotificationBanner() {
