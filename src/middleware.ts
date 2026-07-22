@@ -12,12 +12,12 @@ export default async function middleware(request: NextRequest) {
   // 1. Detect locale from URL pathname FIRST
   const pathnameLocale = request.nextUrl.pathname.split('/')[1]
   
-  // Type guard para validar el locale
+  // Type guard para validar el locale - SOLO 'es' y 'en' son válidos
   const isValidLocale = (locale: string): locale is 'es' | 'en' => {
-    return routing.locales.includes(locale as 'es' | 'en')
+    return locale === 'es' || locale === 'en'
   }
   
-  const locale = isValidLocale(pathnameLocale) ? pathnameLocale : routing.defaultLocale
+  const locale: 'es' | 'en' = isValidLocale(pathnameLocale) ? pathnameLocale : routing.defaultLocale
 
   // 2. Inject locale header directly on NextRequest
   // This is the proper way to add headers in middleware
