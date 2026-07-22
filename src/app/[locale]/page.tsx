@@ -409,45 +409,102 @@ export default async function HomePage() {
           </section>
         )}
 
-        {/* Tipos propiedad */}
-        <section className="max-w-7xl mx-auto px-4 py-10">
-          <h2 className="text-2xl md:text-3xl font-black text-gray-900 mb-2">
-            {t('home.types.title')}
-          </h2>
-          <p className="text-gray-600 mb-8">{t('home.types.subtitle')}</p>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            {tiposPropiedad.map((tipo) => {
-              const Icon = tipo.icon
-              return (
-                <LocalLink
-                  key={tipo.id}
-                  href={`/catalogo?tipo=${tipo.id}`}
-                  prefetch={true}
-                  className="bg-white rounded-2xl p-6 text-center shadow-sm border hover:border-brand-accent transition hover:shadow-lg group"
-                >
-                  <div className="w-12 h-12 bg-brand-primary/10 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:bg-brand-accent/20 transition">
-                    <Icon size={24} className="text-brand-primary group-hover:text-brand-accent transition" />
-                  </div>
-                  <span className="font-bold text-gray-900 text-sm">{tipo.nombre}</span>
-                  <span className="block text-xs text-gray-600 mt-1 truncate">{tipo.desc}</span>
-                </LocalLink>
-              )
-            })}
+        {/* Tipos propiedad - ZILLOW STYLE */}
+        <section className="bg-gray-50 py-16">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="text-center mb-10">
+              <h2 className="text-3xl md:text-4xl font-black text-gray-900 mb-3">
+                Explora por tipo de propiedad
+              </h2>
+              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                Encuentra exactamente lo que buscas entre nuestra amplia variedad de categorías
+              </p>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              {tiposPropiedad.map((tipo) => {
+                const Icon = tipo.icon
+                return (
+                  <LocalLink
+                    key={tipo.id}
+                    href={`/catalogo?tipo=${tipo.id}`}
+                    prefetch={true}
+                    className="bg-white rounded-2xl p-6 text-center shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-2 group border border-gray-100"
+                  >
+                    <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-700 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                      <Icon size={28} className="text-white" />
+                    </div>
+                    <span className="font-bold text-gray-900 text-sm block mb-1">{tipo.nombre}</span>
+                    <span className="block text-xs text-gray-500 line-clamp-2">{tipo.desc}</span>
+                  </LocalLink>
+                )
+              })}
+            </div>
           </div>
         </section>
 
-        {/* Cómo funciona */}
-        <section className="bg-white border-y border-gray-200 py-12">
+        {/* Cómo funciona - ZILLOW STYLE */}
+        <section className="py-16 bg-white">
           <div className="max-w-7xl mx-auto px-4">
-            <h2 className="text-2xl md:text-3xl font-black text-gray-900 text-center mb-10">
-              {t('home.howItWorks.title')}
-            </h2>
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-black text-gray-900 mb-3">
+                ¿Cómo funciona VendeT?
+              </h2>
+              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                Publicar o encontrar tu propiedad ideal es más fácil de lo que crees
+              </p>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div className="text-center">
-                <div className="w-16 h-16 bg-brand-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Search size={28} className="text-brand-primary" />
+              <div className="text-center relative">
+                {/* Connector line for desktop */}
+                <div className="hidden md:block absolute top-8 left-1/2 w-full h-0.5 bg-gradient-to-r from-blue-200 to-orange-200 -z-10"></div>
+                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-700 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+                  <Search size={32} className="text-white" />
                 </div>
-                <h3 className="font-bold text-gray-900 text-lg mb-2">{t('home.howItWorks.step1Title')}</h3>
+                <h3 className="font-bold text-gray-900 text-xl mb-3">Busca propiedades</h3>
+                <p className="text-gray-600 leading-relaxed">
+                  Explora miles de inmuebles con filtros avanzados por ubicación, precio y características
+                </p>
+              </div>
+              <div className="text-center relative">
+                <div className="hidden md:block absolute top-8 left-1/2 w-full h-0.5 bg-gradient-to-r from-blue-200 to-orange-200 -z-10"></div>
+                <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+                  <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 5v14M5 12h14" />
+                  </svg>
+                </div>
+                <h3 className="font-bold text-gray-900 text-xl mb-3">Publica gratis</h3>
+                <p className="text-gray-600 leading-relaxed">
+                  Sube fotos, agrega detalles y publica tu propiedad en minutos sin costo alguno
+                </p>
+              </div>
+              <div className="text-center">
+                <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+                  <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                    <polyline points="22 4 12 14.01 9 11.01" />
+                  </svg>
+                </div>
+                <h3 className="font-bold text-gray-900 text-xl mb-3">Conecta y vende</h3>
+                <p className="text-gray-600 leading-relaxed">
+                  Recibe mensajes directos de compradores interesados y cierra el trato sin comisiones
+                </p>
+              </div>
+            </div>
+            
+            {/* CTA after how it works */}
+            <div className="text-center mt-12">
+              <LocalLink
+                href="/publicar-inmueble"
+                className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white px-8 py-4 rounded-xl font-bold text-lg hover:from-orange-600 hover:to-orange-700 transition shadow-lg hover:shadow-xl"
+              >
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+                Comenzar ahora — Es gratis
+              </LocalLink>
+            </div>
+          </div>
+        </section>
                 <p className="text-sm text-gray-600">{t('home.howItWorks.step1Desc')}</p>
               </div>
               <div className="text-center">
