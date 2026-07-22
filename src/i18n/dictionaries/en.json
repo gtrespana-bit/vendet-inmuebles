@@ -46,16 +46,54 @@
       "seeHowToFeature": "How to Feature",
       "featuredBadge": "Featured ads sell",
       "featuredBadgeBold": "3x faster",
+      "searchPlaceholder": "Search properties...",
+      "allTypes": "All types",
+      "allOperations": "All operations",
+      "search": "Search",
       "stats": {
         "activeProducts": "Active Listings",
         "users": "Users",
-        "featureFrom": "Feature from"
+        "featureFrom": "Feature from",
+        "activeProperties": "Active Properties",
+        "states": "States",
+        "free": "100% Free"
       }
     },
     "freeBanner": {
       "title": "100% Free to Post",
       "subtitle": "No commissions. No hidden fees. Ever.",
-      "compare": "See how it works"
+      "compare": "See how it works",
+      "publishNow": "Publish Now"
+    },
+    "types": {
+      "title": "What are you looking for?",
+      "subtitle": "Browse properties by type",
+      "house": "House",
+      "houseDesc": "Single-family homes",
+      "apartment": "Apartment",
+      "apartmentDesc": "Apartments and studios",
+      "land": "Land",
+      "landDesc": "Plots and land",
+      "commercial": "Commercial",
+      "commercialDesc": "Business premises",
+      "office": "Office",
+      "officeDesc": "Professional offices",
+      "warehouse": "Warehouse",
+      "warehouseDesc": "Warehouses and deposits"
+    },
+    "howItWorks": {
+      "title": "How it works",
+      "step1Title": "Create your account",
+      "step1Desc": "Register for free in less than 2 minutes",
+      "step2Title": "Publish your property",
+      "step2Desc": "Add photos, description and price",
+      "step3Title": "Receive offers",
+      "step3Desc": "Connect directly with interested buyers"
+    },
+    "states": {
+      "title": "Browse by state",
+      "subtitle": "Find properties in the most popular locations",
+      "viewAll": "View all states"
     },
     "featured": {
       "wantToFeature": "Want to be featured?",
