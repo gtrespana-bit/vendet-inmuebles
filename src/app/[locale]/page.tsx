@@ -5,31 +5,6 @@ import { supabase } from '@/lib/supabase'
 import { getTranslations } from 'next-intl/server'
 import type { Metadata } from 'next'
 
-function generateItemListSchema(properties: any[], baseUrl: string) {
-  if (!properties || properties.length === 0) return null
-  const itemListElements = properties.map((prop, index) => ({
-    '@type': 'ListItem',
-    position: index + 1,
-    url: `${baseUrl}/inmueble/${prop.id}`,
-    name: prop.titulo,
-    description: prop.descripcion || `${prop.operacion_tipo?.toLowerCase() === 'venta' ? 'Venta' : 'Alquiler'} de ${prop.tipo_propiedad} en ${prop.ubicacion_ciudad}`,
-    image: prop.imagen_url || `${baseUrl}/placeholder-property.webp`,
-    offers: {
-      '@type': 'Offer',
-      price: prop.precio_usd || 0,
-      priceCurrency: 'USD',
-      availability: prop.activo ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock'
-    }
-  }))
-  return {
-    '@context': 'https://schema.org',
-    '@type': 'ItemList',
-    itemListElement: itemListElements,
-    numberOfItems: properties.length,
-    description: 'Lista de inmuebles en VendeT Inmuebles - Venezuela'
-  }
-}
-
 export async function generateMetadata({ params }: { params: { locale: string } }): Promise<Metadata> {
   const t = await getTranslations({ locale: params.locale, namespace: 'Home' })
   return {
