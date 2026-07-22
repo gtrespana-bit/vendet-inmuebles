@@ -11,8 +11,8 @@ const nextIntlMiddleware = createMiddleware(routing)
 export default async function middleware(request: NextRequest) {
   // 1. Detect locale from URL pathname FIRST
   const pathnameLocale = request.nextUrl.pathname.split('/')[1]
-  const isValidLocale = (routing.locales as string[]).includes(pathnameLocale)
-  const locale: 'es' | 'en' = isValidLocale ? (pathnameLocale as 'es' | 'en') : routing.defaultLocale
+  const isValidLocale = routing.locales.includes(pathnameLocale as 'es' | 'en')
+  const locale = isValidLocale ? (pathnameLocale as 'es' | 'en') : routing.defaultLocale
 
   // 2. Inject locale header directly on NextRequest
   // This is the proper way to add headers in middleware
