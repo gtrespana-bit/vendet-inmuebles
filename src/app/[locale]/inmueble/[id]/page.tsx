@@ -82,6 +82,7 @@ export default async function PropertyDetailPage({ params }: PageProps) {
     notFound();
   }
 
+  const operacion = propiedad.operacion_tipo?.toLowerCase() === 'venta' ? 'Venta' : 'Alquiler';
   const formatoMoneda = new Intl.NumberFormat('es-US', {
     style: 'currency',
     currency: 'USD',
