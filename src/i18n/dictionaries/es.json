@@ -46,11 +46,42 @@
       "seeHowToFeature": "Ver Cómo Destacar",
       "featuredBadge": "Los anuncios destacados se venden",
       "featuredBadgeBold": "3x más rápido",
+      "searchPlaceholder": "¿Qué estás buscando?",
+      "allTypes": "Todos los tipos",
+      "allOperations": "Todas las operaciones",
+      "search": "Buscar",
+      "forSale": "Venta",
+      "forRent": "Alquiler",
       "stats": {
-        "activeProducts": "Productos activos",
-        "users": "Usuarios",
-        "featureFrom": "Destacarlo desde"
+        "activeProperties": "Propiedades activas",
+        "states": "Estados",
+        "free": "Gratis"
       }
+    },
+    "types": {
+      "title": "Tipos de propiedades",
+      "subtitle": "Encuentra la propiedad que necesitas",
+      "house": "Casa",
+      "houseDesc": "Casas en venta y alquiler",
+      "apartment": "Apartamento",
+      "apartmentDesc": "Apartamentos y pisos",
+      "land": "Terreno",
+      "landDesc": "Terrenos y lotes",
+      "commercial": "Local comercial",
+      "commercialDesc": "Locales y negocios",
+      "office": "Oficina",
+      "officeDesc": "Oficinas y espacios",
+      "warehouse": "Galpón",
+      "warehouseDesc": "Galpones industriales"
+    },
+    "howItWorks": {
+      "title": "Cómo funciona",
+      "step1Title": "Crea tu cuenta",
+      "step1Desc": "Regístrate gratis en segundos",
+      "step2Title": "Publica tu propiedad",
+      "step2Desc": "Agrega fotos, descripción y precio",
+      "step3Title": "Recibe ofertas",
+      "step3Desc": "Conecta con compradores interesados"
     },
     "freeBanner": {
       "title": "Publicar es 100% GRATIS",
@@ -128,7 +159,9 @@
       "featureAd": "Destacar mi anuncio"
     },
     "productCard": {
-      "featured": "Destacado"
+      "featured": "Destacado",
+      "forSale": "Venta",
+      "forRent": "Alquiler"
     }
   },
   "notFound": {
