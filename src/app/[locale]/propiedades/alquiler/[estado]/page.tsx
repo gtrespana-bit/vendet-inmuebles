@@ -57,18 +57,18 @@ export default async function AlquilerPorEstadoPage({ params, searchParams }: Pa
   
   // Obtener propiedades de alquiler en este estado
   const { data: propiedades } = await supabase
-    .from('properties')
+    .from('productos')
     .select(`
       *,
       property_images (url),
       states (name),
       cities (name)
     `)
-    .eq('operation_type', 'alquiler')
-    .eq('state_id', estado)
-    .eq('status', 'active')
+    .eq('operacion_tipo', 'alquiler')
+    .eq('ubicacion_estado_id', estado)
+    .eq('activo', true)
     .limit(50)
-    .order('created_at', { ascending: false })
+    .order('creado_en', { ascending: false })
   
   const breadcrumbItems = [
     { label: t('breadcrumbs.home'), href: `/${locale}` },

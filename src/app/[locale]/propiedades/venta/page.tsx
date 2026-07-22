@@ -35,17 +35,17 @@ export default async function VentasPage({ params, searchParams }: PageProps) {
   
   // Obtener propiedades recientes de venta
   const { data: propiedades } = await supabase
-    .from('properties')
+    .from('productos')
     .select(`
       *,
       property_images (url),
       states (name),
       cities (name)
     `)
-    .eq('operation_type', 'venta')
-    .eq('status', 'active')
+    .eq('operacion_tipo', 'venta')
+    .eq('activo', true)
     .limit(50)
-    .order('created_at', { ascending: false })
+    .order('creado_en', { ascending: false })
   
   return (
     <div className="container mx-auto px-4 py-8">

@@ -28,17 +28,17 @@ export default async function VentasPorCiudadPage({ params, searchParams }: Page
   const supabase = createServerClient()
   
   const { data: propiedades, error } = await supabase
-    .from('properties')
+    .from('productos')
     .select(`
       *,
       property_images (url),
       states (name),
       cities (name)
     `)
-    .eq('operation_type', 'venta')
-    .eq('state_id', estado)
-    .eq('city_id', ciudad)
-    .eq('status', 'active')
+    .eq('operacion_tipo', 'venta')
+    .eq('ubicacion_estado_id', estado)
+    .eq('ubicacion_ciudad_id', ciudad)
+    .eq('activo', true)
     .limit(50)
   
   if (error || !propiedades) {

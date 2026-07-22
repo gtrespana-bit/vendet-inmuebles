@@ -35,17 +35,17 @@ export default async function AlquilerPage({ params, searchParams }: PageProps) 
   
   // Obtener propiedades recientes de alquiler
   const { data: propiedades } = await supabase
-    .from('properties')
+    .from('productos')
     .select(`
       *,
       property_images (url),
       states (name),
       cities (name)
     `)
-    .eq('operation_type', 'alquiler')
-    .eq('status', 'active')
+    .eq('operacion_tipo', 'alquiler')
+    .eq('activo', true)
     .limit(50)
-    .order('created_at', { ascending: false })
+    .order('creado_en', { ascending: false })
   
   return (
     <div className="container mx-auto px-4 py-8">
