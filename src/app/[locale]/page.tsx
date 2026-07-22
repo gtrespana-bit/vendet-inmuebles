@@ -232,92 +232,132 @@ export default async function HomePage() {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListSchema) }}
         />
       )}
-      <div className="bg-gray-50">
-        {/* HERO */}
-        <section className="bg-gradient-to-br from-brand-primary to-brand-dark py-16 md:py-24 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-brand-accent/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4" />
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-brand-accent/5 rounded-full blur-2xl translate-y-1/3 -translate-x-1/4" />
-          <div className="max-w-7xl mx-auto px-4 text-center relative z-10">
-            <div className="inline-block bg-brand-accent/20 backdrop-blur-sm border border-brand-accent/30 rounded-full px-4 py-1.5 mb-6">
-              <p className="text-brand-accent font-bold text-xs md:text-sm flex items-center gap-2">
-                <Star size={14} className="fill-brand-accent" />
-                La plataforma #1 para vender y comprar propiedades en Venezuela
+      <div className="bg-white">
+        {/* HERO - ZILLOW STYLE: Immersive with central search */}
+        <section className="relative bg-gradient-to-br from-blue-900 via-blue-800 to-blue-950 py-20 md:py-32 overflow-hidden">
+          {/* Background pattern */}
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute top-20 left-10 w-72 h-72 bg-orange-400 rounded-full blur-3xl"></div>
+            <div className="absolute bottom-10 right-10 w-96 h-96 bg-blue-400 rounded-full blur-3xl"></div>
+          </div>
+          
+          <div className="max-w-7xl mx-auto px-4 relative z-10">
+            <div className="text-center mb-10">
+              <div className="inline-flex items-center gap-2 bg-orange-500/20 backdrop-blur-sm border border-orange-400/30 rounded-full px-4 py-2 mb-6">
+                <Star size={16} className="fill-orange-400 text-orange-400" />
+                <span className="text-orange-300 font-semibold text-sm">El marketplace #1 de inmuebles en Venezuela</span>
+              </div>
+              
+              <h1 className="text-5xl md:text-7xl font-black text-white mb-6 leading-tight">
+                Encuentra tu lugar
+                <br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-orange-300">perfecto en Venezuela</span>
+              </h1>
+              
+              <p className="text-xl md:text-2xl text-blue-100 mb-8 max-w-3xl mx-auto font-medium">
+                Miles de propiedades en venta y alquiler. Publica gratis o busca tu próximo hogar hoy mismo.
               </p>
             </div>
-            <h1 className="text-4xl md:text-6xl font-black text-white mb-4 leading-tight">
-              {t('home.hero.title1')}
-              <br />
-              <span className="text-brand-accent">{t('home.hero.title2')}</span>
-            </h1>
-            <p className="text-base md:text-xl text-blue-100 mb-8 max-w-3xl mx-auto font-medium">
-              Publica tu propiedad gratis en 2 minutos o encuentra tu próximo hogar entre miles de inmuebles en todo el país.
-            </p>
-            {/* CTAs principales */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-10">
+
+            {/* Search Box - Central Focus like Zillow */}
+            <div className="max-w-5xl mx-auto mb-12">
+              <div className="bg-white rounded-2xl shadow-2xl p-3 md:p-4">
+                {/* Tabs for intent */}
+                <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
+                  <button className="px-6 py-2.5 bg-blue-600 text-white rounded-full font-bold text-sm whitespace-nowrap hover:bg-blue-700 transition">
+                    Comprar
+                  </button>
+                  <button className="px-6 py-2.5 bg-gray-100 text-gray-700 rounded-full font-bold text-sm whitespace-nowrap hover:bg-gray-200 transition">
+                    Alquilar
+                  </button>
+                  <button className="px-6 py-2.5 bg-gray-100 text-gray-700 rounded-full font-bold text-sm whitespace-nowrap hover:bg-gray-200 transition">
+                    Vender
+                  </button>
+                </div>
+
+                {/* Search inputs */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                  <div className="md:col-span-2 flex items-center gap-3 px-4 py-3 bg-gray-50 rounded-xl border border-gray-200">
+                    <MapPin size={20} className="text-gray-400 shrink-0" />
+                    <input
+                      type="text"
+                      placeholder="Ciudad, estado o zona..."
+                      className="w-full bg-transparent outline-none text-gray-800 font-medium placeholder:text-gray-400"
+                    />
+                  </div>
+                  
+                  <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 rounded-xl border border-gray-200">
+                    <Home size={18} className="text-gray-400 shrink-0" />
+                    <select className="w-full bg-transparent outline-none text-gray-700 font-medium cursor-pointer">
+                      <option value="">Tipo de propiedad</option>
+                      <option value="casa">Casa</option>
+                      <option value="apartamento">Apartamento</option>
+                      <option value="terreno">Terreno</option>
+                      <option value="local">Local comercial</option>
+                      <option value="oficina">Oficina</option>
+                    </select>
+                  </div>
+                  
+                  <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 rounded-xl border border-gray-200">
+                    <Key size={18} className="text-gray-400 shrink-0" />
+                    <select className="w-full bg-transparent outline-none text-gray-700 font-medium cursor-pointer">
+                      <option value="">Operación</option>
+                      <option value="venta">Venta</option>
+                      <option value="alquiler">Alquiler</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Search button full width on mobile */}
+                <div className="mt-4">
+                  <LocalLink
+                    href="/catalogo"
+                    className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white px-8 py-4 rounded-xl font-bold text-lg hover:from-orange-600 hover:to-orange-700 transition shadow-lg hover:shadow-xl flex items-center justify-center gap-2 group"
+                  >
+                    <Search size={22} className="group-hover:scale-110 transition-transform" />
+                    Buscar Propiedades
+                  </LocalLink>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick CTAs */}
+            <div className="flex flex-wrap justify-center gap-4 mb-12">
               <LocalLink
                 href="/publicar-inmueble"
-                className="bg-brand-accent text-gray-900 px-8 py-4 rounded-xl font-bold text-lg hover:bg-accent/90 transition shadow-xl hover:shadow-2xl hover:-translate-y-1 flex items-center justify-center gap-2"
+                className="bg-white/10 backdrop-blur-sm border-2 border-white/30 text-white px-6 py-3 rounded-xl font-bold hover:bg-white/20 transition flex items-center gap-2"
               >
                 <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M12 5v14M5 12h14" />
                 </svg>
-                Publicar mi propiedad — Gratis
+                Publicar Gratis
               </LocalLink>
               <LocalLink
                 href="/catalogo"
-                className="bg-white/10 backdrop-blur-sm border-2 border-white/30 text-white px-8 py-4 rounded-xl font-bold text-lg hover:bg-white/20 transition flex items-center justify-center gap-2"
+                className="bg-white/10 backdrop-blur-sm border-2 border-white/30 text-white px-6 py-3 rounded-xl font-bold hover:bg-white/20 transition flex items-center gap-2"
               >
-                <Search size={20} />
-                Buscar propiedades
+                Ver todas las propiedades
+                <ArrowRight size={20} />
               </LocalLink>
             </div>
-            {/* Buscador rápido */}
-            <div className="max-w-4xl mx-auto mb-8">
-              <p className="text-blue-200 text-sm mb-3 font-semibold">¿Qué estás buscando?</p>
-              <div className="bg-white rounded-2xl p-3 shadow-2xl flex flex-col md:flex-row gap-2">
-                <div className="flex-1 flex items-center gap-2 px-3 py-2 border border-gray-200 rounded-xl">
-                  <Search size={18} className="text-gray-400 shrink-0" />
-                  <input
-                    type="text"
-                    placeholder={t('home.hero.searchPlaceholder')}
-                    className="w-full outline-none text-gray-700 text-sm"
-                  />
-                </div>
-                <select className="px-3 py-2 border border-gray-200 rounded-xl text-sm text-gray-700 bg-white">
-                  <option value="">{t('home.hero.allTypes')}</option>
-                  <option value="casa">{t('home.types.house')}</option>
-                  <option value="apartamento">{t('home.types.apartment')}</option>
-                  <option value="terreno">{t('home.types.land')}</option>
-                  <option value="local">{t('home.types.commercial')}</option>
-                  <option value="oficina">{t('home.types.office')}</option>
-                </select>
-                <select className="px-3 py-2 border border-gray-200 rounded-xl text-sm text-gray-700 bg-white">
-                  <option value="">{t('home.hero.allOperations')}</option>
-                  <option value="Venta">{t('home.hero.forSale')}</option>
-                  <option value="Alquiler">{t('home.hero.forRent')}</option>
-                </select>
-                <LocalLink
-                  href="/catalogo"
-                  className="bg-brand-accent text-gray-900 px-6 py-2 rounded-xl font-bold text-sm hover:bg-accent/90 transition shadow-lg flex items-center justify-center gap-2"
-                >
-                  <Search size={16} />
-                  {t('home.hero.search')}
-                </LocalLink>
+
+            {/* Stats Bar */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
+              <div className="text-center">
+                <p className="text-3xl md:text-4xl font-black text-orange-400">+1,200</p>
+                <p className="text-xs md:text-sm text-blue-100 mt-1">Propiedades Activas</p>
               </div>
-            </div>
-            {/* Stats */}
-            <div className="grid grid-cols-3 gap-6 max-w-md mx-auto text-center">
-              <div>
-                <p className="text-2xl font-black text-brand-accent">+9</p>
-                <p className="text-[10px] text-white/60 mt-0.5">{t('home.hero.stats.activeProperties')}</p>
+              <div className="text-center">
+                <p className="text-3xl md:text-4xl font-black text-orange-400">24</p>
+                <p className="text-xs md:text-sm text-blue-100 mt-1">Estados Cubiertos</p>
               </div>
-              <div>
-                <p className="text-2xl font-black text-brand-accent">24</p>
-                <p className="text-[10px] text-white/60 mt-0.5">{t('home.hero.stats.states')}</p>
+              <div className="text-center">
+                <p className="text-3xl md:text-4xl font-black text-orange-400">100%</p>
+                <p className="text-xs md:text-sm text-blue-100 mt-1">Gratis para Publicar</p>
               </div>
-              <div>
-                <p className="text-2xl font-black text-brand-accent">100%</p>
-                <p className="text-[10px] text-white/60 mt-0.5">{t('home.hero.stats.free')}</p>
+              <div className="text-center">
+                <p className="text-3xl md:text-4xl font-black text-orange-400">+5K</p>
+                <p className="text-xs md:text-sm text-blue-100 mt-1">Usuarios Registrados</p>
               </div>
             </div>
           </div>
