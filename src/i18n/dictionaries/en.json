@@ -1046,5 +1046,21 @@
     "iosDone": "Got it",
     "closeBanner": "Close banner",
     "close": "Close"
+  },
+  "properties": {
+    "meta": {
+      "title": "Properties - VendeT Real Estate",
+      "description": "Find properties for sale and rent. Houses, apartments, land and more."
+    },
+    "breadcrumbs": {
+      "home": "Home",
+      "for_sale": "Sale",
+      "for_rent": "Rent"
+    },
+    "filters": {
+      "by_state": "Search by State",
+      "by_city": "Search by City",
+      "no_properties": "No properties available in this area."
+    }
   }
 }

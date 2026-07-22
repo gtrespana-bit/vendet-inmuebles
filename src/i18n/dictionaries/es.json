@@ -1046,5 +1046,21 @@
     "iosDone": "Entendido",
     "closeBanner": "Cerrar banner",
     "close": "Cerrar"
+  },
+  "properties": {
+    "meta": {
+      "title": "Propiedades - VendeT Inmuebles",
+      "description": "Encuentra propiedades en venta y alquiler. Casas, apartamentos, terrenos y más."
+    },
+    "breadcrumbs": {
+      "home": "Inicio",
+      "for_sale": "Venta",
+      "for_rent": "Alquiler"
+    },
+    "filters": {
+      "by_state": "Buscar por Estado",
+      "by_city": "Buscar por Ciudad",
+      "no_properties": "No hay propiedades disponibles en esta zona."
+    }
   }
 }
