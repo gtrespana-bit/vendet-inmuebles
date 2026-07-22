@@ -1,55 +1,45 @@
 import { NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase-server'
 
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url)
-  const id = searchParams.get('id') || '3f4c55e8-06c0-448e-9077-78046971b10f'
-
+export async function GET() {
   const supabase = createServerClient()
 
-  // Query 1: Simple (sin join)
-  const simple = await supabase
+  // Listar TODOS los productos (sin filtro de ID)
+  const { data: allProducts, error: allError, count } = await supabase
+    .from('productos')
+    .select('id, titulo, activo, slug, operacion_tipo, ubicacion_ciudad', { count: 'exact' })
+    .limit(20)
+
+  // Verificar columnas de la tabla
+  const { data: firstRow, error: firstError } = await supabase
     .from('productos')
     .select('*')
-    .eq('id', id)
-    .single()
+    .limit(1)
 
-  // Query 2: Con join a perfiles (la que usa la página)
-  const withJoin = await supabase
-    .from('productos')
-    .select(`
-      *,
-      perfiles (
-        id,
-        nombre,
-        telefono,
-        verificado,
-        nivel_confianza,
-        foto_perfil_url
-      )
-    `)
-    .eq('id', id)
-    .single()
+  const columns = firstRow && firstRow.length > 0 ? Object.keys(firstRow[0]) : []
 
-  // Query 3: Verificar si existe tabla perfiles
-  const perfilesCheck = await supabase
-    .from('perfiles')
-    .select('id', { count: 'exact', head: true })
+  // Test con el primer ID real (si existe)
+  let singleTest: any = { data: null, error: null }
+  if (allProducts && allProducts.length > 0) {
+    const testId = allProducts[0].id
+    const { data, error } = await supabase
+      .from('productos')
+      .select('*, perfiles ( id, nombre, telefono, verificado, nivel_confianza, foto_perfil_url )')
+      .eq('id', testId)
+      .single()
+    singleTest = {
+      testId,
+      data: data ? { id: data.id, titulo: data.titulo, activo: data.activo, has_perfiles: !!(data as any).perfiles } : null,
+      error: error?.message || null,
+    }
+  }
 
   return NextResponse.json({
-    id,
-    simple: {
-      data: simple.data ? { id: simple.data.id, titulo: simple.data.titulo, activo: simple.data.activo } : null,
-      error: simple.error?.message || null,
-    },
-    withJoin: {
-      data: withJoin.data ? { id: withJoin.data.id, titulo: withJoin.data.titulo, activo: withJoin.data.activo, has_perfiles: !!withJoin.data.perfiles } : null,
-      error: withJoin.error?.message || null,
-    },
-    perfilesTable: {
-      exists: !perfilesCheck.error,
-      count: perfilesCheck.count || 0,
-      error: perfilesCheck.error?.message || null,
-    },
+    totalProducts: count,
+    allError: allError?.message || null,
+    products: allProducts,
+    columns,
+    firstRowSample: firstRow?.[0] ? { ...firstRow[0], descripcion: firstRow[0].descripcion?.substring(0, 50) } : null,
+    singleTest,
   })
 }
