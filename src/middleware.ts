@@ -11,7 +11,7 @@ const nextIntlMiddleware = createMiddleware(routing)
 export default async function middleware(request: NextRequest) {
   // 1. Detect locale from URL pathname FIRST
   const pathnameLocale = request.nextUrl.pathname.split('/')[1]
-  const locale = routing.locales.includes(pathnameLocale as any)
+  const locale = routing.locales.includes(pathnameLocale as 'es' | 'en')
     ? pathnameLocale
     : routing.defaultLocale
 
