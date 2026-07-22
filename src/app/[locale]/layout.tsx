@@ -1,11 +1,11 @@
-import { NextIntlClientProvider } from 'next-intl'
+﻿import { NextIntlClientProvider } from 'next-intl'
 import { notFound } from 'next/navigation'
 import { routing } from '@/i18n/routing'
 import type { Metadata } from 'next'
-import '../globals.css' // ← AGREGAR ESTA LÍNEA
+import '../globals.css'
 
 async function getDictionary(locale: string) {
-  return (await import(`@/i18n/dictionaries/${locale}.json`)).default
+  return (await import(@/i18n/dictionaries/.json)).default
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
@@ -13,7 +13,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   return {
     alternates: {
       languages: {
-        'es-VE': `https://vendet-inmuebles.online/${locale}`,
+        'es-VE': https://vendet-inmuebles.online/,
       },
     },
   }
@@ -35,12 +35,12 @@ export default async function LocaleLayout({
   const messages = await getDictionary(locale)
 
   return (
-    <html lang={locale}> {/* ← AGREGAR */}
-      <body> {/* ← AGREGAR */}
+    <html lang={locale}>
+      <body>
         <NextIntlClientProvider locale={locale} messages={messages}>
           {children}
         </NextIntlClientProvider>
-      </body> {/* ← AGREGAR */}
-    </html> {/* ← AGREGAR */}
+      </body>
+    </html>
   )
 }
