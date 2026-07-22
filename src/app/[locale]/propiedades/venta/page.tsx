@@ -42,7 +42,7 @@ export default async function VentasPage({ params, searchParams }: PageProps) {
       states (name),
       cities (name)
     `)
-    .eq('operacion_tipo', 'venta')
+    .eq('operacion_tipo', 'Venta')
     .eq('activo', true)
     .limit(50)
     .order('creado_en', { ascending: false })

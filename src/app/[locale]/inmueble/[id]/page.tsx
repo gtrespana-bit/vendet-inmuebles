@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     return { title: 'Propiedad no encontrada' };
   }
 
-  const operacion = propiedad.operacion_tipo === 'venta' ? 'Venta' : 'Alquiler';
+  const operacion = propiedad.operacion_tipo?.toLowerCase() === 'venta' ? 'Venta' : 'Alquiler';
   return {
     title: `${operacion}: ${propiedad.titulo} en ${propiedad.ubicacion_ciudad}, ${propiedad.ubicacion_estado}`,
     description: propiedad.descripcion?.substring(0, 160),
@@ -120,7 +120,7 @@ export default async function PropertyDetailPage({ params }: PageProps) {
         <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
           <div className="container mx-auto">
             <span className="inline-block px-3 py-1 bg-blue-600 rounded-full text-sm font-medium mb-2">
-              {propiedad.operacion_tipo || 'Venta'}
+              {operacion || 'Venta'}
             </span>
             <h1 className="text-3xl md:text-4xl font-bold mb-2">{propiedad.titulo}</h1>
             <div className="flex items-center gap-2 text-lg">

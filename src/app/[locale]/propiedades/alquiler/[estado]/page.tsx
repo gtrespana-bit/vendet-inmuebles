@@ -64,7 +64,7 @@ export default async function AlquilerPorEstadoPage({ params, searchParams }: Pa
       states (name),
       cities (name)
     `)
-    .eq('operacion_tipo', 'alquiler')
+    .eq('operacion_tipo', 'Alquiler')
     .eq('ubicacion_estado_id', estado)
     .eq('activo', true)
     .limit(50)

@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     // Get product owner before updating
     const { data: product } = await supabaseAdmin
       .from('productos')
-      .select('user_id, titulo, slug')
+      .select('user_id, titulo')
       .eq('id', productId)
       .single()
 

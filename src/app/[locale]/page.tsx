@@ -14,7 +14,7 @@ function generateItemListSchema(properties: any[], baseUrl: string) {
     position: index + 1,
     url: `${baseUrl}/inmueble/${prop.id}`,
     name: prop.titulo,
-    description: prop.descripcion || `${prop.operacion_tipo === 'venta' ? 'Venta' : 'Alquiler'} de ${prop.tipo_propiedad} en ${prop.ubicacion_ciudad}`,
+    description: prop.descripcion || `${prop.operacion_tipo?.toLowerCase() === 'venta' ? 'Venta' : 'Alquiler'} de ${prop.tipo_propiedad} en ${prop.ubicacion_ciudad}`,
     image: prop.imagen_url || `${baseUrl}/placeholder-property.webp`,
     offers: {
       '@type': 'Offer',

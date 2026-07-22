@@ -42,7 +42,7 @@ export default async function AlquilerPage({ params, searchParams }: PageProps) 
       states (name),
       cities (name)
     `)
-    .eq('operacion_tipo', 'alquiler')
+    .eq('operacion_tipo', 'Alquiler')
     .eq('activo', true)
     .limit(50)
     .order('creado_en', { ascending: false })

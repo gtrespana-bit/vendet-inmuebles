@@ -64,7 +64,7 @@ export default async function VentasPorEstadoPage({ params, searchParams }: Page
       states (name),
       cities (name)
     `)
-    .eq('operacion_tipo', 'venta')
+    .eq('operacion_tipo', 'Venta')
     .eq('ubicacion_estado_id', estado)
     .eq('activo', true)
     .limit(50)

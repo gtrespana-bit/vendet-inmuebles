@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
     // Get product owner
     const { data: product } = await supabaseAdmin
       .from('productos')
-      .select('user_id, titulo, slug')
+      .select('user_id, titulo')
       .eq('id', productId)
       .single()
 

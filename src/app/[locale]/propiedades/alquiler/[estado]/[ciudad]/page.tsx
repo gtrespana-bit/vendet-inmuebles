@@ -35,7 +35,7 @@ export default async function VentasPorCiudadPage({ params, searchParams }: Page
       states (name),
       cities (name)
     `)
-    .eq('operacion_tipo', 'alquiler')
+    .eq('operacion_tipo', 'Alquiler')
     .eq('ubicacion_estado_id', estado)
     .eq('ubicacion_ciudad_id', ciudad)
     .eq('activo', true)
