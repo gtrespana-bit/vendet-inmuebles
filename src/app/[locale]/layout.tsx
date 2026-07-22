@@ -23,79 +23,90 @@ export const viewport: Viewport = {
   colorScheme: 'light',
 }
 
-export const metadata: Metadata = {
-  metadataBase: new URL('https://vendet-inmuebles.online'),
-  title: {
-    default: 'VendeT Inmuebles - Bienes Raíces en Venezuela | Casas, Apartamentos, Terrenos',
-    template: '%s | VendeT Inmuebles',
-  },
-  description: 'El portal líder de bienes raíces en Venezuela. Encuentra casas, apartamentos, terrenos, locales y oficinas en venta y alquiler en todo el país.',
-  keywords: ['inmuebles venezuela', 'casas en venta venezuela', 'apartamentos venezuela', 'terrenos venezuela', 'alquiler venezuela', 'bienes raices venezuela', 'propiedades venezuela', 'inmobiliaria venezuela'],
-  authors: [{ name: 'VendeT Inmuebles' }],
-  creator: 'VendeT Inmuebles',
-  publisher: 'VendeT Inmuebles',
-  formatDetection: {
-    email: false,
-    address: false,
-    telephone: false,
-  },
-  openGraph: {
-    type: 'website',
-    locale: 'es_VE',
-    url: 'https://vendet-inmuebles.online',
-    siteName: 'VendeT Inmuebles',
-    title: 'VendeT Inmuebles - Bienes Raíces en Venezuela',
-    description: 'El portal líder de bienes raíces en Venezuela. Encuentra tu próximo hogar o inversión.',
-    images: [{
-      url: 'https://vendet-inmuebles.online/og-image.png',
-      width: 1200,
-      height: 630,
-      alt: 'VendeT Inmuebles - Bienes Raíces Venezuela'
-    }],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'VendeT Inmuebles - Bienes Raíces en Venezuela',
-    description: 'El portal líder de bienes raíces en Venezuela.',
-    images: ['https://vendet-inmuebles.online/og-image.png'],
-  },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      'max-video-preview': -1,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
-    },
-  },
-  alternates: {
-    canonical: 'https://vendet-inmuebles.online',
-    languages: {
-      'es-VE': 'https://vendet-inmuebles.online',
-      'en-US': 'https://vendet-inmuebles.online/en',
-    },
-  },
-  verification: {
-    google: 'google-site-verification=vendet-inmuebles-verification-code',
-  },
-  category: 'real_estate',
-}
-
 async function getDictionary(locale: string) {
   return (await import(`@/i18n/dictionaries/${locale}.json`)).default
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params
+  
+  const metadataBase = new URL('https://vendet-inmuebles.online')
+  const canonicalUrl = locale === 'es' 
+    ? 'https://vendet-inmuebles.online' 
+    : `https://vendet-inmuebles.online/${locale}`
+
   return {
-    alternates: {
-      languages: {
-        'es-VE': `https://vendet-inmuebles.online/${locale}`,
-        'en-US': `https://vendet-inmuebles.online/${locale}`,
+    metadataBase,
+    title: {
+      default: locale === 'es' 
+        ? 'VendeT Inmuebles - Bienes Raíces en Venezuela | Casas, Apartamentos, Terrenos'
+        : 'VendeT Real Estate - Properties in Venezuela | Houses, Apartments, Land',
+      template: '%s | VendeT Inmuebles',
+    },
+    description: locale === 'es'
+      ? 'El portal líder de bienes raíces en Venezuela. Encuentra casas, apartamentos, terrenos, locales y oficinas en venta y alquiler en todo el país.'
+      : 'The leading real estate portal in Venezuela. Find houses, apartments, land, commercial spaces and offices for sale and rent across the country.',
+    keywords: locale === 'es'
+      ? ['inmuebles venezuela', 'casas en venta venezuela', 'apartamentos venezuela', 'terrenos venezuela', 'alquiler venezuela', 'bienes raices venezuela', 'propiedades venezuela', 'inmobiliaria venezuela']
+      : ['venezuela real estate', 'houses for sale venezuela', 'apartments venezuela', 'land venezuela', 'rent venezuela', 'properties venezuela'],
+    authors: [{ name: 'VendeT Inmuebles' }],
+    creator: 'VendeT Inmuebles',
+    publisher: 'VendeT Inmuebles',
+    formatDetection: {
+      email: false,
+      address: false,
+      telephone: false,
+    },
+    openGraph: {
+      type: 'website',
+      locale: locale === 'es' ? 'es_VE' : 'en_US',
+      url: canonicalUrl,
+      siteName: 'VendeT Inmuebles',
+      title: locale === 'es'
+        ? 'VendeT Inmuebles - Bienes Raíces en Venezuela'
+        : 'VendeT Real Estate - Properties in Venezuela',
+      description: locale === 'es'
+        ? 'El portal líder de bienes raíces en Venezuela. Encuentra tu próximo hogar o inversión.'
+        : 'The leading real estate portal in Venezuela. Find your next home or investment.',
+      images: [{
+        url: 'https://vendet-inmuebles.online/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'VendeT Inmuebles - Bienes Raíces Venezuela'
+      }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: locale === 'es'
+        ? 'VendeT Inmuebles - Bienes Raíces en Venezuela'
+        : 'VendeT Real Estate - Properties in Venezuela',
+      description: locale === 'es'
+        ? 'El portal líder de bienes raíces en Venezuela.'
+        : 'The leading real estate portal in Venezuela.',
+      images: ['https://vendet-inmuebles.online/og-image.png'],
+    },
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        'max-video-preview': -1,
+        'max-image-preview': 'large',
+        'max-snippet': -1,
       },
     },
+    alternates: {
+      canonical: canonicalUrl,
+      languages: {
+        'es-VE': 'https://vendet-inmuebles.online',
+        'en-US': 'https://vendet-inmuebles.online/en',
+      },
+    },
+    verification: {
+      google: 'google-site-verification=vendet-inmuebles-verification-code',
+    },
+    category: 'real_estate',
   }
 }
 
