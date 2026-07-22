@@ -201,33 +201,33 @@ export default async function HomePage() {
   return (
     <div className="bg-white">
       {/* HERO - ZILLOW STYLE: Immersive with central search */}
-      <section className="relative bg-gradient-to-br from-blue-900 via-blue-800 to-blue-950 py-20 md:py-32 overflow-hidden">
+      <section className="relative bg-gradient-to-br from-brand-primary via-brand-dark to-brand-primary py-12 md:py-20 overflow-hidden">
         {/* Background pattern */}
         <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-20 left-10 w-72 h-72 bg-orange-400 rounded-full blur-3xl"></div>
-          <div className="absolute bottom-10 right-10 w-96 h-96 bg-blue-400 rounded-full blur-3xl"></div>
+          <div className="absolute top-20 left-10 w-72 h-72 bg-brand-accent rounded-full blur-3xl"></div>
+          <div className="absolute bottom-10 right-10 w-96 h-96 bg-brand-accent rounded-full blur-3xl"></div>
         </div>
         
-        <div className="max-w-7xl mx-auto px-4 relative z-10">
-            <div className="text-center mb-10">
-              <div className="inline-flex items-center gap-2 bg-orange-500/20 backdrop-blur-sm border border-orange-400/30 rounded-full px-4 py-2 mb-6">
-                <Star size={16} className="fill-orange-400 text-orange-400" />
-                <span className="text-orange-300 font-semibold text-sm">El marketplace #1 de inmuebles en Venezuela</span>
+        <div className="max-w-4xl mx-auto px-4 relative z-10">
+            <div className="text-center mb-6">
+              <div className="inline-flex items-center gap-2 bg-brand-accent/20 backdrop-blur-sm border border-brand-accent/30 rounded-full px-4 py-2 mb-4">
+                <Star size={16} className="fill-brand-accent text-brand-accent" />
+                <span className="text-brand-accent font-semibold text-sm">{t('home.badge')}</span>
               </div>
               
-              <h1 className="text-5xl md:text-7xl font-black text-white mb-6 leading-tight">
-                Encuentra tu lugar
+              <h1 className="text-3xl md:text-5xl font-black text-white mb-4 leading-tight">
+                {t('home.title1')}
                 <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-orange-300">perfecto en Venezuela</span>
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-accent to-white">{t('home.title2')}</span>
               </h1>
               
-              <p className="text-xl md:text-2xl text-blue-100 mb-8 max-w-3xl mx-auto font-medium">
-                Miles de propiedades en venta y alquiler. Publica gratis o busca tu próximo hogar hoy mismo.
+              <p className="text-base md:text-lg text-white/90 mb-6 max-w-xl mx-auto font-medium">
+                {t('home.subtitle')}
               </p>
             </div>
 
             {/* Search Box - Central Focus like Zillow */}
-            <div className="max-w-5xl mx-auto mb-12">
+            <div className="max-w-3xl mx-auto mb-8">
               <div className="bg-white rounded-2xl shadow-2xl p-3 md:p-4">
                 {/* Tabs for intent */}
                 <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
@@ -332,7 +332,7 @@ export default async function HomePage() {
 
         {/* Banner gratis */}
         <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-y border-green-200">
-          <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-center gap-3 flex-wrap">
+          <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-center gap-3 flex-wrap">
             <div className="flex items-center gap-2">
               <span className="w-7 h-7 bg-green-500 rounded-full flex items-center justify-center shrink-0">
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -352,7 +352,7 @@ export default async function HomePage() {
 
         {/* Destacadas */}
         {destacados.length > 0 && (
-          <section className="max-w-7xl mx-auto px-4 py-10">
+          <section className="max-w-4xl mx-auto px-4 py-10">
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h2 className="text-2xl font-black text-gray-900">{t('home.featured.title')}</h2>
@@ -378,12 +378,12 @@ export default async function HomePage() {
 
         {/* Tipos propiedad - ZILLOW STYLE */}
         <section className="bg-gray-50 py-16">
-          <div className="max-w-7xl mx-auto px-4">
-            <div className="text-center mb-10">
+          <div className="max-w-4xl mx-auto px-4">
+            <div className="text-center mb-8">
               <h2 className="text-3xl md:text-4xl font-black text-gray-900 mb-3">
                 Explora por tipo de propiedad
               </h2>
-              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              <p className="text-lg text-gray-600 max-w-xl mx-auto">
                 Encuentra exactamente lo que buscas entre nuestra amplia variedad de categorías
               </p>
             </div>
@@ -411,12 +411,12 @@ export default async function HomePage() {
 
         {/* Cómo funciona - ZILLOW STYLE */}
         <section className="py-16 bg-white">
-          <div className="max-w-7xl mx-auto px-4">
+          <div className="max-w-4xl mx-auto px-4">
             <div className="text-center mb-12">
               <h2 className="text-3xl md:text-4xl font-black text-gray-900 mb-3">
                 ¿Cómo funciona VendeT?
               </h2>
-              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              <p className="text-lg text-gray-600 max-w-xl mx-auto">
                 Publicar o encontrar tu propiedad ideal es más fácil de lo que crees
               </p>
             </div>
@@ -475,7 +475,7 @@ export default async function HomePage() {
 
         {/* Recent Properties - ZILLOW STYLE CARD GRID */}
         <section className="bg-gray-50 py-16">
-          <div className="max-w-7xl mx-auto px-4">
+          <div className="max-w-4xl mx-auto px-4">
             <div className="flex items-center justify-between mb-8">
               <div>
                 <h2 className="text-3xl font-black text-gray-900 mb-2">Propiedades Recientes</h2>
@@ -533,7 +533,7 @@ export default async function HomePage() {
 
         {/* Estados */}
         <section className="bg-white border-y border-gray-200 py-12">
-          <div className="max-w-7xl mx-auto px-4">
+          <div className="max-w-4xl mx-auto px-4">
             <h2 className="text-2xl md:text-3xl font-black text-gray-900 text-center mb-2">
               {t('home.states.title')}
             </h2>
@@ -563,7 +563,7 @@ export default async function HomePage() {
 
         {/* CTA */}
         <section className="bg-brand-accent py-16">
-          <div className="max-w-7xl mx-auto px-4 text-center">
+          <div className="max-w-4xl mx-auto px-4 text-center">
             <h2 className="text-3xl font-black text-gray-900 mb-4">
               {t('home.cta.title')}
             </h2>
