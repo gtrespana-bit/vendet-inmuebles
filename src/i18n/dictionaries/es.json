@@ -158,6 +158,11 @@
       "publishNow": "Publica ahora — Es gratis",
       "featureAd": "Destacar mi anuncio"
     },
+    "states": {
+      "title": "Propiedades por estado",
+      "subtitle": "Explora inmuebles en las principales regiones de Venezuela",
+      "viewAll": "Ver todos los estados"
+    },
     "productCard": {
       "featured": "Destacado",
       "forSale": "Venta",

@@ -234,20 +234,46 @@ export default async function HomePage() {
       )}
       <div className="bg-gray-50">
         {/* HERO */}
-        <section className="bg-gradient-to-br from-brand-primary to-brand-dark py-12 md:py-20 relative overflow-hidden">
+        <section className="bg-gradient-to-br from-brand-primary to-brand-dark py-16 md:py-24 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-96 h-96 bg-brand-accent/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4" />
           <div className="absolute bottom-0 left-0 w-64 h-64 bg-brand-accent/5 rounded-full blur-2xl translate-y-1/3 -translate-x-1/4" />
           <div className="max-w-7xl mx-auto px-4 text-center relative z-10">
-            <h1 className="text-3xl md:text-5xl font-black text-white mb-3 leading-tight">
+            <div className="inline-block bg-brand-accent/20 backdrop-blur-sm border border-brand-accent/30 rounded-full px-4 py-1.5 mb-6">
+              <p className="text-brand-accent font-bold text-xs md:text-sm flex items-center gap-2">
+                <Star size={14} className="fill-brand-accent" />
+                La plataforma #1 para vender y comprar propiedades en Venezuela
+              </p>
+            </div>
+            <h1 className="text-4xl md:text-6xl font-black text-white mb-4 leading-tight">
               {t('home.hero.title1')}
               <br />
               <span className="text-brand-accent">{t('home.hero.title2')}</span>
             </h1>
-            <p className="text-base md:text-lg text-blue-200 mb-6 max-w-2xl mx-auto">
-              {t('home.hero.subtitle1')}
+            <p className="text-base md:text-xl text-blue-100 mb-8 max-w-3xl mx-auto font-medium">
+              Publica tu propiedad gratis en 2 minutos o encuentra tu próximo hogar entre miles de inmuebles en todo el país.
             </p>
-            {/* Buscador */}
-            <div className="max-w-3xl mx-auto mb-8">
+            {/* CTAs principales */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-10">
+              <LocalLink
+                href="/publicar-inmueble"
+                className="bg-brand-accent text-gray-900 px-8 py-4 rounded-xl font-bold text-lg hover:bg-accent/90 transition shadow-xl hover:shadow-2xl hover:-translate-y-1 flex items-center justify-center gap-2"
+              >
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+                Publicar mi propiedad — Gratis
+              </LocalLink>
+              <LocalLink
+                href="/catalogo"
+                className="bg-white/10 backdrop-blur-sm border-2 border-white/30 text-white px-8 py-4 rounded-xl font-bold text-lg hover:bg-white/20 transition flex items-center justify-center gap-2"
+              >
+                <Search size={20} />
+                Buscar propiedades
+              </LocalLink>
+            </div>
+            {/* Buscador rápido */}
+            <div className="max-w-4xl mx-auto mb-8">
+              <p className="text-blue-200 text-sm mb-3 font-semibold">¿Qué estás buscando?</p>
               <div className="bg-white rounded-2xl p-3 shadow-2xl flex flex-col md:flex-row gap-2">
                 <div className="flex-1 flex items-center gap-2 px-3 py-2 border border-gray-200 rounded-xl">
                   <Search size={18} className="text-gray-400 shrink-0" />
