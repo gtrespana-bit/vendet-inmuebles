@@ -5,7 +5,7 @@ import type { Metadata } from 'next'
 import '../globals.css'
 
 async function getDictionary(locale: string) {
-  return (await import(@/i18n/dictionaries/.json)).default
+  return (await import(`@/i18n/dictionaries/${locale}.json`)).default
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
@@ -13,7 +13,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   return {
     alternates: {
       languages: {
-        'es-VE': https://vendet-inmuebles.online/,
+        'es-VE': `https://vendet-inmuebles.online/${locale}`,
       },
     },
   }
