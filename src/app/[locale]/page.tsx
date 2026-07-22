@@ -234,28 +234,28 @@ export default async function HomePage() {
       )}
       <div className="bg-white">
         {/* HERO - ZILLOW STYLE: Immersive with central search */}
-        <section className="relative bg-gradient-to-br from-blue-900 via-blue-800 to-blue-950 py-20 md:py-32 overflow-hidden">
+        <section className="relative bg-gradient-to-br from-brand-primary via-brand-dark to-brand-primary py-20 md:py-32 overflow-hidden">
           {/* Background pattern */}
           <div className="absolute inset-0 opacity-10">
-            <div className="absolute top-20 left-10 w-72 h-72 bg-orange-400 rounded-full blur-3xl"></div>
-            <div className="absolute bottom-10 right-10 w-96 h-96 bg-blue-400 rounded-full blur-3xl"></div>
+            <div className="absolute top-20 left-10 w-72 h-72 bg-brand-accent rounded-full blur-3xl"></div>
+            <div className="absolute bottom-10 right-10 w-96 h-96 bg-brand-accent/50 rounded-full blur-3xl"></div>
           </div>
           
           <div className="max-w-7xl mx-auto px-4 relative z-10">
             <div className="text-center mb-10">
-              <div className="inline-flex items-center gap-2 bg-orange-500/20 backdrop-blur-sm border border-orange-400/30 rounded-full px-4 py-2 mb-6">
-                <Star size={16} className="fill-orange-400 text-orange-400" />
-                <span className="text-orange-300 font-semibold text-sm">El marketplace #1 de inmuebles en Venezuela</span>
+              <div className="inline-flex items-center gap-2 bg-brand-accent/20 backdrop-blur-sm border border-brand-accent/30 rounded-full px-4 py-2 mb-6">
+                <Star size={16} className="fill-brand-accent text-brand-accent" />
+                <span className="text-brand-accent font-semibold text-sm">{t('home.hero.badge')}</span>
               </div>
               
               <h1 className="text-5xl md:text-7xl font-black text-white mb-6 leading-tight">
-                Encuentra tu lugar
+                {t('home.hero.title1')}
                 <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-orange-300">perfecto en Venezuela</span>
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-accent to-orange-300">{t('home.hero.title2')}</span>
               </h1>
               
-              <p className="text-xl md:text-2xl text-blue-100 mb-8 max-w-3xl mx-auto font-medium">
-                Miles de propiedades en venta y alquiler. Publica gratis o busca tu próximo hogar hoy mismo.
+              <p className="text-xl md:text-2xl text-white/90 mb-8 max-w-3xl mx-auto font-medium">
+                {t('home.hero.subtitle')}
               </p>
             </div>
 

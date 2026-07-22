@@ -37,8 +37,12 @@
   },
   "home": {
     "hero": {
-      "title1": "Buy and Sell",
-      "title2": "All in One Place",
+      "badge": "The #1 real estate marketplace in Venezuela",
+      "title1": "Find your perfect",
+      "title2": "place in Venezuela",
+      "subtitle": "Thousands of properties for sale and rent. Post free or find your next home today.",
+      "title1_old": "Buy and Sell",
+      "title2_old": "All in One Place",
       "subtitle1": "The marketplace for Venezuela.",
       "subtitle2": "Free listings, simple",
       "subtitle3": "featured ads from $1",
