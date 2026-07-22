@@ -212,17 +212,17 @@ export default async function HomePage() {
             <div className="text-center mb-6">
               <div className="inline-flex items-center gap-2 bg-brand-accent/20 backdrop-blur-sm border border-brand-accent/30 rounded-full px-4 py-2 mb-4">
                 <Star size={16} className="fill-brand-accent text-brand-accent" />
-                <span className="text-brand-accent font-semibold text-sm">{t('home.badge')}</span>
+                <span className="text-brand-accent font-semibold text-sm">{t('home.hero.badge')}</span>
               </div>
               
               <h1 className="text-3xl md:text-5xl font-black text-white mb-4 leading-tight">
-                {t('home.title1')}
+                {t('home.hero.title1')}
                 <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-accent to-white">{t('home.title2')}</span>
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-accent to-white">{t('home.hero.title2')}</span>
               </h1>
               
               <p className="text-base md:text-lg text-white/90 mb-6 max-w-xl mx-auto font-medium">
-                {t('home.subtitle')}
+                {t('home.hero.subtitle')}
               </p>
             </div>
 
