@@ -505,79 +505,64 @@ export default async function HomePage() {
             </div>
           </div>
         </section>
-                <p className="text-sm text-gray-600">{t('home.howItWorks.step1Desc')}</p>
+
+        {/* Recent Properties - ZILLOW STYLE CARD GRID */}
+        <section className="bg-gray-50 py-16">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h2 className="text-3xl font-black text-gray-900 mb-2">Propiedades Recientes</h2>
+                <p className="text-gray-600">Las últimas publicaciones en el mercado venezolano</p>
               </div>
-              <div className="text-center">
-                <div className="w-16 h-16 bg-brand-accent/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Key size={28} className="text-brand-primary" />
+              <LocalLink
+                href="/catalogo"
+                className="hidden md:flex items-center gap-2 text-blue-600 font-bold hover:text-blue-700 transition"
+                prefetch={true}
+              >
+                Ver todas <ArrowRight size={18} />
+              </LocalLink>
+            </div>
+            
+            {propiedades.length === 0 ? (
+              <div className="bg-white rounded-2xl p-16 text-center shadow-lg border border-gray-100">
+                <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Home size={40} className="text-gray-400" />
                 </div>
-                <h3 className="font-bold text-gray-900 text-lg mb-2">{t('home.howItWorks.step2Title')}</h3>
-                <p className="text-sm text-gray-600">{t('home.howItWorks.step2Desc')}</p>
+                <h3 className="text-2xl font-bold text-gray-900 mb-3">¡Sé el primero en publicar!</h3>
+                <p className="text-gray-600 mb-8 max-w-md mx-auto">
+                  Aún no hay propiedades publicadas. Sé el primero en listar tu inmueble y llega a miles de compradores en toda Venezuela.
+                </p>
+                <LocalLink
+                  href="/publicar-inmueble"
+                  className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white px-8 py-4 rounded-xl font-bold text-lg hover:from-orange-600 hover:to-orange-700 transition shadow-lg hover:shadow-xl"
+                >
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 5v14M5 12h14" />
+                  </svg>
+                  Publicar mi propiedad — Gratis
+                </LocalLink>
               </div>
-              <div className="text-center">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Home size={28} className="text-brand-primary" />
-                </div>
-                <h3 className="font-bold text-gray-900 text-lg mb-2">{t('home.howItWorks.step3Title')}</h3>
-                <p className="text-sm text-gray-600">{t('home.howItWorks.step3Desc')}</p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {propiedades.map((p, index) => {
+                  const isHighlighted =
+                    (p.destacado && p.destacado_hasta > new Date().toISOString()) || p.boosteado_en
+                  return <PropertyCard key={p.id} p={p} highlighted={isHighlighted} priority={index < 2} t={t} />
+                })}
               </div>
+            )}
+            
+            {/* Mobile view all button */}
+            <div className="md:hidden mt-8 text-center">
+              <LocalLink
+                href="/catalogo"
+                className="inline-flex items-center gap-2 bg-white border-2 border-blue-600 text-blue-600 px-6 py-3 rounded-xl font-bold hover:bg-blue-50 transition"
+              >
+                Ver todas las propiedades <ArrowRight size={18} />
+              </LocalLink>
             </div>
           </div>
         </section>
-
-        {/* Trending */}
-        {trending.length > 0 && (
-          <section className="max-w-7xl mx-auto px-4 py-10">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-black text-gray-900">{t('home.trending.title')}</h2>
-              <span className="text-xs text-gray-500">{t('home.trending.period')}</span>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              {trending.map((p, index) => (
-                <PropertyCard
-                  key={p.id}
-                  p={p}
-                  priority={index < 2}
-                  t={t}
-                />
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Recientes */}
-        <section className="max-w-7xl mx-auto px-4 py-10">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">{t('home.recent.title')}</h2>
-            <LocalLink
-              href="/catalogo"
-              className="text-brand-primary font-semibold text-sm hover:underline flex items-center gap-1"
-              prefetch={true}
-            >
-              {t('home.recent.viewAll')} <ArrowRight size={14} />
-            </LocalLink>
-          </div>
-          {propiedades.length === 0 ? (
-            <div className="bg-white rounded-xl p-16 text-center shadow-sm border">
-              <Home size={48} className="text-gray-300 mx-auto mb-4" />
-              <p className="text-xl font-bold text-gray-800 mb-2">{t('home.recent.empty')}</p>
-              <p className="text-gray-500 mb-6">{t('home.recent.emptyCta')}</p>
-              <LocalLink
-                href="/publicar"
-                className="inline-block bg-brand-accent text-gray-900 px-6 py-3 rounded-lg font-bold hover:bg-accent/90 transition"
-              >
-                {t('home.recent.publishFree')}
-              </LocalLink>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {propiedades.map((p, index) => {
-                const isHighlighted =
-                  (p.destacado && p.destacado_hasta > new Date().toISOString()) || p.boosteado_en
-                return <PropertyCard key={p.id} p={p} highlighted={isHighlighted} priority={index < 2} t={t} />
-              })}
-            </div>
-          )}
         </section>
 
         {/* Estados */}
