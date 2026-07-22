@@ -29,7 +29,7 @@ export default function PropertyCard({ property, locale }: PropertyCardProps) {
   }).format(property.precio);
 
   return (
-    <Link href={`/${locale}/inmueble/${property.slug}`} className="group block">
+    <Link href={`/${locale}/inmueble/${property.id}`} className="group block">
       <div className="bg-white rounded-xl shadow-sm border overflow-hidden hover:shadow-md transition-shadow">
         {/* Imagen */}
         <div className="relative h-48 w-full bg-gray-100">

@@ -56,7 +56,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     if (!error && productos) {
       productUrls = productos.map(p => ({
-        url: `https://vendet.online/producto/${p.id}`,
+        url: `https://vendet.online/inmueble/${p.id}`,
         lastModified: new Date(p.actualizado_en || Date.now()),
         changeFrequency: 'weekly' as const,
         priority: 0.8,

@@ -178,7 +178,7 @@ export async function emailProductoPublicado(
      `)}
      <p style="margin:24px 0 0;color:${COLORS.gray};font-size:14px">Consejo: revisa tu anuncio desde tu perfil para asegurarte de que la foto principal sea la mejor.</p>`,
     'Ver mi anuncio',
-    `${URL}/producto/${slug}`,
+    `${URL}/inmueble/${slug}`,
   ))
 }
 

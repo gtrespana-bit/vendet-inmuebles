@@ -47,7 +47,7 @@ export const ProductCardLazy = ({ p, t, priority = false }: ProductCardLazyProps
 
   return (
     <LocalLink 
-      href={`/producto/${p.id}`} 
+      href={`/inmueble/${p.id}`} 
       className={`bg-white rounded-xl overflow-hidden transition-all duration-200 group block border ${isPromoted ? 'border-2 border-brand-accent shadow-md hover:shadow-xl hover:-translate-y-1' : 'border-gray-100 shadow-sm hover:shadow-lg hover:-translate-y-1 hover:border-gray-200'}`}
     >
       <div className="aspect-square bg-gray-100 relative overflow-hidden">

@@ -50,7 +50,7 @@ export async function enviarEmailProducto(
   precio: string,
   slug: string
 ) {
-  const url = `${process.env.NEXT_PUBLIC_URL || 'https://vendet.online'}/producto/${slug}`
+  const url = `${process.env.NEXT_PUBLIC_URL || 'https://vendet.online'}/inmueble/${slug}`
   return enviar('VendeT-Venezuela', email, '✅ Tu anuncio fue publicado', `
     <div style="font-family:sans-serif;max-width:500px;margin:0 auto">
       <h2 style="color:#1e3a8a">Hola ${nombre}!</h2>
