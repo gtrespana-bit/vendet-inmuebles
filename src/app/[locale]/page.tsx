@@ -225,16 +225,9 @@ export default async function HomePage() {
   ]
 
   return (
-    <>
-      {itemListSchema ? (
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListSchema) }}
-        />
-      ) : null}
-      <div className="bg-white">
-        {/* HERO - ZILLOW STYLE: Immersive with central search */}
-        <section className="relative bg-gradient-to-br from-blue-900 via-blue-800 to-blue-950 py-20 md:py-32 overflow-hidden">
+    <div className="bg-white">
+      {/* HERO - ZILLOW STYLE: Immersive with central search */}
+      <section className="relative bg-gradient-to-br from-blue-900 via-blue-800 to-blue-950 py-20 md:py-32 overflow-hidden">
           {/* Background pattern */}
           <div className="absolute inset-0 opacity-10">
             <div className="absolute top-20 left-10 w-72 h-72 bg-orange-400 rounded-full blur-3xl"></div>
@@ -623,7 +616,7 @@ export default async function HomePage() {
           </div>
         </section>
       </div>
-    </>
+    </div>
   )
 }
 
