@@ -3,9 +3,15 @@ import { routing } from './routing'
 
 export default getRequestConfig(async ({ requestLocale }) => {
   const requested = await requestLocale
-  // Validación manual de locale sin usar hasLocale que no existe en esta versión
-  const locale = routing.locales.includes(requested as string)
-    ? (requested as string)
+  
+  // Type guard para validar el locale
+  const isValidLocale = (locale: string): locale is 'es' | 'en' => {
+    return locale === 'es' || locale === 'en'
+  }
+  
+  // Usar type guard para asegurar tipo correcto
+  const locale: 'es' | 'en' = isValidLocale(requested as string) 
+    ? (requested as 'es' | 'en')
     : routing.defaultLocale
 
   return {
