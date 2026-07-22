@@ -556,7 +556,6 @@ export default async function HomePage() {
             </div>
           </div>
         </section>
-        </section>
 
         {/* Estados */}
         <section className="bg-white border-y border-gray-200 py-12">
