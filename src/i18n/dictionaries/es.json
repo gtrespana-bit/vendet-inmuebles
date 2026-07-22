@@ -37,8 +37,10 @@
   },
   "home": {
     "hero": {
-      "title1": "Vende rápido",
-      "title2": "en Venezuela",
+      "badge": "El marketplace #1 de inmuebles en Venezuela",
+      "title1": "Encuentra tu lugar",
+      "title2": "perfecto en Venezuela",
+      "subtitle": "Miles de propiedades en venta y alquiler. Publica gratis o busca tu próximo hogar hoy mismo.",
       "subtitle1": "Publica gratis y empieza a recibir mensajes.",
       "subtitle2": "¿Quieres vender aún más rápido? Destaca tu anuncio y",
       "subtitle3": "llega a miles más",
