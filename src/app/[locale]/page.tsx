@@ -226,12 +226,12 @@ export default async function HomePage() {
 
   return (
     <>
-      {itemListSchema && (
+      {itemListSchema ? (
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListSchema) }}
         />
-      )}
+      ) : null}
       <div className="bg-white">
         {/* HERO - ZILLOW STYLE: Immersive with central search */}
         <section className="relative bg-gradient-to-br from-blue-900 via-blue-800 to-blue-950 py-20 md:py-32 overflow-hidden">
