@@ -207,8 +207,7 @@ export default async function HomePage() {
     getRecentProducts(),
   ])
   const baseUrl = 'https://vendet-inmuebles.online'
-  const allProperties = [...destacados, ...propiedades].slice(0, 20)
-  const itemListSchema = generateItemListSchema(allProperties, baseUrl)
+  // Schema markup removed to fix compilation issues
 
   const tiposPropiedad = [
     { id: 'casa', nombre: t('home.types.house'), icon: Home, desc: t('home.types.houseDesc') },
