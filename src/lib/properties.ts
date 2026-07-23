@@ -1,10 +1,44 @@
 /**
  * Funciones para manejar propiedades (inmuebles) desde Supabase
  * Uso exclusivo en Server Components
+ * 
+ * NOTA: Usa la tabla 'productos' que contiene los inmuebles reales
  */
 
 import { createServerClient } from './supabase-server';
 import type { Property, PropertyFilter } from '@/types/property';
+
+/**
+ * Mapear datos de la tabla 'productos' al tipo Property
+ */
+function mapProductoToProperty(producto: any): Property {
+  return {
+    id: producto.id,
+    title: producto.titulo,
+    description: producto.descripcion || '',
+    price: producto.precio_usd || 0,
+    price_bs: producto.precio_bs || null,
+    state: producto.ubicacion_estado || '',
+    city_id: producto.ubicacion_ciudad || '',
+    location_details: producto.ubicacion_detalles || '',
+    images: producto.imagenes_urls || (producto.imagen_url ? [producto.imagen_url] : []),
+    featured: producto.destacado || false,
+    featured_until: producto.destacado_hasta || null,
+    boosted_at: producto.boosteado_en || null,
+    property_type: producto.tipo_propiedad || 'Casa',
+    operation_type: producto.operacion_tipo || 'venta',
+    active: producto.activo || false,
+    views_count: producto.visitas || 0,
+    created_at: producto.creado_en || new Date().toISOString(),
+    features: producto.caracteristicas || {},
+    // Campos adicionales para compatibilidad
+    slug: producto.id,
+    bedrooms: (producto.caracteristicas as any)?.habitaciones || 0,
+    bathrooms: (producto.caracteristicas as any)?.banos || 0,
+    area_total: (producto.caracteristicas as any)?.area_m2 || 0,
+    status: producto.activo ? 'active' : 'inactive',
+  };
+}
 
 /**
  * Obtener lista de propiedades con filtros
@@ -34,77 +68,61 @@ export async function getProperties(filters: PropertyFilter = {}): Promise<{
     sort_by = 'newest'
   } = filters;
 
-  // Construir query base
+  // Construir query base - usando tabla 'productos'
   let query = supabase
-    .from('propiedades')
+    .from('productos')
     .select('*', { count: 'exact' })
-    .eq('status', 'active');
+    .eq('activo', true);
 
   // Aplicar filtros
   if (operation_type) {
-    query = query.eq('operation_type', operation_type);
+    query = query.eq('operacion_tipo', operation_type);
   }
   
   if (property_type && property_type.length > 0) {
-    query = query.in('property_type', property_type);
+    query = query.in('tipo_propiedad', property_type);
   }
   
   if (state_id) {
-    query = query.eq('state_id', state_id);
+    query = query.eq('ubicacion_estado', state_id);
   }
   
   if (city_id) {
-    query = query.eq('city_id', city_id);
+    query = query.eq('ubicacion_ciudad', city_id);
   }
   
   if (min_price !== undefined) {
-    query = query.gte('price', min_price);
+    query = query.gte('precio_usd', min_price);
   }
   
   if (max_price !== undefined) {
-    query = query.lte('price', max_price);
+    query = query.lte('precio_usd', max_price);
   }
   
-  if (min_bedrooms !== undefined) {
-    query = query.gte('bedrooms', min_bedrooms);
-  }
-  
-  if (min_bathrooms !== undefined) {
-    query = query.gte('bathrooms', min_bathrooms);
-  }
-  
-  if (min_area !== undefined) {
-    query = query.gte('area_total', min_area);
-  }
+  // Filtros por características (se aplican después porque están en JSONB)
+  // Se manejan en código después de obtener los datos
   
   if (featured_only) {
-    query = query.eq('featured', true);
-  }
-  
-  // Filtro por amenities (array contiene valor)
-  if (amenities && amenities.length > 0) {
-    for (const amenity of amenities) {
-      query = query.contains('amenities', [amenity]);
-    }
+    query = query.eq('destacado', true);
   }
 
   // Ordenamiento
   switch (sort_by) {
     case 'oldest':
-      query = query.order('created_at', { ascending: true });
+      query = query.order('creado_en', { ascending: true });
       break;
     case 'price_asc':
-      query = query.order('price', { ascending: true });
+      query = query.order('precio_usd', { ascending: true });
       break;
     case 'price_desc':
-      query = query.order('price', { ascending: false });
+      query = query.order('precio_usd', { ascending: false });
       break;
     case 'featured':
-      query = query.order('featured', { ascending: false }).order('created_at', { ascending: false });
+      query = query.order('destacado', { ascending: false }).order('creado_en', { ascending: false });
       break;
     case 'newest':
     default:
-      query = query.order('created_at', { ascending: false });
+      query = query.order('creado_en', { ascending: false });
       break;
   }
 
@@ -120,37 +138,33 @@ export async function getProperties(filters: PropertyFilter = {}): Promise<{
     throw new Error('Failed to fetch properties');
   }
 
+  // Filtrar por características si es necesario
+  let productos = data || [];
+  
+  if (min_bedrooms !== undefined) {
+    productos = productos.filter(p => 
+      (p.caracteristicas as any)?.habitaciones >= min_bedrooms
+    );
+  }
+  
+  if (min_bathrooms !== undefined) {
+    productos = productos.filter(p => 
+      (p.caracteristicas as any)?.banos >= min_bathrooms
+    );
+  }
+  
+  if (min_area !== undefined) {
+    productos = productos.filter(p => 
+      (p.caracteristicas as any)?.area_m2 >= min_area
+    );
+  }
+
   return {
-    data: (data as Property[]) || [],
+    data: productos.map(mapProductoToProperty),
     total: count || 0,
     page,
     hasMore: (count || 0) > from + limit
   };
-}
-
-/**
- * Obtener una propiedad por slug
- */
-export async function getPropertyBySlug(slug: string): Promise<Property | null> {
-  const supabase = createServerClient();
-  
-  const { data, error } = await supabase
-    .from('propiedades')
-    .select('*')
-    .eq('slug', slug)
-    .eq('status', 'active')
-    .single();
-
-  if (error) {
-    if (error.code === 'PGRST116') {
-      // No rows found
-      return null;
-    }
-    console.error('Error fetching property:', error);
-    throw new Error('Failed to fetch property');
-  }
-
-  return data as Property;
 }
 
 /**
@@ -160,7 +174,7 @@ export async function getPropertyById(id: string): Promise<Property | null> {
   const supabase = createServerClient();
   
   const { data, error } = await supabase
-    .from('propiedades')
+    .from('productos')
     .select('*')
     .eq('id', id)
     .single();
@@ -173,7 +187,7 @@ export async function getPropertyById(id: string): Promise<Property | null> {
     throw new Error('Failed to fetch property');
   }
 
-  return data as Property;
+  return mapProductoToProperty(data);
 }
 
 /**
@@ -182,12 +196,15 @@ export async function getPropertyById(id: string): Promise<Property | null> {
 export async function getFeaturedProperties(limit: number = 6): Promise<Property[]> {
   const supabase = createServerClient();
   
+  const now = new Date().toISOString();
+  
   const { data, error } = await supabase
-    .from('propiedades')
+    .from('productos')
     .select('*')
-    .eq('status', 'active')
-    .eq('featured', true)
-    .order('created_at', { ascending: false })
+    .eq('activo', true)
+    .eq('destacado', true)
+    .or(`destacado_hasta.is.null,destacado_hasta.gt.${now}`)
+    .order('creado_en', { ascending: false })
     .limit(limit);
 
   if (error) {
@@ -195,110 +212,47 @@ export async function getFeaturedProperties(limit: number = 6): Promise<Property
     return [];
   }
 
-  return (data as Property[]) || [];
+  return (data || []).map(mapProductoToProperty);
 }
 
 /**
- * Obtener propiedades relacionadas (misma ciudad y tipo)
+ * Obtener propiedades recientes
  */
-export async function getRelatedProperties(
-  propertyId: string,
-  cityId: string,
-  propertyType: string,
-  limit: number = 4
-): Promise<Property[]> {
+export async function getRecentProperties(limit: number = 6): Promise<Property[]> {
   const supabase = createServerClient();
   
   const { data, error } = await supabase
-    .from('propiedades')
+    .from('productos')
     .select('*')
-    .eq('status', 'active')
-    .neq('id', propertyId)
-    .eq('city_id', cityId)
-    .eq('property_type', propertyType)
-    .order('created_at', { ascending: false })
+    .eq('activo', true)
+    .order('creado_en', { ascending: false })
     .limit(limit);
 
   if (error) {
-    console.error('Error fetching related properties:', error);
+    console.error('Error fetching recent properties:', error);
     return [];
   }
 
-  return (data as Property[]) || [];
+  return (data || []).map(mapProductoToProperty);
 }
 
 /**
- * Incrementar contador de vistas
+ * Obtener propiedades trending (más vistas)
  */
-export async function incrementPropertyViews(propertyId: string): Promise<void> {
-  const supabase = createServerClient();
-  
-  await supabase.rpc('increment_property_views', { property_id: propertyId });
-}
-
-/**
- * Obtener estadísticas de propiedades por ciudad
- */
-export async function getPropertyStatsByCity(cityId: string): Promise<{
-  totalForSale: number;
-  totalForRent: number;
-  avgPriceSale: number;
-  avgPriceRent: number;
-}> {
+export async function getTrendingProperties(limit: number = 6): Promise<Property[]> {
   const supabase = createServerClient();
   
   const { data, error } = await supabase
-    .from('propiedades')
-    .select('operation_type, price')
-    .eq('status', 'active')
-    .eq('city_id', cityId);
+    .from('productos')
+    .select('*')
+    .eq('activo', true)
+    .order('visitas', { ascending: false })
+    .limit(limit);
 
   if (error) {
-    console.error('Error fetching property stats:', error);
-    return {
-      totalForSale: 0,
-      totalForRent: 0,
-      avgPriceSale: 0,
-      avgPriceRent: 0
-    };
-  }
-
-  const saleProps = (data || []).filter(p => p.operation_type === 'venta');
-  const rentProps = (data || []).filter(p => p.operation_type === 'alquiler');
-
-  const avgPriceSale = saleProps.length > 0 
-    ? saleProps.reduce((sum, p) => sum + p.price, 0) / saleProps.length 
-    : 0;
-    
-  const avgPriceRent = rentProps.length > 0 
-    ? rentProps.reduce((sum, p) => sum + p.price, 0) / rentProps.length 
-    : 0;
-
-  return {
-    totalForSale: saleProps.length,
-    totalForRent: rentProps.length,
-    avgPriceSale: Math.round(avgPriceSale),
-    avgPriceRent: Math.round(avgPriceRent)
-  };
-}
-
-/**
- * Obtener tipos de propiedad únicos disponibles
- */
-export async function getAvailablePropertyTypes(): Promise<string[]> {
-  const supabase = createServerClient();
-  
-  const { data, error } = await supabase
-    .from('propiedades')
-    .select('property_type')
-    .eq('status', 'active')
-    .not('property_type', 'is', null);
-
-  if (error) {
-    console.error('Error fetching property types:', error);
+    console.error('Error fetching trending properties:', error);
     return [];
   }
 
-  const types = new Set((data || []).map(p => p.property_type));
-  return Array.from(types);
+  return (data || []).map(mapProductoToProperty);
 }
