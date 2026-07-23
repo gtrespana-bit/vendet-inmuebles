@@ -211,7 +211,7 @@ export default function CatalogoClient({ initialProducts = [], initialCount = 0 
         operacionTipo: operacion
       });
     }
-  }, [categoria, subcategoria, marca, q, precioMin, precioMax, ubicacionEstado, ubicacionCiudad, hasActiveFilters, loadProducts]);
+  }, [categoria, subcategoria, marca, q, precioMin, precioMax, ubicacionEstado, ubicacionCiudad, hasActiveFilters, loadProducts, operacion]);
 
   // Precargar la siguiente página cuando sea apropiado
   useEffect(() => {

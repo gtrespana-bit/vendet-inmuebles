@@ -85,7 +85,7 @@ export function AuthProvider({ children, initialUser }: { children: React.ReactN
       cancelled = true
       unsub?.()
     }
-  }, [initialUser])
+  }, [initialUser, session])
 
   return (
     <AuthContext.Provider value={{ session, user, loading }}>
