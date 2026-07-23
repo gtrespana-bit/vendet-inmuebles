@@ -17,8 +17,8 @@ module.exports = {
         },
       },
       fontFamily: {
-        sans: ['var(--font-lato)', 'system-ui', 'sans-serif'],
-        heading: ['var(--font-playfair)', 'Georgia', 'serif'],
+        sans: ['system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
+        heading: ['Georgia', 'Cambria', 'Times New Roman', 'Times', 'serif'],
       },
     },
   },
