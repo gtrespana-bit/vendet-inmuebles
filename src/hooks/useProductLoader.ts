@@ -94,9 +94,17 @@ export const useProductLoader = (
         query = query.ilike('tipo_propiedad', `%${activeFilters.tipoPropiedad}%`);
       }
 
-      // Filtro por categoría (categoria_id es integer)
+      // Filtro por categoría - mapear a tipo_propiedad (texto)
       if (activeFilters.categoria) {
-        query = query.eq('categoria_id', parseInt(activeFilters.categoria as string, 10));
+        const catStr = String(activeFilters.categoria);
+        const catNum = parseInt(catStr, 10);
+        if (!isNaN(catNum)) {
+          // Es un número → filtrar por categoria_id
+          query = query.eq('categoria_id', catNum);
+        } else {
+          // Es texto (ej: "casas", "apartamentos") → filtrar por tipo_propiedad
+          query = query.ilike('tipo_propiedad', `%${catStr}%`);
+        }
       }
 
       // Filtro por subcategoría
