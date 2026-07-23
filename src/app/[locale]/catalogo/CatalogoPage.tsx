@@ -207,7 +207,7 @@ export default function CatalogoClient({ initialProducts = [], initialCount = 0 
         precioMin,
         precioMax,
         ubicacionEstado,
-        ubicacionCiudad
+        ubicacionCiudad,
         operacionTipo: operacion
       });
     }
