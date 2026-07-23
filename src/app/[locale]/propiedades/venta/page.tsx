@@ -1,8 +1,9 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
-import { createServerClient } from '@/lib/supabase-server'
+import { getProperties } from '@/lib/properties'
 import PropertyCard from '@/components/PropertyCard'
 import { getTranslations } from 'next-intl/server'
+import { supabase } from '@/lib/supabase'
 
 interface PageProps {
   params: Promise<{ locale: string }>
@@ -25,27 +26,34 @@ export default async function VentasPage({ params, searchParams }: PageProps) {
   
   const t = await getTranslations({ locale, namespace: 'properties' })
   
-  const supabase = createServerClient()
-  
   // Obtener estados disponibles
   const { data: estados } = await supabase
     .from('states')
     .select('id, name')
     .order('name')
   
-  // Obtener propiedades recientes de venta
-  const { data: propiedades } = await supabase
-    .from('productos')
-    .select(`
-      *,
-      property_images (url),
-      states (name),
-      cities (name)
-    `)
-    .eq('operacion_tipo', 'Venta')
-    .eq('activo', true)
-    .limit(50)
-    .order('creado_en', { ascending: false })
+  // Obtener propiedades recientes de venta usando el nuevo sistema
+  const { data: propiedadesData } = await getProperties({
+    operation_type: 'venta',
+    limit: 50,
+    sort_by: 'newest'
+  })
+  
+  // Transformar datos para PropertyCard
+  const propiedades = propiedadesData?.map(p => ({
+    id: p.id,
+    titulo: p.title,
+    precio_usd: p.price,
+    estado: p.state_id,
+    imagen_url: p.images?.[0] || null,
+    ubicacion_ciudad: p.city_id,
+    creado_en: p.created_at,
+    tipo_propiedad: p.property_type,
+    operacion_tipo: p.operation_type === 'venta' ? 'Venta' : 'Alquiler',
+    bedrooms: p.bedrooms,
+    bathrooms: p.bathrooms,
+    area_total: p.area_total
+  })) || []
   
   return (
     <div className="container mx-auto px-4 py-8">

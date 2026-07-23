@@ -1,7 +1,6 @@
 import LocalLink from '@/components/LocalLink'
 import Image from 'next/image'
 import { ArrowRight, Star, Search, Home, Key, Building2, MapPin, TreePine, Store, Briefcase } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
 import { getTranslations } from 'next-intl/server'
 import type { Metadata } from 'next'
 
@@ -90,58 +89,80 @@ function getPlaceholderImage(titulo: string) {
 
 async function getDestacados(limit = 8) {
   try {
-    const { data, error } = await supabase.rpc('obtener_destacados_home', { p_limite: limit })
-    if (!error && data) return data as any[]
-    const { data: data2 } = await supabase
-      .from('productos')
-      .select('id, titulo, precio_usd, estado, imagen_url, ubicacion_ciudad, creado_en, tipo_propiedad, operacion_tipo')
-      .eq('activo', true)
-      .or('estado_moderacion.is.null,estado_moderacion.eq.aprobado,estado_moderacion.eq.pendiente')
-      .eq('destacado', true)
-      .gt('destacado_hasta', new Date().toISOString())
-      .order('destacado_hasta', { ascending: false })
-      .limit(limit)
-    return data2 || []
+    const { getFeaturedProperties } = await import('@/lib/properties')
+    const properties = await getFeaturedProperties(limit)
+    return properties.map(p => ({
+      id: p.id,
+      titulo: p.title,
+      precio_usd: p.price,
+      estado: p.state_id,
+      imagen_url: p.images?.[0] || null,
+      ubicacion_ciudad: p.city_id,
+      creado_en: p.created_at,
+      tipo_propiedad: p.property_type,
+      operacion_tipo: p.operation_type === 'venta' ? 'Venta' : 'Alquiler',
+      bedrooms: p.bedrooms,
+      bathrooms: p.bathrooms,
+      area_total: p.area_total
+    }))
   } catch {
     return []
   }
 }
 
 async function getTrending(limit = 8) {
-  const { data } = await supabase
-    .from('productos')
-    .select('id, titulo, precio_usd, imagen_url, ubicacion_ciudad, visitas, creado_en, tipo_propiedad, operacion_tipo')
-    .eq('activo', true)
-    .or('estado_moderacion.is.null,estado_moderacion.eq.aprobado')
-    .order('visitas', { ascending: false })
-    .limit(limit)
-  return data || []
+  try {
+    const { getProperties } = await import('@/lib/properties')
+    const { data } = await getProperties({ 
+      limit, 
+      sort_by: 'newest' 
+    })
+    return data.map(p => ({
+      id: p.id,
+      titulo: p.title,
+      precio_usd: p.price,
+      imagen_url: p.images?.[0] || null,
+      ubicacion_ciudad: p.city_id,
+      visitas: p.views || 0,
+      creado_en: p.created_at,
+      tipo_propiedad: p.property_type,
+      operacion_tipo: p.operation_type === 'venta' ? 'Venta' : 'Alquiler',
+      bedrooms: p.bedrooms,
+      bathrooms: p.bathrooms,
+      area_total: p.area_total
+    }))
+  } catch {
+    return []
+  }
 }
 
 async function getRecentProducts(limit = 8) {
-  const { data, error } = await supabase
-    .from('productos')
-    .select('id, titulo, precio_usd, estado, imagen_url, ubicacion_ciudad, creado_en, boosteado_en, destacado, destacado_hasta, tipo_propiedad, operacion_tipo')
-    .eq('activo', true)
-    .or('estado_moderacion.is.null,estado_moderacion.eq.aprobado')
-    .limit(20)
-  if (error) return []
-  const now = new Date().toISOString()
-  return (data || [])
-    .sort((a: any, b: any) => {
-      const aBoost = a.boosteado_en || null
-      const bBoost = b.boosteado_en || null
-      if (aBoost && !bBoost) return -1
-      if (!aBoost && bBoost) return 1
-      if (aBoost && bBoost) return bBoost.localeCompare(aBoost)
-      const aDest = a.destacado && a.destacado_hasta > now
-      const bDest = b.destacado && b.destacado_hasta > now
-      if (aDest && !bDest) return -1
-      if (!aDest && bDest) return 1
-      if (aDest && bDest) return b.destacado_hasta.localeCompare(a.destacado_hasta)
-      return (b.creado_en || '').localeCompare(a.creado_en || '')
+  try {
+    const { getProperties } = await import('@/lib/properties')
+    const { data } = await getProperties({ 
+      limit, 
+      sort_by: 'newest' 
     })
-    .slice(0, limit)
+    return data.map(p => ({
+      id: p.id,
+      titulo: p.title,
+      precio_usd: p.price,
+      estado: p.status,
+      imagen_url: p.images?.[0] || null,
+      ubicacion_ciudad: p.city_id,
+      creado_en: p.created_at,
+      boosteado_en: p.featured ? p.created_at : null,
+      destacado: p.featured || false,
+      destacado_hasta: p.featured ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() : null,
+      tipo_propiedad: p.property_type,
+      operacion_tipo: p.operation_type === 'venta' ? 'Venta' : 'Alquiler',
+      bedrooms: p.bedrooms,
+      bathrooms: p.bathrooms,
+      area_total: p.area_total
+    }))
+  } catch {
+    return []
+  }
 }
 
 function PropertyCard({ p, highlighted = false, priority = false, t }: { p: any; highlighted?: boolean; priority?: boolean; t: any }) {
