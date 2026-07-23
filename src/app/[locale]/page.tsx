@@ -123,7 +123,7 @@ async function getTrending(limit = 8) {
       precio_usd: p.price,
       imagen_url: p.images?.[0] || null,
       ubicacion_ciudad: p.city_id,
-      visitas: p.views || 0,
+      visitas: p.views_count || 0,
       creado_en: p.created_at,
       tipo_propiedad: p.property_type,
       operacion_tipo: p.operation_type === 'venta' ? 'Venta' : 'Alquiler',
