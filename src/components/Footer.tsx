@@ -23,11 +23,12 @@ export function Footer() {
               <h3 className="text-white font-bold mb-3">{t('footer.categories')}</h3>
               <ul className="space-y-2 text-sm">
                 {[
-                  t('header.categories.vehiculos'),
-                  t('header.categories.tecnologia'),
-                  t('header.categories.moda'),
-                  t('header.categories.hogar'),
-                  t('header.categories.herramientas'),
+                  t('header.categories.casas'),
+                  t('header.categories.apartamentos'),
+                  t('header.categories.terrenos'),
+                  t('header.categories.locales'),
+                  t('header.categories.oficinas'),
+                  t('header.categories.galpones'),
                 ].map(c => (
                   <li key={c}><LocalLink href="/catalogo" className="hover:text-brand-accent transition">{c}</LocalLink></li>
                 ))}

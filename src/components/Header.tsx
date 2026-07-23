@@ -26,17 +26,15 @@ export function Header() {
     ? (pathname.replace(/^\/en(?=\/|$)/, '') || '/')
     : `/en${pathname === '/' ? '' : pathname}`
 
-  // Categories with translation keys
+  // Real estate categories
   const categorias = [
-    { id: 'ver-todo', nombre: t('header.allCategories'), icon: '🔍' },
-    { id: 'vehiculos', nombre: t('header.categories.vehiculos'), icon: '🚗' },
-    { id: 'tecnologia', nombre: t('header.categories.tecnologia'), icon: '💻' },
-    { id: 'moda', nombre: t('header.categories.moda'), icon: '👗' },
-    { id: 'hogar', nombre: t('header.categories.hogar'), icon: '🏠' },
-    { id: 'herramientas', nombre: t('header.categories.herramientas'), icon: '🔧' },
-    { id: 'materiales', nombre: t('header.categories.materiales'), icon: '🧱' },
-    { id: 'repuestos', nombre: t('header.categories.repuestos'), icon: '⚙️' },
-    { id: 'otros', nombre: t('header.categories.otros'), icon: '📦' },
+    { id: 'ver-todo', nombre: t('header.allCategories'), icon: '🏠' },
+    { id: 'casas', nombre: t('header.categories.casas'), icon: '🏡' },
+    { id: 'apartamentos', nombre: t('header.categories.apartamentos'), icon: '🏢' },
+    { id: 'terrenos', nombre: t('header.categories.terrenos'), icon: '🌳' },
+    { id: 'locales', nombre: t('header.categories.locales'), icon: '🏪' },
+    { id: 'oficinas', nombre: t('header.categories.oficinas'), icon: '💼' },
+    { id: 'galpones', nombre: t('header.categories.galpones'), icon: '🏭' },
   ]
 
   useEffect(() => {

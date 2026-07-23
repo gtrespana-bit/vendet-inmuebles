@@ -256,14 +256,12 @@
     "closeMenu": "Cerrar menú",
     "allCategories": "Ver Todo",
     "categories": {
-      "vehiculos": "Vehículos",
-      "tecnologia": "Tecnología",
-      "moda": "Moda",
-      "hogar": "Hogar",
-      "herramientas": "Herramientas",
-      "materiales": "Materiales",
-      "repuestos": "Repuestos",
-      "otros": "Otros"
+      "casas": "Casas",
+      "apartamentos": "Apartamentos",
+      "terrenos": "Terrenos",
+      "locales": "Locales Comerciales",
+      "oficinas": "Oficinas",
+      "galpones": "Galpones Industriales"
     }
   },
   "footer": {

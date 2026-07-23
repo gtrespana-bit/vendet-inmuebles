@@ -258,14 +258,12 @@
     "closeMenu": "Close menu",
     "allCategories": "View All",
     "categories": {
-      "vehiculos": "Vehicles",
-      "tecnologia": "Technology",
-      "moda": "Fashion",
-      "hogar": "Home",
-      "herramientas": "Tools",
-      "materiales": "Materials",
-      "repuestos": "Parts",
-      "otros": "Others"
+      "casas": "Houses",
+      "apartamentos": "Apartments",
+      "terrenos": "Land Plots",
+      "locales": "Commercial Spaces",
+      "oficinas": "Offices",
+      "galpones": "Industrial Warehouses"
     }
   },
   "footer": {
