@@ -90,7 +90,9 @@ function getPlaceholderImage(titulo: string) {
 async function getDestacados(limit = 8) {
   try {
     const { getFeaturedProperties } = await import('@/lib/properties')
+    console.log('[DEBUG] Llamando a getFeaturedProperties con limit:', limit)
     const properties = await getFeaturedProperties(limit)
+    console.log('[DEBUG] Resultados de destacados:', properties.length)
     return properties.map(p => ({
       id: p.id,
       titulo: p.title,
@@ -105,7 +107,8 @@ async function getDestacados(limit = 8) {
       bathrooms: p.bathrooms,
       area_total: p.area_total
     }))
-  } catch {
+  } catch (err) {
+    console.error('[ERROR] getDestacados falló:', err)
     return []
   }
 }
@@ -113,10 +116,12 @@ async function getDestacados(limit = 8) {
 async function getTrending(limit = 8) {
   try {
     const { getProperties } = await import('@/lib/properties')
+    console.log('[DEBUG] Llamando a getProperties para trending con limit:', limit)
     const { data } = await getProperties({ 
       limit, 
       sort_by: 'newest' 
     })
+    console.log('[DEBUG] Resultados de trending:', data.length)
     return data.map(p => ({
       id: p.id,
       titulo: p.title,
@@ -131,7 +136,8 @@ async function getTrending(limit = 8) {
       bathrooms: p.bathrooms,
       area_total: p.area_total
     }))
-  } catch {
+  } catch (err) {
+    console.error('[ERROR] getTrending falló:', err)
     return []
   }
 }
@@ -139,10 +145,12 @@ async function getTrending(limit = 8) {
 async function getRecentProducts(limit = 8) {
   try {
     const { getProperties } = await import('@/lib/properties')
+    console.log('[DEBUG] Llamando a getProperties para recientes con limit:', limit)
     const { data } = await getProperties({ 
       limit, 
       sort_by: 'newest' 
     })
+    console.log('[DEBUG] Resultados de recientes:', data.length)
     return data.map(p => ({
       id: p.id,
       titulo: p.title,
@@ -160,7 +168,8 @@ async function getRecentProducts(limit = 8) {
       bathrooms: p.bathrooms,
       area_total: p.area_total
     }))
-  } catch {
+  } catch (err) {
+    console.error('[ERROR] getRecentProducts falló:', err)
     return []
   }
 }
