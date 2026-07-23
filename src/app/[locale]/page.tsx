@@ -190,7 +190,7 @@ function PropertyCard({ p, highlighted = false, priority = false, t }: { p: any;
         <p className="text-xs text-gray-500 mt-1">
           {p.tipo_propiedad}
         </p>
-        <p className="text-xl font-black text-brand-primary mt-2">
+        <p className="text-xl font-heading font-bold text-brand-primary mt-2">
           ${new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(Number(p.precio_usd || 0))}
           <span className="text-xs font-normal text-gray-500"> USD</span>
         </p>
@@ -248,7 +248,7 @@ export default async function HomePage() {
                 <span className="text-brand-accent font-semibold text-sm">El marketplace #1 de inmuebles en Venezuela</span>
               </div>
               
-              <h1 className="text-3xl md:text-5xl font-black text-white mb-4 leading-tight">
+              <h1 className="text-3xl md:text-5xl font-heading font-bold text-white mb-4 leading-tight">
                 Encuentra tu lugar
                 <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-accent to-brand-accent/70">perfecto en Venezuela</span>
@@ -344,19 +344,19 @@ export default async function HomePage() {
             {/* Stats Bar */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
               <div className="text-center">
-                <p className="text-3xl md:text-4xl font-black text-brand-accent">+1,200</p>
+                <p className="text-3xl md:text-4xl font-heading font-bold text-brand-accent">+1,200</p>
                 <p className="text-xs md:text-sm text-white/90 mt-1">Propiedades Activas</p>
               </div>
               <div className="text-center">
-                <p className="text-3xl md:text-4xl font-black text-brand-accent">24</p>
+                <p className="text-3xl md:text-4xl font-heading font-bold text-brand-accent">24</p>
                 <p className="text-xs md:text-sm text-white/90 mt-1">Estados Cubiertos</p>
               </div>
               <div className="text-center">
-                <p className="text-3xl md:text-4xl font-black text-brand-accent">100%</p>
+                <p className="text-3xl md:text-4xl font-heading font-bold text-brand-accent">100%</p>
                 <p className="text-xs md:text-sm text-white/90 mt-1">Gratis para Publicar</p>
               </div>
               <div className="text-center">
-                <p className="text-3xl md:text-4xl font-black text-brand-accent">+5K</p>
+                <p className="text-3xl md:text-4xl font-heading font-bold text-brand-accent">+5K</p>
                 <p className="text-xs md:text-sm text-white/90 mt-1">Usuarios Registrados</p>
               </div>
             </div>
@@ -388,7 +388,7 @@ export default async function HomePage() {
           <section className="max-w-4xl mx-auto px-4 py-10">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h2 className="text-2xl font-black text-gray-900">{t('home.featured.title')}</h2>
+                <h2 className="text-2xl font-heading font-bold text-gray-900">{t('home.featured.title')}</h2>
                 <p className="text-sm text-gray-500">{t('home.featured.subtitle')}</p>
               </div>
               <span className="bg-brand-accent/20 text-brand-primary text-xs font-bold px-2.5 py-1 rounded-full">
@@ -411,7 +411,7 @@ export default async function HomePage() {
 
         {/* Tipos propiedad */}
         <section className="max-w-4xl mx-auto px-4 py-10">
-          <h2 className="text-2xl md:text-3xl font-black text-gray-900 mb-2">
+          <h2 className="text-2xl md:text-3xl font-heading font-bold text-gray-900 mb-2">
             {t('home.types.title')}
           </h2>
           <p className="text-gray-600 mb-8">{t('home.types.subtitle')}</p>
@@ -439,7 +439,7 @@ export default async function HomePage() {
         {/* Cómo funciona */}
         <section className="bg-white border-y border-gray-200 py-12">
           <div className="max-w-4xl mx-auto px-4">
-            <h2 className="text-2xl md:text-3xl font-black text-gray-900 text-center mb-10">
+            <h2 className="text-2xl md:text-3xl font-heading font-bold text-gray-900 text-center mb-10">
               {t('home.howItWorks.title')}
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -472,7 +472,7 @@ export default async function HomePage() {
         {trending.length > 0 && (
           <section className="max-w-4xl mx-auto px-4 py-10">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-black text-gray-900">{t('home.trending.title')}</h2>
+              <h2 className="text-2xl font-heading font-bold text-gray-900">{t('home.trending.title')}</h2>
               <span className="text-xs text-gray-500">{t('home.trending.period')}</span>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -526,7 +526,7 @@ export default async function HomePage() {
         {/* Estados */}
         <section className="bg-white border-y border-gray-200 py-12">
           <div className="max-w-4xl mx-auto px-4">
-            <h2 className="text-2xl md:text-3xl font-black text-gray-900 text-center mb-2">
+            <h2 className="text-2xl md:text-3xl font-heading font-bold text-gray-900 text-center mb-2">
               {t('home.states.title')}
             </h2>
             <p className="text-gray-600 text-center mb-8">{t('home.states.subtitle')}</p>
@@ -556,7 +556,7 @@ export default async function HomePage() {
         {/* CTA */}
         <section className="bg-brand-accent py-16">
           <div className="max-w-4xl mx-auto px-4 text-center">
-            <h2 className="text-3xl font-black text-gray-900 mb-4">
+            <h2 className="text-3xl font-heading font-bold text-gray-900 mb-4">
               {t('home.cta.title')}
             </h2>
             <p className="text-gray-800 text-lg mb-8">

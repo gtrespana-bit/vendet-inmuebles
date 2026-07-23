@@ -2,6 +2,7 @@
 import { notFound } from 'next/navigation'
 import { routing } from '@/i18n/routing'
 import type { Metadata, Viewport } from 'next'
+import { Playfair_Display, Lato } from 'next/font/google'
 import '../globals.css'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
@@ -12,6 +13,20 @@ import { ServiceWorkerRegistration } from '@/components/ServiceWorkerRegistratio
 import PWAInstallBanner from '@/components/PWAInstallBanner'
 import PushNotificationBanner from '@/components/PushNotificationBanner'
 import BottomTabNav from '@/components/BottomTabNav'
+
+// Fuentes elegantes: Playfair Display para títulos, Lato para cuerpo
+const playfair = Playfair_Display({
+  subsets: ['latin'],
+  variable: '--font-playfair',
+  display: 'swap',
+})
+
+const lato = Lato({
+  weight: ['300', '400', '700'],
+  subsets: ['latin'],
+  variable: '--font-lato',
+  display: 'swap',
+})
 
 export const viewport: Viewport = {
   themeColor: '#008080',
@@ -126,8 +141,8 @@ export default async function LocaleLayout({
   const messages = await getDictionary(locale)
 
   return (
-    <html lang={locale}>
-      <body className="bg-white antialiased">
+    <html lang={locale} className={`${playfair.variable} ${lato.variable}`}>
+      <body className="bg-white antialiased font-lato">
         <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-brand-primary focus:text-white focus:rounded-lg focus:shadow-lg">
           Skip to main content
         </a>
