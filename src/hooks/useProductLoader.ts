@@ -1,5 +1,4 @@
 'use client';
-
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { clientCache } from '@/lib/clientCache';
@@ -13,6 +12,8 @@ interface ProductFilter {
   precioMax?: string;
   ubicacionEstado?: string;
   ubicacionCiudad?: string;
+  operacionTipo?: string;
+  tipoPropiedad?: string;
   [key: string]: string | number | boolean | undefined;
 }
 
@@ -21,75 +22,118 @@ interface UseProductLoaderResult {
   loading: boolean;
   error: string | null;
   totalCount: number;
-  loadProducts: (filters: ProductFilter) => Promise<void>;
+  loadProducts: (filters?: ProductFilter) => Promise<void>;
 }
 
-export const useProductLoader = (): UseProductLoaderResult => {
+export const useProductLoader = (
+  initialFilters?: ProductFilter
+): UseProductLoaderResult => {
   const [productos, setProductos] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [totalCount, setTotalCount] = useState(0);
 
-  const loadProducts = useCallback(async (filters: ProductFilter) => {
-    // Check cache first
-    const cacheKey = clientCache.generateKey(filters);
-    const cachedData = clientCache.get<any>(cacheKey);
-    
-    if (cachedData) {
-      setProductos(cachedData.productos);
-      setTotalCount(cachedData.totalCount);
+  const loadProducts = useCallback(async (filters?: ProductFilter) => {
+    const activeFilters = { ...initialFilters, ...filters };
+
+    // Generar cache key
+    const cacheKey = `productos_${JSON.stringify(activeFilters)}`;
+    const cached = clientCache.get(cacheKey);
+    if (cached) {
+      setProductos(cached.productos || []);
+      setTotalCount(cached.totalCount || 0);
       return;
     }
-    
+
     setLoading(true);
     setError(null);
 
     try {
       let query = supabase
-        .from('properties')
-        .select('id, title as titulo, price as precio_usd, state_id as estado, images, city_id as ubicacion_ciudad, created_at as creado_en, property_type as subcategoria, featured_on as boosteado_en, featured as destacado, featured_until as destacado_hasta, verified_seller as vendedor_verificado', { count: 'exact' })
-        .eq('status', 'active');
+        .from('productos')
+        .select(
+          `id,
+           titulo,
+           descripcion,
+           precio_usd,
+           precio_bs,
+           estado,
+           categoria_id,
+           subcategoria,
+           marca,
+           ubicacion_estado,
+           ubicacion_ciudad,
+           ubicacion_detalles,
+           activo,
+           visitas,
+           creado_en,
+           imagen_url,
+           imagenes_urls,
+           destacado,
+           destacado_hasta,
+           boosteado_en,
+           estado_moderacion,
+           caracteristicas,
+           tipo_propiedad,
+           operacion_tipo`,
+          { count: 'exact' }
+        )
+        .eq('activo', true)
+        .eq('estado_moderacion', 'aprobado');
 
-      // Aplicar filtros para properties
-      if (filters.categoria) {
-        // Para properties, categoria puede ser operation_type (venta/alquiler)
-        if (['venta', 'alquiler'].includes(filters.categoria.toLowerCase())) {
-          query = query.eq('operation_type', filters.categoria.toLowerCase());
-        }
-        // O puede ser property_type (casa, apartamento, etc.)
-        else if (['casa', 'apartamento', 'terreno', 'local', 'oficina', 'galpon'].includes(filters.categoria.toLowerCase())) {
-          query = query.eq('property_type', filters.categoria.toLowerCase());
-        }
+      // Filtro por tipo de operación (Venta / Alquiler)
+      if (activeFilters.operacionTipo) {
+        const op =
+          activeFilters.operacionTipo.charAt(0).toUpperCase() +
+          activeFilters.operacionTipo.slice(1).toLowerCase();
+        query = query.eq('operacion_tipo', op);
       }
 
-      if (filters.subcategoria) {
-        // Para properties, subcategoria es property_type
-        query = query.eq('property_type', filters.subcategoria);
+      // Filtro por tipo de propiedad
+      if (activeFilters.tipoPropiedad) {
+        query = query.ilike('tipo_propiedad', `%${activeFilters.tipoPropiedad}%`);
       }
 
-      if (filters.marca) {
-        // Para properties, marca no aplica, pero podemos filtrar por city_id si es un estado/ciudad
-        query = query.eq('city_id', filters.marca);
+      // Filtro por categoría (categoria_id es integer)
+      if (activeFilters.categoria) {
+        query = query.eq('categoria_id', parseInt(activeFilters.categoria as string, 10));
       }
 
-      if (filters.q) {
-        // Búsqueda por título o descripción
-        query = query.or(`title.ilike.%${filters.q}%,description.ilike.%${filters.q}%`);
+      // Filtro por subcategoría
+      if (activeFilters.subcategoria) {
+        query = query.ilike('subcategoria', `%${activeFilters.subcategoria}%`);
       }
 
-      if (filters.ubicacionCiudad) {
-        query = query.eq('city_id', filters.ubicacionCiudad);
-      } else if (filters.ubicacionEstado) {
-        query = query.eq('state_id', filters.ubicacionEstado);
+      // Filtro por marca
+      if (activeFilters.marca) {
+        query = query.ilike('marca', `%${activeFilters.marca}%`);
       }
 
-      if (filters.precioMin) {
-        query = query.gte('precio_usd', parseFloat(filters.precioMin));
-      }
-      if (filters.precioMax) {
-        query = query.lte('precio_usd', parseFloat(filters.precioMax));
+      // Búsqueda por título o descripción
+      if (activeFilters.q) {
+        query = query.or(
+          `titulo.ilike.%${activeFilters.q}%,descripcion.ilike.%${activeFilters.q}%`
+        );
       }
 
+      // Filtro por ubicación - ciudad
+      if (activeFilters.ubicacionCiudad) {
+        query = query.eq('ubicacion_ciudad', activeFilters.ubicacionCiudad);
+      } else if (activeFilters.ubicacionEstado) {
+        query = query.eq('ubicacion_estado', activeFilters.ubicacionEstado);
+      }
+
+      // Filtro por precio mínimo
+      if (activeFilters.precioMin) {
+        query = query.gte('precio_usd', parseFloat(activeFilters.precioMin as string));
+      }
+
+      // Filtro por precio máximo
+      if (activeFilters.precioMax) {
+        query = query.lte('precio_usd', parseFloat(activeFilters.precioMax as string));
+      }
+
+      // Ordenar por fecha de creación, más recientes primero
       query = query.order('creado_en', { ascending: false }).limit(100);
 
       const { data, count, error: fetchError } = await query;
@@ -98,45 +142,26 @@ export const useProductLoader = (): UseProductLoaderResult => {
         throw new Error(fetchError.message);
       }
 
-      // Ordenar productos según la lógica de prioridad
-      const now = new Date().toISOString();
-      const sorted = (data || []).sort((a: any, b: any) => {
-        const aBoost = a.boosteado_en || null;
-        const bBoost = b.boosteado_en || null;
-        if (aBoost && !bBoost) return -1;
-        if (!aBoost && bBoost) return 1;
-        if (aBoost && bBoost) return bBoost.localeCompare(aBoost);
-        const aDest = a.destacado && a.destacado_hasta && a.destacado_hasta > now;
-        const bDest = b.destacado && b.destacado_hasta && b.destacado_hasta > now;
-        if (aDest && !bDest) return -1;
-        if (!aDest && bDest) return 1;
-        if (aDest && bDest) return b.destacado_hasta!.localeCompare(a.destacado_hasta!);
-        return b.creado_en.localeCompare(a.creado_en);
-      });
+      const productosData = data || [];
+      setProductos(productosData);
+      setTotalCount(count || 0);
 
-      // Procesar images array para obtener imagen_url
-      const processed = sorted.map((p: any) => ({
-        ...p,
-        imagen_url: p.images?.[0] || null,
-        ubicacion_estado: p.estado // state_id ya está en estado
-      }));
-
-      setProductos(processed);
-      setTotalCount(count ?? 0);
-      
-      // Save to cache
+      // Guardar en caché
       clientCache.set(cacheKey, {
-        productos: processed,
-        totalCount: count ?? 0
+        productos: productosData,
+        totalCount: count || 0,
       });
-    } catch (err) {
-      console.error('Error loading products:', err);
-      setError(err instanceof Error ? err.message : 'Error desconocido');
+    } catch (err: any) {
+      setError(err.message || 'Error al cargar productos');
       setProductos([]);
       setTotalCount(0);
     } finally {
       setLoading(false);
     }
+  }, [initialFilters]);
+
+  useEffect(() => {
+    loadProducts();
   }, []);
 
   return {
@@ -144,6 +169,6 @@ export const useProductLoader = (): UseProductLoaderResult => {
     loading,
     error,
     totalCount,
-    loadProducts
+    loadProducts,
   };
 };
