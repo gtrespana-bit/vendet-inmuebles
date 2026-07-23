@@ -162,7 +162,10 @@ export default function CatalogoClient({ initialProducts = [], initialCount = 0 
   const { prefetchPage } = usePrefetch();
 
   // Determinar qué productos usar
-  const productosToUse = hasActiveFilters ? loadedProductos : initialProducts;
+  // Durante loading con filtros, mantener productos iniciales para evitar parpadeo
+  const productosToUse = hasActiveFilters
+    ? (loading && loadedProductos.length === 0 && initialProducts.length > 0 ? initialProducts : loadedProductos)
+    : initialProducts;
   const totalCountToUse = hasActiveFilters ? loaderTotalCount : initialCount;
 
   // Calcular productos para la página actual
