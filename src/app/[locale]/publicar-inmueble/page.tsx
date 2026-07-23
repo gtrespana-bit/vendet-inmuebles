@@ -101,6 +101,7 @@ export default function PublicarInmueblePage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          userId: user.id,
           titulo,
           descripcion,
           precio: parseFloat(precio),

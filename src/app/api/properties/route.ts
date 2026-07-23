@@ -1,13 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient, getUserFromCookie } from '@/lib/supabase-server'
+import { createServerClient } from '@/lib/supabase-server'
 
 export async function POST(req: NextRequest) {
   try {
-    const user = getUserFromCookie()
-    if (!user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
-    }
-
     const body = await req.json()
     const {
       tipoOperacion,
@@ -15,15 +10,19 @@ export async function POST(req: NextRequest) {
       descripcion,
       precio,
       estado,
-      municipio,
-      tipoInmueble,
+      ciudad,
       habitaciones,
       banos,
       area,
       imagenes,
+      userId,
     } = body
 
-    if (!titulo || !descripcion || !precio || !estado || !municipio || !tipoInmueble) {
+    if (!userId) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    }
+
+    if (!titulo || !descripcion || !precio || !estado || !ciudad) {
       return NextResponse.json(
         { error: 'Faltan campos obligatorios' },
         { status: 400 }
@@ -35,19 +34,18 @@ export async function POST(req: NextRequest) {
     const { data, error } = await supabase
       .from('productos')
       .insert({
-        user_id: user.id,
+        user_id: userId,
         titulo,
         descripcion,
         precio: parseFloat(precio),
         estado,
-        municipio,
-        tipo_inmueble: tipoInmueble,
-        tipo_operacion: tipoOperacion || 'venta',
+        ciudad,
         habitaciones: habitaciones ? parseInt(habitaciones) : null,
         banos: banos ? parseInt(banos) : null,
         area: area ? parseInt(area) : null,
         imagenes: imagenes || [],
         categoria: 'inmuebles',
+        tipo_operacion: tipoOperacion || 'venta',
         activo: true,
       })
       .select()
