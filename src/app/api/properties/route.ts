@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient, getUserFromRequest } from '@/lib/supabase-server'
+import { createServerClient, getUserFromCookie } from '@/lib/supabase-server'
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await getUserFromRequest(req)
+    const user = getUserFromCookie()
     if (!user) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
