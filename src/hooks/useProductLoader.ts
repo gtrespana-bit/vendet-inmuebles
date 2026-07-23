@@ -38,7 +38,7 @@ export const useProductLoader = (
 
     // Generar cache key
     const cacheKey = `productos_${JSON.stringify(activeFilters)}`;
-    const cached = clientCache.get(cacheKey);
+    const cached = clientCache.get(cacheKey) as any;
     if (cached) {
       setProductos(cached.productos || []);
       setTotalCount(cached.totalCount || 0);
