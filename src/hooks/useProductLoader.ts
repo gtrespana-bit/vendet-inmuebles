@@ -46,38 +46,41 @@ export const useProductLoader = (): UseProductLoaderResult => {
 
     try {
       let query = supabase
-        .from('productos')
-        .select('id, titulo, precio_usd, estado, imagen_url, ubicacion_ciudad, ubicacion_estado, creado_en, subcategoria, boosteado_en, destacado, destacado_hasta, vendedor_verificado', { count: 'exact' })
-        .eq('activo', true)
-        .or('estado_moderacion.is.null,estado_moderacion.eq.aprobado,estado_moderacion.eq.pendiente');
+        .from('properties')
+        .select('id, title as titulo, price as precio_usd, state_id as estado, images, city_id as ubicacion_ciudad, created_at as creado_en, property_type as subcategoria, featured_on as boosteado_en, featured as destacado, featured_until as destacado_hasta, verified_seller as vendedor_verificado', { count: 'exact' })
+        .eq('status', 'active');
 
+      // Aplicar filtros para properties
       if (filters.categoria) {
-        const { data: catRow } = await supabase
-          .from('categorias')
-          .select('id')
-          .eq('nombre', filters.categoria)
-          .single();
-        if (catRow) {
-          query = query.eq('categoria_id', catRow.id);
+        // Para properties, categoria puede ser operation_type (venta/alquiler)
+        if (['venta', 'alquiler'].includes(filters.categoria.toLowerCase())) {
+          query = query.eq('operation_type', filters.categoria.toLowerCase());
+        }
+        // O puede ser property_type (casa, apartamento, etc.)
+        else if (['casa', 'apartamento', 'terreno', 'local', 'oficina', 'galpon'].includes(filters.categoria.toLowerCase())) {
+          query = query.eq('property_type', filters.categoria.toLowerCase());
         }
       }
 
       if (filters.subcategoria) {
-        query = query.eq('subcategoria', filters.subcategoria);
+        // Para properties, subcategoria es property_type
+        query = query.eq('property_type', filters.subcategoria);
       }
 
       if (filters.marca) {
-        query = query.eq('marca', filters.marca);
+        // Para properties, marca no aplica, pero podemos filtrar por city_id si es un estado/ciudad
+        query = query.eq('city_id', filters.marca);
       }
 
       if (filters.q) {
-        query = query.textSearch('search_vector', filters.q, { config: 'spanish', type: 'plain' });
+        // Búsqueda por título o descripción
+        query = query.or(`title.ilike.%${filters.q}%,description.ilike.%${filters.q}%`);
       }
 
       if (filters.ubicacionCiudad) {
-        query = query.eq('ubicacion_ciudad', filters.ubicacionCiudad);
+        query = query.eq('city_id', filters.ubicacionCiudad);
       } else if (filters.ubicacionEstado) {
-        query = query.eq('ubicacion_estado', filters.ubicacionEstado);
+        query = query.eq('state_id', filters.ubicacionEstado);
       }
 
       if (filters.precioMin) {
@@ -111,12 +114,19 @@ export const useProductLoader = (): UseProductLoaderResult => {
         return b.creado_en.localeCompare(a.creado_en);
       });
 
-      setProductos(sorted);
+      // Procesar images array para obtener imagen_url
+      const processed = sorted.map((p: any) => ({
+        ...p,
+        imagen_url: p.images?.[0] || null,
+        ubicacion_estado: p.estado // state_id ya está en estado
+      }));
+
+      setProductos(processed);
       setTotalCount(count ?? 0);
       
       // Save to cache
       clientCache.set(cacheKey, {
-        productos: sorted,
+        productos: processed,
         totalCount: count ?? 0
       });
     } catch (err) {
