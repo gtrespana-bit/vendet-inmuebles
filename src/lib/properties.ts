@@ -36,7 +36,7 @@ export async function getProperties(filters: PropertyFilter = {}): Promise<{
 
   // Construir query base
   let query = supabase
-    .from('properties')
+    .from('propiedades')
     .select('*', { count: 'exact' })
     .eq('status', 'active');
 
@@ -135,7 +135,7 @@ export async function getPropertyBySlug(slug: string): Promise<Property | null> 
   const supabase = createServerClient();
   
   const { data, error } = await supabase
-    .from('properties')
+    .from('propiedades')
     .select('*')
     .eq('slug', slug)
     .eq('status', 'active')
@@ -160,7 +160,7 @@ export async function getPropertyById(id: string): Promise<Property | null> {
   const supabase = createServerClient();
   
   const { data, error } = await supabase
-    .from('properties')
+    .from('propiedades')
     .select('*')
     .eq('id', id)
     .single();
@@ -183,7 +183,7 @@ export async function getFeaturedProperties(limit: number = 6): Promise<Property
   const supabase = createServerClient();
   
   const { data, error } = await supabase
-    .from('properties')
+    .from('propiedades')
     .select('*')
     .eq('status', 'active')
     .eq('featured', true)
@@ -210,7 +210,7 @@ export async function getRelatedProperties(
   const supabase = createServerClient();
   
   const { data, error } = await supabase
-    .from('properties')
+    .from('propiedades')
     .select('*')
     .eq('status', 'active')
     .neq('id', propertyId)
@@ -248,7 +248,7 @@ export async function getPropertyStatsByCity(cityId: string): Promise<{
   const supabase = createServerClient();
   
   const { data, error } = await supabase
-    .from('properties')
+    .from('propiedades')
     .select('operation_type, price')
     .eq('status', 'active')
     .eq('city_id', cityId);
@@ -289,7 +289,7 @@ export async function getAvailablePropertyTypes(): Promise<string[]> {
   const supabase = createServerClient();
   
   const { data, error } = await supabase
-    .from('properties')
+    .from('propiedades')
     .select('property_type')
     .eq('status', 'active')
     .not('property_type', 'is', null);
