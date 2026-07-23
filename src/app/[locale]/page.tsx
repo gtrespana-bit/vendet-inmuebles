@@ -537,7 +537,7 @@ export default async function HomePage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {propiedades.map((p, index) => {
                 const isHighlighted =
-                  (p.destacado && p.destacado_hasta !== null && p.destacado_hasta > new Date().toISOString()) || p.boosteado_en
+                  !!(p.destacado && p.destacado_hasta !== null && p.destacado_hasta > new Date().toISOString()) || !!p.boosteado_en;
                 return <PropertyCard key={p.id} p={p} highlighted={isHighlighted} priority={index < 2} t={t} />
               })}
             </div>
