@@ -94,16 +94,30 @@ export const useProductLoader = (
         query = query.ilike('tipo_propiedad', `%${activeFilters.tipoPropiedad}%`);
       }
 
-      // Filtro por categoría - mapear a tipo_propiedad (texto)
+      // Filtro por categoría - mapear slug a tipo_propiedad real en BD
       if (activeFilters.categoria) {
-        const catStr = String(activeFilters.categoria);
+        const catStr = String(activeFilters.categoria).toLowerCase();
         const catNum = parseInt(catStr, 10);
         if (!isNaN(catNum)) {
-          // Es un número → filtrar por categoria_id
           query = query.eq('categoria_id', catNum);
         } else {
-          // Es texto (ej: "casas", "apartamentos") → filtrar por tipo_propiedad
-          query = query.ilike('tipo_propiedad', `%${catStr}%`);
+          // Mapeo slug URL → valor real en BD
+          const tipoMap: Record<string, string> = {
+            casas: 'Casa',
+            apartamentos: 'Apartamento',
+            terrenos: 'Terreno',
+            oficinas: 'Oficina',
+            locales: 'Local',
+            edificios: 'Edificio',
+            quintas: 'Quinta',
+            galpones: 'Galpón',
+          };
+          const tipoReal = tipoMap[catStr];
+          if (tipoReal) {
+            query = query.ilike('tipo_propiedad', tipoReal);
+          } else {
+            query = query.ilike('tipo_propiedad', `%${catStr}%`);
+          }
         }
       }
 
