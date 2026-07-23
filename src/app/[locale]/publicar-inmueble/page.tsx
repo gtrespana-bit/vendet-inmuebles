@@ -59,25 +59,41 @@ export default function PublicarInmueblePage() {
         throw new Error('Debes subir al menos una imagen');
       }
 
-      // Subir imágenes a Supabase Storage
+      // Subir imágenes a Cloudflare R2
       const imageUrls: string[] = [];
       for (const img of imagenes) {
-        const fileName = `${Date.now()}-${img.file.name}`;
-        const formData = new FormData();
-        formData.append('file', img.file);
-        formData.append('fileName', fileName);
-
-        const res = await fetch('/api/upload-image', {
+        const fileName = `inmuebles/${Date.now()}-${img.file.name}`;
+        
+        // Obtener presigned URL desde API
+        const presignedRes = await fetch('/api/r2-upload', {
           method: 'POST',
-          body: formData,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            key: fileName, 
+            contentType: img.file.type || 'image/jpeg'
+          }),
         });
 
-        if (!res.ok) {
-          throw new Error('Error al subir imagen');
+        if (!presignedRes.ok) {
+          throw new Error('Error al generar URL de subida');
         }
 
-        const data = await res.json();
-        imageUrls.push(data.url);
+        const { url: uploadUrl, publicUrl } = await presignedRes.json();
+
+        // Subir imagen directamente a R2 usando presigned URL
+        const uploadRes = await fetch(uploadUrl, {
+          method: 'PUT',
+          body: img.file,
+          headers: {
+            'Content-Type': img.file.type || 'image/jpeg',
+          },
+        });
+
+        if (!uploadRes.ok) {
+          throw new Error('Error al subir imagen a R2');
+        }
+
+        imageUrls.push(publicUrl);
       }
 
       // Crear propiedad en Supabase
