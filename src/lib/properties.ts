@@ -100,7 +100,9 @@ export async function getProperties(filters: PropertyFilter = {}): Promise<{
 
   // Aplicar filtros
   if (operation_type) {
-    query = query.eq('operacion_tipo', operation_type);
+    // Capitalizar para coincidir con valores en DB ('Venta', 'Alquiler')
+    const normalizedOp = operation_type.charAt(0).toUpperCase() + operation_type.slice(1);
+    query = query.eq('operacion_tipo', normalizedOp);
   }
   
   if (property_type && property_type.length > 0) {
