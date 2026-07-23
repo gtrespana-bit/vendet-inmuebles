@@ -155,7 +155,8 @@ export default function CatalogoClient({ initialProducts = [], initialCount = 0 
   const ubicacionEstado = searchParams.get('estado') || ''
   const ubicacionCiudad = searchParams.get('ciudad') || ''
 
-  const hasActiveFilters = !!(categoria || subcategoria || marca || q || precioMin || precioMax || ubicacionEstado || ubicacionCiudad)
+  const operacion = searchParams.get('operacion') || ''
+  const hasActiveFilters = !!(categoria || subcategoria || marca || q || precioMin || precioMax || ubicacionEstado || ubicacionCiudad || operacion)
 
   // Usar los hooks de carga y precarga de productos
   const { productos: loadedProductos, loading, error, totalCount: loaderTotalCount, loadProducts } = useProductLoader();
@@ -207,6 +208,7 @@ export default function CatalogoClient({ initialProducts = [], initialCount = 0 
         precioMax,
         ubicacionEstado,
         ubicacionCiudad
+        operacionTipo: operacion
       });
     }
   }, [categoria, subcategoria, marca, q, precioMin, precioMax, ubicacionEstado, ubicacionCiudad, hasActiveFilters, loadProducts]);
@@ -313,8 +315,7 @@ export default function CatalogoClient({ initialProducts = [], initialCount = 0 
         <aside className="w-full lg:w-72 flex-shrink-0">
           <CatalogFilters
             categoria={categoria}
-            subcategoria={subcategoria}
-            marca={marca}
+            operacionTipo={operacion}
             precioMin={precioMin}
             precioMax={precioMax}
             ubicacionEstado={ubicacionEstado}
