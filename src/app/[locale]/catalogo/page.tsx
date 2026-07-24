@@ -53,7 +53,7 @@ async function getInitialProducts() {
       main_image_url: p.main_image_url ?? p.imagen_url ?? p.imagenes_urls?.[0] ?? null,
       city: p.city ?? p.ubicacion_ciudad ?? 'Ubicación no especificada',
       state: p.state ?? p.ubicacion_estado ?? 'Estado no especificado',
-      operation_type: p.operation_type ?? p.operacion_tipo ?? 'venta',
+      operation_type: p.operation_type ?? 'venta',
       property_type: p.tipo_propiedad ?? 'inmueble',
       // Pre-computar flags para evitar hydration mismatch en cliente
       _isFeatured: !!(p.destacado && p.destacado_hasta && p.destacado_hasta > now),
