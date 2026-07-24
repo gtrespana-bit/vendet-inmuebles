@@ -33,19 +33,14 @@ export default async function AlquilerPage({ params, searchParams }: PageProps) 
     .select('id, name')
     .order('name')
   
-  // Obtener propiedades recientes de alquiler
+  // Obtener propiedades recientes de alquiler usando el nuevo sistema
   const { data: propiedadesData } = await supabase
     .from('productos')
-    .select(`
-      *,
-      property_images (url),
-      states (name),
-      cities (name)
-    `)
-    .eq('operacion_tipo', 'Alquiler')
+    .select('*')
+    .eq('tipo_operacion', 'alquiler')
     .eq('activo', true)
     .limit(50)
-    .order('creado_en', { ascending: false })
+    .order('created_at', { ascending: false })
   
   // Transformar datos para PropertyCard
   const propiedades = (propiedadesData ?? []).map(p => ({
@@ -54,9 +49,9 @@ export default async function AlquilerPage({ params, searchParams }: PageProps) 
     slug: p.slug || '',
     precio: p.precio || 0,
     tipo_operacion: 'alquiler' as ('venta' | 'alquiler'),
-    ciudad: p.cities?.name || 'Ciudad no especificada',
-    estado: p.states?.name || 'Estado no especificado',
-    imagen_destacada_url: p.property_images?.[0]?.url || p.imagenes?.[0] || null,
+    ciudad: p.ciudad || 'Ciudad no especificada',
+    estado: p.estado || 'Estado no especificado',
+    imagen_destacada_url: p.imagenes?.[0] || null,
     habitaciones: p.habitaciones || 0,
     banos: p.banos || 0,
     area: p.area || 0
