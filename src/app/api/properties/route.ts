@@ -62,8 +62,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(data)
   } catch (error: any) {
     console.error('Error creating property:', error)
+    console.error('Error stack:', error?.stack)
+    console.error('Request body:', body)
     return NextResponse.json(
-      { error: error.message || 'Error interno del servidor' },
+      { error: error.message || 'Error interno del servidor', details: error?.message },
       { status: 500 }
     )
   }
