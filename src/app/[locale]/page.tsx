@@ -204,7 +204,7 @@ async function getRecentProducts(limit = 8) {
 
 function PropertyCard({ p, highlighted = false, priority = false, t }: { p: any; highlighted?: boolean; priority?: boolean; t: any }) {
   const imgUrl = p.imagen_url || getPlaceholderImage(p.titulo)
-  const operacion = p.operacion_tipo === 'Venta' ? t('home.propertyCard.forSale') : t('home.propertyCard.forRent')
+  const operacion = p.operacion_tipo === 'Venta' ? t('home.productCard.forSale') : t('home.productCard.forRent')
   return (
     <LocalLink
       href={`/inmueble/${p.id}`}
@@ -217,7 +217,7 @@ function PropertyCard({ p, highlighted = false, priority = false, t }: { p: any;
       <div className="aspect-square bg-gray-100 relative overflow-hidden">
         {highlighted && (
           <div className="absolute top-2 left-2 z-10 bg-brand-accent text-gray-900 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
-            <Star size={10} /> {t('home.propertyCard.featured')}
+            <Star size={10} /> {t('home.productCard.featured')}
           </div>
         )}
         <div className="absolute top-2 right-2 z-10 bg-brand-primary/90 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
