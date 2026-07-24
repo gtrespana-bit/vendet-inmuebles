@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase-server'
 
 export async function POST(req: NextRequest) {
+  let body: any;
   try {
-    const body = await req.json()
+    body = await req.json()
     const {
       tipo_operacion,
       titulo,
