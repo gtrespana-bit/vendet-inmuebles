@@ -29,9 +29,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     return { title: 'Propiedad no encontrada' };
   }
 
-  const operacion = propiedad.operacion_tipo?.toLowerCase() === 'venta' ? 'Venta' : 'Alquiler';
+  const operacion = propiedad.tipo_operacion?.toLowerCase() === 'venta' ? 'Venta' : 'Alquiler';
   return {
-    title: `${operacion}: ${propiedad.titulo} en ${propiedad.ubicacion_ciudad}, ${propiedad.ubicacion_estado}`,
+    title: `${operacion}: ${propiedad.titulo} en ${propiedad.ciudad}, ${propiedad.estado}`,
     description: propiedad.descripcion?.substring(0, 160),
     openGraph: {
       title: `${operacion}: ${propiedad.titulo}`,
@@ -82,18 +82,22 @@ export default async function PropertyDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  const operacion = propiedad.operacion_tipo?.toLowerCase() === 'venta' ? 'Venta' : 'Alquiler';
+  const operacion = propiedad.tipo_operacion?.toLowerCase() === 'venta' ? 'Venta' : 'Alquiler';
   const formatoMoneda = new Intl.NumberFormat('es-US', {
     style: 'currency',
     currency: 'USD',
     minimumFractionDigits: 0,
   });
 
-  const imagenes = propiedad.imagenes_urls as string[] || [];
-  const caracteristicas = propiedad.caracteristicas as any || {};
+  const imagenes = propiedad.imagenes as string[] || [];
+  const caracteristicas = {
+    habitaciones: propiedad.habitaciones,
+    banos: propiedad.banos,
+    area_m2: propiedad.area,
+  };
   const perfil = propiedad.perfiles;
   
-  const whatsappMessage = `Hola, me interesa el inmueble: ${propiedad.titulo} (${formatoMoneda.format(propiedad.precio_usd)})`;
+  const whatsappMessage = `Hola, me interesa el inmueble: ${propiedad.titulo} (${formatoMoneda.format(propiedad.precio)})`;
   const whatsappLink = perfil?.telefono 
     ? `https://wa.me/${perfil.telefono.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(whatsappMessage)}`
     : null;
@@ -126,7 +130,7 @@ export default async function PropertyDetailPage({ params }: PageProps) {
             <h1 className="text-3xl md:text-4xl font-bold mb-2">{propiedad.titulo}</h1>
             <div className="flex items-center gap-2 text-lg">
               <MapPin size={20} />
-              <span>{propiedad.ubicacion_ciudad}, {propiedad.ubicacion_estado}</span>
+              <span>{propiedad.ciudad}, {propiedad.estado}</span>
             </div>
           </div>
         </div>
@@ -143,11 +147,8 @@ export default async function PropertyDetailPage({ params }: PageProps) {
               <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
                 <div>
                   <span className="text-3xl font-bold text-gray-900">
-                    ${propiedad.precio_usd?.toLocaleString()}
+                    ${propiedad.precio?.toLocaleString()}
                   </span>
-                  {propiedad.precio_bs && (
-                    <p className="text-gray-500 text-sm">Bs. {propiedad.precio_bs.toLocaleString()}</p>
-                  )}
                 </div>
                 <div className="flex gap-4">
                   {caracteristicas.habitaciones && (

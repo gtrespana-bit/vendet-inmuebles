@@ -121,13 +121,17 @@ export default function PublicarInmueblePage() {
       });
 
       if (!res.ok) {
-        throw new Error('Error al crear la propiedad');
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Error al crear la propiedad');
       }
 
+      const nuevaPropiedad = await res.json();
+      
       setSuccess(true);
+      // Redirigir a la página de detalle de la propiedad recién creada
       setTimeout(() => {
-        router.push('/propiedades');
-      }, 2000);
+        router.push(`/inmueble/${nuevaPropiedad.id}`);
+      }, 1500);
     } catch (err: any) {
       setError(err.message || 'Error al publicar inmueble');
     } finally {
