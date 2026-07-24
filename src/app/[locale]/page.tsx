@@ -100,7 +100,7 @@ async function getDestacados(limit = 8) {
       .select('*')
       .eq('activo', true)
       .neq('main_image_url', null)
-      .order('created_at', { ascending: false })
+      .order('creado_en', { ascending: false })
       .limit(limit)
     
     if (error) throw error
@@ -108,11 +108,11 @@ async function getDestacados(limit = 8) {
     return (data || []).map(p => ({
       id: p.id,
       titulo: p.titulo,
-      precio_usd: p.price || 0,
+      precio_usd: p.price || p.precio_usd || 0,
       estado: p.state || p.estado,
       imagen_url: p.main_image_url || p.imagen_url,
       ubicacion_ciudad: p.city || p.ciudad,
-      creado_en: p.created_at || p.creado_en,
+      creado_en: p.creado_en,
       tipo_propiedad: p.tipo_propiedad || 'Inmueble',
       operacion_tipo: p.operation_type === 'venta' ? 'Venta' : (p.operation_type === 'alquiler' ? 'Alquiler' : (p.operacion_tipo === 'Venta' ? 'Venta' : 'Alquiler')),
       bedrooms: p.bedrooms || p.habitaciones,
@@ -145,11 +145,11 @@ async function getTrending(limit = 8) {
     return (data || []).map(p => ({
       id: p.id,
       titulo: p.titulo,
-      precio_usd: p.price || 0,
+      precio_usd: p.price || p.precio_usd || 0,
       imagen_url: p.main_image_url || p.imagen_url,
       ubicacion_ciudad: p.city || p.ciudad,
       visitas: p.visitas || 0,
-      creado_en: p.created_at || p.creado_en,
+      creado_en: p.creado_en,
       tipo_propiedad: p.tipo_propiedad || 'Inmueble',
       operacion_tipo: p.operation_type === 'venta' ? 'Venta' : (p.operation_type === 'alquiler' ? 'Alquiler' : (p.operacion_tipo === 'Venta' ? 'Venta' : 'Alquiler')),
       bedrooms: p.bedrooms || p.habitaciones,
@@ -174,7 +174,7 @@ async function getRecentProducts(limit = 8) {
       .from('productos')
       .select('*')
       .eq('activo', true)
-      .order('created_at', { ascending: false })
+      .order('creado_en', { ascending: false })
       .limit(limit)
     
     if (error) throw error
@@ -182,12 +182,12 @@ async function getRecentProducts(limit = 8) {
     return (data || []).map(p => ({
       id: p.id,
       titulo: p.titulo,
-      precio_usd: p.price || 0,
+      precio_usd: p.price || p.precio_usd || 0,
       estado: p.state || p.estado,
       imagen_url: p.main_image_url || p.imagen_url,
       ubicacion_ciudad: p.city || p.ciudad,
-      creado_en: p.created_at || p.creado_en,
-      boosteado_en: p.destacado ? p.created_at : null,
+      creado_en: p.creado_en,
+      boosteado_en: p.destacado ? p.creado_en : null,
       destacado: p.destacado || false,
       destacado_hasta: p.destacado_hasta,
       tipo_propiedad: p.tipo_propiedad || 'Inmueble',
