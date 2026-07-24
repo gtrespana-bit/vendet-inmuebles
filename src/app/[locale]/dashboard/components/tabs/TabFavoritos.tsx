@@ -26,16 +26,16 @@ export default function TabFavoritos({ favoritos }: { favoritos: any[] }) {
             <div key={fav.producto_id} className="flex items-center gap-4 p-3 rounded-lg hover:bg-gray-50 border border-gray-100 transition">
               <LocalLink href={`/inmueble/${p.id}`} className="flex items-center gap-4 flex-1 min-w-0">
                 <div className="w-16 h-16 rounded-lg bg-gray-100 flex-shrink-0 overflow-hidden">
-                  {p.imagen_url ? (
-                    <Image src={p.imagen_url} alt={p.titulo} className="w-full h-full object-cover" fill sizes="100px" />
+                  {p.main_image_url ? (
+                    <Image src={p.main_image_url} alt={p.titulo} className="w-full h-full object-cover" fill sizes="100px" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">Sin foto</div>
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <h4 className="font-medium text-gray-800 truncate">{p.titulo}</h4>
-                  <p className="text-sm text-brand-primary font-bold">${new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(Number(p.precio_usd || 0))}</p>
-                  {p.ubicacion_ciudad && <p className="text-xs text-gray-500">{p.ubicacion_ciudad}</p>}
+                  <p className="text-sm text-brand-primary font-bold">${new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(Number(p.price || 0))}</p>
+                  {p.city && <p className="text-xs text-gray-500">{p.city}</p>}
                 </div>
               </LocalLink>
               <button onClick={async () => { await supabase.from('favoritos').delete().eq('producto_id', p.id); window.location.reload() }} className="p-2 hover:bg-red-50 rounded-lg transition text-red-500" title="Quitar de favoritos">

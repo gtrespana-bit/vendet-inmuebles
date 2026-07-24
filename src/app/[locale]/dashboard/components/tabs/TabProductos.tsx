@@ -253,8 +253,8 @@ export default function TabProductos({
             <div key={p.id} className={`group flex items-start gap-4 p-3 rounded-lg border border-gray-100 transition ${isVendido ? 'bg-green-50/50 border-green-200' : 'hover:bg-gray-50'}`}>
               <LocalLink href={`/inmueble/${p.id}`} className="flex items-center gap-4 flex-1 min-w-0">
                 <div className="w-16 h-16 rounded-lg bg-gray-100 flex-shrink-0 overflow-hidden relative">
-                  {p.imagen_url ? (
-                    <Image src={p.imagen_url} alt={p.titulo} className="w-full h-full object-cover" fill sizes="100px" />
+                  {p.main_image_url ? (
+                    <Image src={p.main_image_url} alt={p.titulo} className="w-full h-full object-cover" fill sizes="100px" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">Sin foto</div>
                   )}
@@ -268,7 +268,7 @@ export default function TabProductos({
                   <h4 className="font-medium text-gray-800 truncate group-hover:text-brand-primary transition">
                     {isBoosted && '⚡ '}{isFeatured && !isBoosted && '⭐ '}{p.titulo}
                   </h4>
-                  <p className="text-sm text-brand-primary font-bold">${new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(Number(p.precio_usd || 0))}</p>
+                  <p className="text-sm text-brand-primary font-bold">${new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(Number(p.price || 0))}</p>
                   <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
                     <span>👀 {p.visitas || 0} vistas</span>
                     {isVendido

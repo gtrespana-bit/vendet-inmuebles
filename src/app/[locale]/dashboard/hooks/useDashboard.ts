@@ -52,10 +52,10 @@ export function useDashboard() {
 
     // Supabase client automatically handles auth tokens via persistSession + autoRefreshToken
     Promise.all([
-      supabase.from('productos').select('id, titulo, precio_usd, estado, categoria_id, subcategoria, marca, ubicacion_ciudad, activo, visitas, creado_en, imagen_url, destacado, destacado_hasta, boosteado_en, estado_moderacion').eq('user_id', user.id).order('creado_en', { ascending: false }).then(({ data }: { data: any[] | null }) => setProductos(data || [])),
+      supabase.from('productos').select('id, titulo, price, estado, categoria, city, state, activo, visitas, creado_en, main_image_url, operation_type, destacado, destacado_hasta, boosteado_en, estado_moderacion').eq('user_id', user.id).order('creado_en', { ascending: false }).then(({ data }: { data: any[] | null }) => setProductos(data || [])),
 
       supabase.from('productos').select('visitas').eq('user_id', user.id).then(({ data }: { data: any[] | null }) => setVisitasTotales(data?.reduce((sum: number, p: { visitas: number | null }) => sum + (p.visitas || 0), 0) || 0)),
-      supabase.from('favoritos').select('producto_id, creado_en, productos!inner(id, titulo, precio_usd, imagen_url, activo, user_id, ubicacion_ciudad)').eq('user_id', user.id).order('creado_en', { ascending: false }).then(({ data }: { data: any[] | null }) => {
+      supabase.from('favoritos').select('producto_id, creado_en, productos!inner(id, titulo, price, main_image_url, activo, user_id, city)').eq('user_id', user.id).order('creado_en', { ascending: false }).then(({ data }: { data: any[] | null }) => {
         setFavoritos(data || [])
         setFavoritosCount(data?.length || 0)
       }),

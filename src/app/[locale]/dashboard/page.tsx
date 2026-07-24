@@ -175,7 +175,7 @@ export default function DashboardPage() {
     } else {
       data.setCreditos(result.balance)
       data.setToast(t('boostApplied'))
-      const { data: prods } = await supabase.from('productos').select('id, titulo, precio_usd, estado, categoria_id, subcategoria, marca, ubicacion_ciudad, activo, visitas, creado_en, imagen_url, destacado, destacado_hasta, boosteado_en, estado_moderacion').eq('user_id', user!.id).order('creado_en', { ascending: false })
+      const { data: prods } = await supabase.from('productos').select('id, titulo, price, estado, categoria, city, state, activo, visitas, creado_en, main_image_url, operation_type, destacado, destacado_hasta, boosteado_en, estado_moderacion').eq('user_id', user!.id).order('creado_en', { ascending: false })
       data.setProductos(prods || [])
     }
     setBoostTarget(null)
@@ -189,7 +189,7 @@ export default function DashboardPage() {
     } else {
       data.setCreditos(result.balance)
       data.setToast(t('featuredActivated', { hours: horas }))
-      const { data: prods } = await supabase.from('productos').select('id, titulo, precio_usd, estado, categoria_id, subcategoria, marca, ubicacion_ciudad, activo, visitas, creado_en, imagen_url, destacado, destacado_hasta, boosteado_en, estado_moderacion').eq('user_id', user!.id).order('creado_en', { ascending: false })
+      const { data: prods } = await supabase.from('productos').select('id, titulo, price, estado, categoria, city, state, activo, visitas, creado_en, main_image_url, operation_type, destacado, destacado_hasta, boosteado_en, estado_moderacion').eq('user_id', user!.id).order('creado_en', { ascending: false })
       data.setProductos(prods || [])
     }
     setDestacadoTarget(null)
