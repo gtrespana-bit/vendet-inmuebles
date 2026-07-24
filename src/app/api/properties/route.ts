@@ -32,23 +32,36 @@ export async function POST(req: NextRequest) {
 
     const supabase = createServerClient()
 
+    // Preparar datos para insertar (sin area si no existe en la tabla)
+    const propertyData: any = {
+      user_id: userId,
+      titulo,
+      descripcion,
+      precio: parseFloat(precio),
+      estado,
+      ciudad,
+      categoria: 'inmuebles',
+      tipo_operacion: tipo_operacion || 'venta',
+      activo: true,
+    }
+
+    // Agregar campos opcionales solo si existen
+    if (habitaciones !== undefined && habitaciones !== null) {
+      propertyData.habitaciones = parseInt(habitaciones)
+    }
+    if (banos !== undefined && banos !== null) {
+      propertyData.banos = parseInt(banos)
+    }
+    if (area !== undefined && area !== null) {
+      propertyData.area = parseInt(area)
+    }
+    if (imagenes && imagenes.length > 0) {
+      propertyData.imagenes = imagenes
+    }
+
     const { data, error } = await supabase
       .from('productos')
-      .insert({
-        user_id: userId,
-        titulo,
-        descripcion,
-        precio: parseFloat(precio),
-        estado,
-        ciudad,
-        habitaciones: habitaciones ? parseInt(habitaciones) : null,
-        banos: banos ? parseInt(banos) : null,
-        area: area ? parseInt(area) : null,
-        imagenes: imagenes || [],
-        categoria: 'inmuebles',
-        tipo_operacion: tipo_operacion || 'venta',
-        activo: true,
-      })
+      .insert(propertyData)
       .select()
       .single()
 

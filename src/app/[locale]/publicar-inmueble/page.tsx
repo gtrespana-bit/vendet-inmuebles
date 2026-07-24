@@ -116,7 +116,6 @@ export default function PublicarInmueblePage() {
           ciudad,
           habitaciones,
           banos,
-          area: area ? parseInt(area) : null,
           imagenes: imageUrls,
         }),
       });
