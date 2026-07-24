@@ -50,7 +50,7 @@ async function getInitialProducts() {
       ...p,
       // Normalizar datos: usar columnas nuevas si existen, sino las antiguas
       price: p.price ?? 0,
-      main_image_url: p.main_image_url ?? p.imagen_url ?? p.imagenes_urls?.[0] ?? null,
+      main_image_url: p.main_image_url ?? null,
       city: p.city ?? 'Ubicación no especificada',
       state: p.state ?? 'Estado no especificado',
       operation_type: p.operation_type ?? 'venta',
