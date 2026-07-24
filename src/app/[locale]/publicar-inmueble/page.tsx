@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/components/AuthProvider';
 import { ESTADOS, MUNICIPIOS_POR_ESTADO } from '@/lib/ubicaciones';
 
 interface ImagePreview {
@@ -12,6 +13,7 @@ interface ImagePreview {
 
 export default function PublicarInmueblePage() {
   const router = useRouter();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -97,6 +99,10 @@ export default function PublicarInmueblePage() {
       }
 
       // Crear propiedad en Supabase
+      if (!user) {
+        throw new Error('Debes iniciar sesión para publicar un inmueble');
+      }
+
       const res = await fetch('/api/properties', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
