@@ -15,7 +15,7 @@ function generateItemListSchema(properties: any[], baseUrl: string) {
     image: prop.imagen_url || `${baseUrl}/placeholder-property.webp`,
     offers: {
       '@type': 'Offer',
-      price: prop.precio_usd || 0,
+      price: prop.price || 0,
       priceCurrency: 'USD',
       availability: prop.activo ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock'
     }
