@@ -37,7 +37,13 @@ const nextConfig = withNextIntl({
       },
       {
         protocol: 'https',
+        hostname: '*.r2.dev',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
         hostname: 'pub-d212837165c545e3956251da001fa37a.r2.dev',
+        pathname: '/**',
       },
     ],
     formats: ['image/avif', 'image/webp'],
