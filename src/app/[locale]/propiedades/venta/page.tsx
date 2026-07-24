@@ -44,14 +44,14 @@ export default async function VentasPage({ params, searchParams }: PageProps) {
     id: p.id,
     title: p.title || 'Sin título',
     slug: p.slug || '',
-    price: p.price ?? p.precio_usd ?? 0,
-    operation_type: (p.operation_type ?? p.operacion_tipo ?? 'venta') as ('venta' | 'alquiler'),
-    city: p.city ?? p.ubicacion_ciudad ?? 'Ciudad no especificada',
-    state: p.state ?? p.ubicacion_estado ?? 'Estado no especificado',
-    main_image_url: p.main_image_url ?? p.imagen_url ?? p.imagenes_urls?.[0] ?? null,
-    bedrooms: p.bedrooms ?? (p.caracteristicas as any)?.habitaciones ?? 0,
-    bathrooms: p.bathrooms ?? (p.caracteristicas as any)?.banos ?? 0,
-    area_size: p.area_size ?? p.area_total ?? (p.caracteristicas as any)?.area_m2 ?? 0
+    price: p.price ?? 0,
+    operation_type: (p.operation_type ?? 'venta') as ('venta' | 'alquiler'),
+    city: p.city ?? 'Ciudad no especificada',
+    state: p.state ?? 'Estado no especificado',
+    main_image_url: p.main_image_url ?? null,
+    bedrooms: p.bedrooms ?? 0,
+    bathrooms: p.bathrooms ?? 0,
+    area_size: p.area_size ?? 0
   }))
   
   return (
