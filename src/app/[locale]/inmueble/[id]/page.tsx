@@ -89,11 +89,12 @@ export default async function PropertyDetailPage({ params }: PageProps) {
     minimumFractionDigits: 0,
   });
 
-  const imagenes = propiedad.imagenes as string[] || [];
+  const imagenes = propiedad.imagenes as string[] || propiedad.imagenes_urls as string[] || [];
+  // Leer características:优先 usar columnas directas, fallback a JSON caracteristicas
   const caracteristicas = {
-    habitaciones: propiedad.habitaciones,
-    banos: propiedad.banos,
-    area_m2: propiedad.area,
+    habitaciones: propiedad.habitaciones ?? (propiedad.caracteristicas as any)?.habitaciones,
+    banos: propiedad.banos ?? (propiedad.caracteristicas as any)?.banos,
+    area_m2: propiedad.area ?? (propiedad.caracteristicas as any)?.area_m2,
   };
   const perfil = propiedad.perfiles;
   
@@ -142,6 +143,36 @@ export default async function PropertyDetailPage({ params }: PageProps) {
           {/* Columna Principal */}
           <div className="lg:col-span-2 space-y-6">
             
+            {/* Características Detalladas - MOVER ANTES DE DESCRIPCIÓN */}
+            {Object.keys(caracteristicas).some(k => caracteristicas[k as keyof typeof caracteristicas]) && (
+              <div className="bg-white rounded-xl shadow-sm p-6">
+                <h2 className="text-xl font-semibold mb-4">Características</h2>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {caracteristicas.habitaciones && (
+                    <div className="flex items-center gap-2 text-gray-700">
+                      <CheckCircle size={16} className="text-green-500" />
+                      <span className="capitalize">Habitaciones:</span>
+                      <span className="font-medium">{caracteristicas.habitaciones}</span>
+                    </div>
+                  )}
+                  {caracteristicas.banos && (
+                    <div className="flex items-center gap-2 text-gray-700">
+                      <CheckCircle size={16} className="text-green-500" />
+                      <span className="capitalize">Baños:</span>
+                      <span className="font-medium">{caracteristicas.banos}</span>
+                    </div>
+                  )}
+                  {caracteristicas.area_m2 && (
+                    <div className="flex items-center gap-2 text-gray-700">
+                      <CheckCircle size={16} className="text-green-500" />
+                      <span className="capitalize">Área m²:</span>
+                      <span className="font-medium">{caracteristicas.area_m2}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Precio y Datos Clave */}
             <div className="bg-white rounded-xl shadow-sm p-6">
               <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
@@ -179,22 +210,6 @@ export default async function PropertyDetailPage({ params }: PageProps) {
                 {propiedad.descripcion || 'No hay descripción disponible.'}
               </p>
             </div>
-
-            {/* Características Detalladas */}
-            {Object.keys(caracteristicas).length > 0 && (
-              <div className="bg-white rounded-xl shadow-sm p-6">
-                <h2 className="text-xl font-semibold mb-4">Características</h2>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {Object.entries(caracteristicas).map(([key, value]) => (
-                    <div key={key} className="flex items-center gap-2 text-gray-700">
-                      <CheckCircle size={16} className="text-green-500" />
-                      <span className="capitalize">{key.replace('_', ' ')}:</span>
-                      <span className="font-medium">{String(value)}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
             {/* Galería */}
             {imagenes.length > 1 && (
