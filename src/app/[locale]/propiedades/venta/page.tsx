@@ -42,16 +42,16 @@ export default async function VentasPage({ params, searchParams }: PageProps) {
   // Transformar datos para PropertyCard
   const propiedades = (propiedadesData ?? []).map(p => ({
     id: p.id,
-    titulo: p.title || 'Sin título',
+    titulo: p.titulo || p.title || 'Sin título',
     slug: p.slug || '',
-    precio: p.price || 0,
-    tipo_operacion: (p.operation_type === 'venta' ? 'venta' : 'alquiler') as ('venta' | 'alquiler'),
-    ciudad: p.city_name || 'Ciudad no especificada',
-    estado: p.state_name || 'Estado no especificado',
-    imagen_destacada_url: p.main_image_url || p.images?.[0] || null,
-    habitaciones: p.bedrooms || 0,
-    banos: p.bathrooms || 0,
-    area: p.area_total || 0
+    precio: p.price ?? p.precio_usd ?? 0,
+    tipo_operacion: (p.operation_type ?? p.operacion_tipo ?? 'venta') as ('venta' | 'alquiler'),
+    ciudad: p.city ?? p.ubicacion_ciudad ?? 'Ciudad no especificada',
+    estado: p.state ?? p.ubicacion_estado ?? 'Estado no especificado',
+    imagen_destacada_url: p.main_image_url ?? p.imagen_url ?? p.imagenes_urls?.[0] ?? null,
+    habitaciones: p.bedrooms ?? (p.caracteristicas as any)?.habitaciones ?? 0,
+    banos: p.bathrooms ?? (p.caracteristicas as any)?.banos ?? 0,
+    area: p.area_size ?? p.area_total ?? (p.caracteristicas as any)?.area_m2 ?? 0
   }))
   
   return (
