@@ -53,9 +53,34 @@ export async function POST(req: NextRequest) {
       .single()
 
     if (error) {
-      console.error('Supabase insert error:', error)
+      console.error('=== ERROR CRUD SUPABASE ===')
+      console.error('Mensaje:', error.message)
+      console.error('Detalle:', error.details)
+      console.error('Hint:', error.hint)
+      console.error('Code:', error.code)
+      console.error('Datos enviados:', JSON.stringify({
+        user_id: userId,
+        titulo,
+        descripcion,
+        precio: parseFloat(precio),
+        estado,
+        ciudad,
+        habitaciones: habitaciones ? parseInt(habitaciones) : null,
+        banos: banos ? parseInt(banos) : null,
+        area: area ? parseInt(area) : null,
+        imagenes: imagenes || [],
+        categoria: 'inmuebles',
+        tipo_operacion: tipo_operacion || 'venta',
+        activo: true,
+      }, null, 2))
+      
       return NextResponse.json(
-        { error: error.message || 'Error al crear la propiedad' },
+        { 
+          error: 'Error al guardar en base de datos', 
+          message: error.message,
+          details: error.details,
+          code: error.code
+        },
         { status: 500 }
       )
     }
