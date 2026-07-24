@@ -34,7 +34,7 @@ export default async function AlquilerPage({ params, searchParams }: PageProps) 
     .order('name')
   
   // Obtener propiedades recientes de alquiler
-  const { data: propiedades } = await supabase
+  const { data: propiedadesData } = await supabase
     .from('productos')
     .select(`
       *,
@@ -46,6 +46,21 @@ export default async function AlquilerPage({ params, searchParams }: PageProps) 
     .eq('activo', true)
     .limit(50)
     .order('creado_en', { ascending: false })
+  
+  // Transformar datos para PropertyCard
+  const propiedades = propiedadesData?.map(p => ({
+    id: p.id,
+    titulo: p.titulo || 'Sin título',
+    slug: p.slug || '',
+    precio: p.precio || 0,
+    tipo_operacion: 'alquiler',
+    ciudad: p.cities?.name || 'Ciudad no especificada',
+    estado: p.states?.name || 'Estado no especificado',
+    imagen_destacada_url: p.property_images?.[0]?.url || p.imagenes?.[0] || null,
+    habitaciones: p.habitaciones || 0,
+    banos: p.banos || 0,
+    area: p.area || 0
+  })) || []
   
   return (
     <div className="container mx-auto px-4 py-8">
@@ -74,8 +89,12 @@ export default async function AlquilerPage({ params, searchParams }: PageProps) 
         <h2 className="text-xl font-semibold mb-4">Propiedades Destacadas</h2>
         {propiedades && propiedades.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {propiedades.map((propiedad: any) => (
-              <PropertyCard key={propiedad.id} {...propiedad} />
+            {propiedades.map((propiedad) => (
+              <PropertyCard 
+                key={propiedad.id} 
+                property={propiedad} 
+                locale={locale} 
+              />
             ))}
           </div>
         ) : (

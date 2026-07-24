@@ -42,17 +42,16 @@ export default async function VentasPage({ params, searchParams }: PageProps) {
   // Transformar datos para PropertyCard
   const propiedades = propiedadesData?.map(p => ({
     id: p.id,
-    titulo: p.title,
-    precio_usd: p.price,
-    estado: p.state_id,
-    imagen_url: p.images?.[0] || null,
-    ubicacion_ciudad: p.city_id,
-    creado_en: p.created_at,
-    tipo_propiedad: p.property_type,
-    operacion_tipo: p.operation_type === 'venta' ? 'Venta' : 'Alquiler',
-    bedrooms: p.bedrooms,
-    bathrooms: p.bathrooms,
-    area_total: p.area_total
+    titulo: p.title || 'Sin título',
+    slug: p.slug || '',
+    precio: p.price || 0,
+    tipo_operacion: p.operation_type === 'venta' ? 'venta' : 'alquiler',
+    ciudad: p.city || 'Ciudad no especificada',
+    estado: p.state || 'Estado no especificado',
+    imagen_destacada_url: p.images?.[0] || null,
+    habitaciones: p.bedrooms || 0,
+    banos: p.bathrooms || 0,
+    area: p.area_total || 0
   })) || []
   
   return (
@@ -82,8 +81,12 @@ export default async function VentasPage({ params, searchParams }: PageProps) {
         <h2 className="text-xl font-semibold mb-4">Propiedades Destacadas</h2>
         {propiedades && propiedades.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {propiedades.map((propiedad: any) => (
-              <PropertyCard key={propiedad.id} {...propiedad} />
+            {propiedades.map((propiedad) => (
+              <PropertyCard 
+                key={propiedad.id} 
+                property={propiedad} 
+                locale={locale} 
+              />
             ))}
           </div>
         ) : (
