@@ -48,19 +48,19 @@ export default async function AlquilerPage({ params, searchParams }: PageProps) 
     .order('creado_en', { ascending: false })
   
   // Transformar datos para PropertyCard
-  const propiedades = propiedadesData?.map(p => ({
+  const propiedades = (propiedadesData ?? []).map(p => ({
     id: p.id,
     titulo: p.titulo || 'Sin título',
     slug: p.slug || '',
     precio: p.precio || 0,
-    tipo_operacion: 'alquiler',
+    tipo_operacion: 'alquiler' as ('venta' | 'alquiler'),
     ciudad: p.cities?.name || 'Ciudad no especificada',
     estado: p.states?.name || 'Estado no especificado',
     imagen_destacada_url: p.property_images?.[0]?.url || p.imagenes?.[0] || null,
     habitaciones: p.habitaciones || 0,
     banos: p.banos || 0,
     area: p.area || 0
-  })) || []
+  }))
   
   return (
     <div className="container mx-auto px-4 py-8">

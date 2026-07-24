@@ -40,19 +40,19 @@ export default async function VentasPage({ params, searchParams }: PageProps) {
   })
   
   // Transformar datos para PropertyCard
-  const propiedades = propiedadesData?.map(p => ({
+  const propiedades = (propiedadesData ?? []).map(p => ({
     id: p.id,
     titulo: p.title || 'Sin título',
     slug: p.slug || '',
     precio: p.price || 0,
-    tipo_operacion: (p.operation_type === 'venta' ? 'venta' : 'alquiler') as 'venta' | 'alquiler',
+    tipo_operacion: (p.operation_type === 'venta' ? 'venta' : 'alquiler') as ('venta' | 'alquiler'),
     ciudad: p.city || 'Ciudad no especificada',
     estado: p.state || 'Estado no especificado',
     imagen_destacada_url: p.images?.[0] || null,
     habitaciones: p.bedrooms || 0,
     banos: p.bathrooms || 0,
     area: p.area_total || 0
-  })) || []
+  }))
   
   return (
     <div className="container mx-auto px-4 py-8">
