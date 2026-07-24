@@ -89,23 +89,35 @@ function getPlaceholderImage(titulo: string) {
 
 async function getDestacados(limit = 8) {
   try {
-    const { getFeaturedProperties } = await import('@/lib/properties')
-    console.log('[DEBUG] Llamando a getFeaturedProperties con limit:', limit)
-    const properties = await getFeaturedProperties(limit)
-    console.log('[DEBUG] Resultados de destacados:', properties.length)
-    return properties.map(p => ({
+    const { createClient } = await import('@supabase/supabase-js')
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+    
+    const { data, error } = await supabase
+      .from('productos')
+      .select('*')
+      .eq('activo', true)
+      .neq('main_image_url', null)
+      .order('created_at', { ascending: false })
+      .limit(limit)
+    
+    if (error) throw error
+    
+    return (data || []).map(p => ({
       id: p.id,
-      titulo: p.title,
-      precio_usd: p.price,
-      estado: p.state_id,
-      imagen_url: p.images?.[0] || null,
-      ubicacion_ciudad: p.city_id,
-      creado_en: p.created_at,
-      tipo_propiedad: p.property_type,
-      operacion_tipo: p.operation_type === 'venta' ? 'Venta' : 'Alquiler',
-      bedrooms: p.bedrooms,
-      bathrooms: p.bathrooms,
-      area_total: p.area_total
+      titulo: p.titulo,
+      precio_usd: p.price || 0,
+      estado: p.state || p.estado,
+      imagen_url: p.main_image_url || p.imagen_url,
+      ubicacion_ciudad: p.city || p.ciudad,
+      creado_en: p.created_at || p.creado_en,
+      tipo_propiedad: p.tipo_propiedad || 'Inmueble',
+      operacion_tipo: p.operation_type === 'venta' ? 'Venta' : (p.operation_type === 'alquiler' ? 'Alquiler' : (p.operacion_tipo === 'Venta' ? 'Venta' : 'Alquiler')),
+      bedrooms: p.bedrooms || p.habitaciones,
+      bathrooms: p.bathrooms || p.banos,
+      area_total: p.area_size || p.area
     }))
   } catch (err) {
     console.error('[ERROR] getDestacados falló:', err)
@@ -115,26 +127,34 @@ async function getDestacados(limit = 8) {
 
 async function getTrending(limit = 8) {
   try {
-    const { getProperties } = await import('@/lib/properties')
-    console.log('[DEBUG] Llamando a getProperties para trending con limit:', limit)
-    const { data } = await getProperties({ 
-      limit, 
-      sort_by: 'newest' 
-    })
-    console.log('[DEBUG] Resultados de trending:', data.length)
-    return data.map(p => ({
+    const { createClient } = await import('@supabase/supabase-js')
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+    
+    const { data, error } = await supabase
+      .from('productos')
+      .select('*')
+      .eq('activo', true)
+      .order('visitas', { ascending: false })
+      .limit(limit)
+    
+    if (error) throw error
+    
+    return (data || []).map(p => ({
       id: p.id,
-      titulo: p.title,
-      precio_usd: p.price,
-      imagen_url: p.images?.[0] || null,
-      ubicacion_ciudad: p.city_id,
-      visitas: p.views_count || 0,
-      creado_en: p.created_at,
-      tipo_propiedad: p.property_type,
-      operacion_tipo: p.operation_type === 'venta' ? 'Venta' : 'Alquiler',
-      bedrooms: p.bedrooms,
-      bathrooms: p.bathrooms,
-      area_total: p.area_total
+      titulo: p.titulo,
+      precio_usd: p.price || 0,
+      imagen_url: p.main_image_url || p.imagen_url,
+      ubicacion_ciudad: p.city || p.ciudad,
+      visitas: p.visitas || 0,
+      creado_en: p.created_at || p.creado_en,
+      tipo_propiedad: p.tipo_propiedad || 'Inmueble',
+      operacion_tipo: p.operation_type === 'venta' ? 'Venta' : (p.operation_type === 'alquiler' ? 'Alquiler' : (p.operacion_tipo === 'Venta' ? 'Venta' : 'Alquiler')),
+      bedrooms: p.bedrooms || p.habitaciones,
+      bathrooms: p.bathrooms || p.banos,
+      area_total: p.area_size || p.area
     }))
   } catch (err) {
     console.error('[ERROR] getTrending falló:', err)
@@ -144,29 +164,37 @@ async function getTrending(limit = 8) {
 
 async function getRecentProducts(limit = 8) {
   try {
-    const { getProperties } = await import('@/lib/properties')
-    console.log('[DEBUG] Llamando a getProperties para recientes con limit:', limit)
-    const { data } = await getProperties({ 
-      limit, 
-      sort_by: 'newest' 
-    })
-    console.log('[DEBUG] Resultados de recientes:', data.length)
-    return data.map(p => ({
+    const { createClient } = await import('@supabase/supabase-js')
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+    
+    const { data, error } = await supabase
+      .from('productos')
+      .select('*')
+      .eq('activo', true)
+      .order('created_at', { ascending: false })
+      .limit(limit)
+    
+    if (error) throw error
+    
+    return (data || []).map(p => ({
       id: p.id,
-      titulo: p.title,
-      precio_usd: p.price,
-      estado: p.status,
-      imagen_url: p.images?.[0] || null,
-      ubicacion_ciudad: p.city_id,
-      creado_en: p.created_at,
-      boosteado_en: p.featured ? p.created_at : null,
-      destacado: p.featured || false,
-      destacado_hasta: p.featured ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() : null,
-      tipo_propiedad: p.property_type,
-      operacion_tipo: p.operation_type === 'venta' ? 'Venta' : 'Alquiler',
-      bedrooms: p.bedrooms,
-      bathrooms: p.bathrooms,
-      area_total: p.area_total
+      titulo: p.titulo,
+      precio_usd: p.price || 0,
+      estado: p.state || p.estado,
+      imagen_url: p.main_image_url || p.imagen_url,
+      ubicacion_ciudad: p.city || p.ciudad,
+      creado_en: p.created_at || p.creado_en,
+      boosteado_en: p.destacado ? p.created_at : null,
+      destacado: p.destacado || false,
+      destacado_hasta: p.destacado_hasta,
+      tipo_propiedad: p.tipo_propiedad || 'Inmueble',
+      operacion_tipo: p.operation_type === 'venta' ? 'Venta' : (p.operation_type === 'alquiler' ? 'Alquiler' : (p.operacion_tipo === 'Venta' ? 'Venta' : 'Alquiler')),
+      bedrooms: p.bedrooms || p.habitaciones,
+      bathrooms: p.bathrooms || p.banos,
+      area_total: p.area_size || p.area
     }))
   } catch (err) {
     console.error('[ERROR] getRecentProducts falló:', err)
