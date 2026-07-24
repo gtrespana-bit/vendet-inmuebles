@@ -45,7 +45,7 @@ export default async function VentasPage({ params, searchParams }: PageProps) {
     titulo: p.title || 'Sin título',
     slug: p.slug || '',
     precio: p.price || 0,
-    tipo_operacion: p.operation_type === 'venta' ? 'venta' : 'alquiler',
+    tipo_operacion: (p.operation_type === 'venta' ? 'venta' : 'alquiler') as 'venta' | 'alquiler',
     ciudad: p.city || 'Ciudad no especificada',
     estado: p.state || 'Estado no especificado',
     imagen_destacada_url: p.images?.[0] || null,
