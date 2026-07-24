@@ -286,6 +286,8 @@
     "priceUsd": "Precio (USD)",
     "min": "Min",
     "max": "Max",
+    "minPrice": "Precio mínimo",
+    "maxPrice": "Precio máximo",
     "location": "Ubicación",
     "state": "Estado",
     "allVenezuela": "Toda Venezuela",
