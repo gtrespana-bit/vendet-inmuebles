@@ -5,7 +5,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
     const {
-      tipoOperacion,
+      tipo_operacion,
       titulo,
       descripcion,
       precio,
@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
         area: area ? parseInt(area) : null,
         imagenes: imagenes || [],
         categoria: 'inmuebles',
-        tipo_operacion: tipoOperacion || 'venta',
+        tipo_operacion: tipo_operacion || 'venta',
         activo: true,
       })
       .select()
