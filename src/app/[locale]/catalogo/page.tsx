@@ -49,7 +49,7 @@ async function getInitialProducts() {
     }).map((p: any) => ({
       ...p,
       // Normalizar datos: usar columnas nuevas si existen, sino las antiguas
-      price: p.price ?? p.precio_usd ?? 0,
+      price: p.price ?? 0,
       main_image_url: p.main_image_url ?? p.imagen_url ?? p.imagenes_urls?.[0] ?? null,
       city: p.city ?? p.ubicacion_ciudad ?? 'Ubicación no especificada',
       state: p.state ?? p.ubicacion_estado ?? 'Estado no especificado',
