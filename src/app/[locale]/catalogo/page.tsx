@@ -20,13 +20,14 @@ export const metadata: Metadata = {
 async function getInitialProducts() {
   try {
     // Optimización: Seleccionar solo columnas necesarias para la vista de catálogo
+    // Usamos COALESCE en la consulta para soportar columnas antiguas y nuevas
     const { data, count, error } = await supabase
       .from('productos')
-      .select('id, titulo, precio_usd, precio_bs, estado, imagen_url, imagenes_urls, ubicacion_ciudad, ubicacion_estado, ubicacion_detalles, creado_en, subcategoria, boosteado_en, destacado, destacado_hasta, tipo_propiedad, operacion_tipo, caracteristicas, descripcion', { count: 'exact' })
+      .select('id, titulo, price, precio_usd, main_image_url, imagen_url, imagenes_urls, city, ubicacion_ciudad, state, ubicacion_estado, creado_en, tipo_propiedad, operation_type, operacion_tipo, caracteristicas, descripcion, boosteado_en, destacado, destacado_hasta', { count: 'exact' })
       .eq('activo', true)
       .eq('estado_moderacion', 'aprobado')
       .order('creado_en', { ascending: false })
-      .limit(24) // Reducir de 48 a 12 para mejor rendimiento inicial
+      .limit(24)
 
     if (error || !data) return { products: [], count: 0 }
 
@@ -47,6 +48,13 @@ async function getInitialProducts() {
       return b.creado_en.localeCompare(a.creado_en)
     }).map((p: any) => ({
       ...p,
+      // Normalizar datos: usar columnas nuevas si existen, sino las antiguas
+      price: p.price ?? p.precio_usd ?? 0,
+      main_image_url: p.main_image_url ?? p.imagen_url ?? p.imagenes_urls?.[0] ?? null,
+      city: p.city ?? p.ubicacion_ciudad ?? 'Ubicación no especificada',
+      state: p.state ?? p.ubicacion_estado ?? 'Estado no especificado',
+      operation_type: p.operation_type ?? p.operacion_tipo ?? 'venta',
+      property_type: p.tipo_propiedad ?? 'inmueble',
       // Pre-computar flags para evitar hydration mismatch en cliente
       _isFeatured: !!(p.destacado && p.destacado_hasta && p.destacado_hasta > now),
     }))
