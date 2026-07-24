@@ -55,27 +55,36 @@ export const useProductLoader = (
           `id,
            titulo,
            descripcion,
+           price,
            precio_usd,
-           precio_bs,
+           state,
            estado,
+           city,
+           ubicacion_ciudad,
+           main_image_url,
+           imagen_url,
+           imagenes_urls,
+           images,
+           operation_type,
+           operacion_tipo,
+           bedrooms,
+           habitaciones,
+           bathrooms,
+           banos,
+           area_size,
+           area,
            categoria_id,
            subcategoria,
            marca,
-           ubicacion_estado,
-           ubicacion_ciudad,
-           ubicacion_detalles,
            activo,
            visitas,
            creado_en,
-           imagen_url,
-           imagenes_urls,
            destacado,
            destacado_hasta,
            boosteado_en,
            estado_moderacion,
            caracteristicas,
-           tipo_propiedad,
-           operacion_tipo`,
+           tipo_propiedad`,
           { count: 'exact' }
         )
         .eq('activo', true)
@@ -83,10 +92,9 @@ export const useProductLoader = (
 
       // Filtro por tipo de operación (Venta / Alquiler)
       if (activeFilters.operacionTipo) {
-        const op =
-          activeFilters.operacionTipo.charAt(0).toUpperCase() +
-          activeFilters.operacionTipo.slice(1).toLowerCase();
-        query = query.eq('operacion_tipo', op);
+        const op = activeFilters.operacionTipo.toLowerCase();
+        // Intentar con nueva columna primero, fallback a antigua
+        query = query.or(`operation_type.eq.${op},operacion_tipo.ilike.%${op}%`);
       }
 
       // Filtro por tipo de propiedad
