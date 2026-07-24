@@ -42,16 +42,16 @@ export default async function VentasPage({ params, searchParams }: PageProps) {
   // Transformar datos para PropertyCard
   const propiedades = (propiedadesData ?? []).map(p => ({
     id: p.id,
-    titulo: p.titulo || p.title || 'Sin título',
+    title: p.title || 'Sin título',
     slug: p.slug || '',
-    precio: p.price ?? p.precio_usd ?? 0,
-    tipo_operacion: (p.operation_type ?? p.operacion_tipo ?? 'venta') as ('venta' | 'alquiler'),
-    ciudad: p.city ?? p.ubicacion_ciudad ?? 'Ciudad no especificada',
-    estado: p.state ?? p.ubicacion_estado ?? 'Estado no especificado',
-    imagen_destacada_url: p.main_image_url ?? p.imagen_url ?? p.imagenes_urls?.[0] ?? null,
-    habitaciones: p.bedrooms ?? (p.caracteristicas as any)?.habitaciones ?? 0,
-    banos: p.bathrooms ?? (p.caracteristicas as any)?.banos ?? 0,
-    area: p.area_size ?? p.area_total ?? (p.caracteristicas as any)?.area_m2 ?? 0
+    price: p.price ?? p.precio_usd ?? 0,
+    operation_type: (p.operation_type ?? p.operacion_tipo ?? 'venta') as ('venta' | 'alquiler'),
+    city: p.city ?? p.ubicacion_ciudad ?? 'Ciudad no especificada',
+    state: p.state ?? p.ubicacion_estado ?? 'Estado no especificado',
+    main_image_url: p.main_image_url ?? p.imagen_url ?? p.imagenes_urls?.[0] ?? null,
+    bedrooms: p.bedrooms ?? (p.caracteristicas as any)?.habitaciones ?? 0,
+    bathrooms: p.bathrooms ?? (p.caracteristicas as any)?.banos ?? 0,
+    area_size: p.area_size ?? p.area_total ?? (p.caracteristicas as any)?.area_m2 ?? 0
   }))
   
   return (
