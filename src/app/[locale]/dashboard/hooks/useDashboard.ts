@@ -55,7 +55,7 @@ export function useDashboard() {
       supabase.from('vw_propiedades_publicas').select('id, titulo, price, estado, categoria, city, state, activo, visitas, creado_en, main_image_url, operation_type, destacado, destacado_hasta, boosteado_en, estado_moderacion').eq('user_id', user.id).order('creado_en', { ascending: false }).then(({ data }: { data: any[] | null }) => setProductos(data || [])),
 
       supabase.from('vw_propiedades_publicas').select('visitas').eq('user_id', user.id).then(({ data }: { data: any[] | null }) => setVisitasTotales(data?.reduce((sum: number, p: { visitas: number | null }) => sum + (p.visitas || 0), 0) || 0)),
-      supabase.from('favoritos').select('producto_id, creado_en, productos!inner(id, titulo, price, precio_usd, main_image_url, imagen_url, activo, user_id, city, ubicacion_ciudad)').eq('user_id', user.id).order('creado_en', { ascending: false }).then(({ data }: { data: any[] | null }) => {
+      supabase.from('favoritos').select('producto_id, creado_en, vw_propiedades_publicas!inner(id, titulo, price, main_image_url, activo, user_id, city, state)').eq('user_id', user.id).order('creado_en', { ascending: false }).then(({ data }: { data: any[] | null }) => {
         setFavoritos(data || [])
         setFavoritosCount(data?.length || 0)
       }),
@@ -75,11 +75,11 @@ export function useDashboard() {
         }
       }),
       supabase.from('vw_propiedades_publicas').select('*', { count: 'exact' }).eq('user_id', user.id).eq('activo', true).then(({ count }: { count: number | null }) => setPubCount(count || 0)),
-      supabase.from('resenas').select('id, puntuacion, comentario, producto_id, creado_en, productos(titulo)').eq('vendedor_id', user.id).order('creado_en', { ascending: false }).then(({ data }: { data: any[] | null }) => {
+      supabase.from('resenas').select('id, puntuacion, comentario, producto_id, creado_en, vw_propiedades_publicas(titulo)').eq('vendedor_id', user.id).order('creado_en', { ascending: false }).then(({ data }: { data: any[] | null }) => {
         // Flatten the joined data for backwards compatibility
         const flattenedResenas = (data || []).map((r: any) => ({
           ...r,
-          producto_titulo: r.productos?.titulo || 'Producto eliminado',
+          producto_titulo: r.vw_propiedades_publicas?.titulo || 'Producto eliminado',
         }))
         setResenas(flattenedResenas)
         if (data && data.length > 0) {
