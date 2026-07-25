@@ -9,9 +9,9 @@ interface Producto {
   titulo: string;
   precio_usd: number;
   estado: string;
-  imagen_url: string | null;
-  ubicacion_ciudad: string | null;
-  ubicacion_estado: string | null;
+  main_image_url: string | null;
+  ciudad: string | null;
+  estado: string | null;
   creado_en: string;
   subcategoria: string | null;
   boosteado_en: string | null;
@@ -27,7 +27,7 @@ interface ProductCardLazyProps {
   priority?: boolean;
 }
 
-const PLACEHOLDER_IMAGE = '/placeholder-product.webp';
+const PLACEHOLDER_IMAGE = '/sinimagen.webp';
 
 const BLUR_DATA_URL = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAADAAQDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k='
 
@@ -43,7 +43,7 @@ export const ProductCardLazy = ({ p, t, priority = false }: ProductCardLazyProps
     : !!(p.destacado && p.destacado_hasta && new Date(p.destacado_hasta) > new Date());
   const isPromoted = isBoosted || isFeatured;
 
-  const imgUrl = p.imagen_url || PLACEHOLDER_IMAGE;
+  const imgUrl = p.main_image_url || PLACEHOLDER_IMAGE;
 
   return (
     <LocalLink 
@@ -90,7 +90,7 @@ export const ProductCardLazy = ({ p, t, priority = false }: ProductCardLazyProps
             {t('product.verified')}
           </div>
         )}
-        <p className="text-xs text-gray-500 mt-1">{p.ubicacion_ciudad || p.ubicacion_estado || 'Venezuela'}</p>
+        <p className="text-xs text-gray-500 mt-1">{p.ciudad || p.estado || 'Venezuela'}</p>
       </div>
     </LocalLink>
   );

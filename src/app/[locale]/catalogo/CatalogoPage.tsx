@@ -23,9 +23,9 @@ type Producto = {
   titulo: string
   precio_usd: number
   estado: string
-  imagen_url: string | null
-  ubicacion_ciudad: string | null
-  ubicacion_estado: string | null
+  main_image_url: string | null
+  ciudad: string | null
+  estado: string | null
   creado_en: string
   subcategoria: string | null
   destacado: boolean
@@ -37,14 +37,12 @@ interface CatalogoPageProps {
   initialCount?: number
 }
 
-const PLACEHOLDER_IMAGES = [
-  '/placeholder-product.webp',
-]
+const PLACEHOLDER_IMAGE = '/sinimagen.webp'
 
 const BLUR_DATA_URL = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAADAAQDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k='
 
 function getPlaceholderImage(titulo: string) {
-  return PLACEHOLDER_IMAGES[Math.abs(titulo.charCodeAt(0)) % PLACEHOLDER_IMAGES.length]
+  return PLACEHOLDER_IMAGE
 }
 
 function ProductCardSkeleton() {
@@ -61,7 +59,7 @@ function ProductCardSkeleton() {
 }
 
 const ProductCard = memo(({ p, priority = false, t }: { p: Producto; priority?: boolean; t: (key: string) => string }) => {
-  const imgUrl = p.imagen_url || getPlaceholderImage(p.titulo)
+  const imgUrl = p.main_image_url || PLACEHOLDER_IMAGE
 
   return (
     <LocalLink href={`/inmueble/${p.id}`} className="bg-white rounded-xl overflow-hidden transition-all duration-200 group block border border-gray-100 shadow-sm hover:shadow-lg hover:-translate-y-1 hover:border-gray-200">
@@ -80,10 +78,9 @@ const ProductCard = memo(({ p, priority = false, t }: { p: Producto; priority?: 
           blurDataURL={BLUR_DATA_URL}
           fetchPriority={priority ? 'high' : 'low'} // Cambiar a 'low' para no prioritarios
           onError={(e) => {
-            // ✅ CORREGIDO: Previene loop infinito
             const target = e.target as HTMLImageElement
-            if (!target.src.includes('/placeholder-product.webp')) {
-              target.src = '/placeholder-product.webp'
+            if (!target.src.includes(PLACEHOLDER_IMAGE)) {
+              target.src = PLACEHOLDER_IMAGE
             }
           }}
         />
@@ -97,7 +94,7 @@ const ProductCard = memo(({ p, priority = false, t }: { p: Producto; priority?: 
             {t('product.verified')}
           </div>
         )}
-        <p className="text-xs text-gray-500 mt-1">{p.ubicacion_ciudad || p.ubicacion_estado || 'Venezuela'}</p>
+        <p className="text-xs text-gray-500 mt-1">{p.ciudad || p.estado || 'Venezuela'}</p>
       </div>
     </LocalLink>
   )

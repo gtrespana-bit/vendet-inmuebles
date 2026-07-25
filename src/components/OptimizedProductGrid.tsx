@@ -8,9 +8,9 @@ interface Producto {
   titulo: string;
   precio_usd: number;
   estado: string;
-  imagen_url: string | null;
-  ubicacion_ciudad: string | null;
-  ubicacion_estado: string | null;
+  main_image_url: string | null;
+  ciudad: string | null;
+  estado: string | null;
   creado_en: string;
   subcategoria: string | null;
   boosteado_en: string | null;
