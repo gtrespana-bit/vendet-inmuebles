@@ -268,12 +268,6 @@ export default async function PropertyDetailPage({ params }: PageProps) {
                       <CheckCircle size={18} className="text-blue-500" />
                     )}
                   </div>
-                  {perfil?.nivel_confianza !== null && (
-                    <div className="flex items-center gap-1 text-sm text-gray-600">
-                      <span>Nivel de confianza:</span>
-                      <span className="font-bold text-yellow-600">{perfil.nivel_confianza}/100</span>
-                    </div>
-                  )}
                 </div>
               </div>
 
