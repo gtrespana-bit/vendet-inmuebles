@@ -2,7 +2,13 @@ import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { createServerClient } from '@/lib/supabase-server';
 import Image from 'next/image';
-import { MapPin, Home, Bath, Bed, Square, Phone, MessageCircle, CheckCircle, Mail, Building, Calendar, Eye, User } from 'lucide-react';
+import { 
+  MapPin, Home, Bath, Bed, Square, Phone, MessageCircle, 
+  CheckCircle, Mail, Building, Calendar, Eye, User, 
+  Ruler, Key, DollarSign, TrendingUp, Shield, Award,
+  ChevronLeft, Share2, Heart, ExternalLink
+} from 'lucide-react';
+import Link from 'next/link';
 
 interface PageProps {
   params: Promise<{ id: string; locale: string }>;
@@ -50,21 +56,25 @@ export default async function PropertyDetailPage({ params }: PageProps) {
     minimumFractionDigits: 0,
   });
 
-  // Construir array de imágenes
+  // Construir array de imágenes - CORREGIDO para manejar ambos formatos
   let imagenes: string[] = [];
   
-  if (propiedad.main_image_url) {
+  // Intentar obtener de imagenes_urls (array)
+  if (propiedad.imagenes_urls && Array.isArray(propiedad.imagenes_urls)) {
+    imagenes = propiedad.imagenes_urls.filter((url: string) => url !== null && url !== undefined);
+  }
+  
+  // Si no hay imágenes en imagenes_urls, intentar con imagenes (JSON array)
+  if (imagenes.length === 0 && propiedad.imagenes && Array.isArray(propiedad.imagenes)) {
+    imagenes = propiedad.imagenes.filter((url: string) => url !== null && url !== undefined);
+  }
+  
+  // Si todavía no hay imágenes, usar main_image_url como fallback
+  if (imagenes.length === 0 && propiedad.main_image_url) {
     imagenes.push(propiedad.main_image_url);
   }
 
-  if (propiedad.imagenes && Array.isArray(propiedad.imagenes)) {
-    propiedad.imagenes.forEach((url: string) => {
-      if (url && !imagenes.includes(url)) {
-        imagenes.push(url);
-      }
-    });
-  }
-
+  // Imagen de fallback si no hay ninguna imagen
   if (imagenes.length === 0) {
     imagenes = ['/sinimagen.webp'];
   }
@@ -76,6 +86,10 @@ export default async function PropertyDetailPage({ params }: PageProps) {
     propiedad.estado
   ].filter(Boolean);
   const ubicacionCorta = ubicacionParts.join(', ');
+  
+  // Verificar si el propietario está verificado
+  const esVerificado = propiedad.propietario_verificado === true || propiedad.nivel_confianza > 50;
+  const esEmpresa = propiedad.propietario_tipo === 'empresa';
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
