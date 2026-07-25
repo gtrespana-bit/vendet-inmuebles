@@ -28,9 +28,7 @@ type Producto = {
   ubicacion_estado: string | null
   creado_en: string
   subcategoria: string | null
-  boosteado_en: string | null
   destacado: boolean
-  destacado_hasta: string | null
   vendedor_verificado: boolean | null
 }
 
@@ -63,29 +61,11 @@ function ProductCardSkeleton() {
 }
 
 const ProductCard = memo(({ p, priority = false, t }: { p: Producto; priority?: boolean; t: (key: string) => string }) => {
-  const isBoosted = p.boosteado_en != null
-  // Usar flag pre-computado del servidor para evitar hydration mismatch
-  // Si no existe (datos frescos del cliente), calcular en el cliente
-  const isFeatured = (p as any)._isFeatured !== undefined
-    ? (p as any)._isFeatured
-    : !!(p.destacado && p.destacado_hasta && new Date(p.destacado_hasta) > new Date())
-  const isPromoted = isBoosted || isFeatured
-
   const imgUrl = p.imagen_url || getPlaceholderImage(p.titulo)
 
   return (
-    <LocalLink href={`/inmueble/${p.id}`} className={`bg-white rounded-xl overflow-hidden transition-all duration-200 group block border ${isPromoted ? 'border-2 border-brand-accent shadow-md hover:shadow-xl hover:-translate-y-1' : 'border-gray-100 shadow-sm hover:shadow-lg hover:-translate-y-1 hover:border-gray-200'}`}>
+    <LocalLink href={`/inmueble/${p.id}`} className="bg-white rounded-xl overflow-hidden transition-all duration-200 group block border border-gray-100 shadow-sm hover:shadow-lg hover:-translate-y-1 hover:border-gray-200">
       <div className="aspect-square bg-gray-100 relative overflow-hidden">
-        {isFeatured && (
-          <div className="absolute top-2 left-2 z-10 bg-brand-accent text-brand-primary text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
-            ⭐ {t('product.featured')}
-          </div>
-        )}
-        {isBoosted && !isFeatured && (
-          <div className="absolute top-2 left-2 z-10 bg-green-700 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
-            ⚡ <span className="text-white">Boost</span>
-          </div>
-        )}
         <Image
           src={imgUrl}
           alt={p.titulo}

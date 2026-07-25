@@ -20,37 +20,24 @@ export const metadata: Metadata = {
 async function getInitialProducts() {
   try {
     // Optimización: Seleccionar solo columnas necesarias para la vista de catálogo
-    // Usamos COALESCE en la consulta para soportar columnas antiguas y nuevas
     const { data, count, error } = await supabase
       .from('vw_propiedades_publicas')
-      .select('id, titulo, precio, main_image_url, ciudad, estado, creado_en, tipo_nombre, operacion_nombre, caracteristicas, descripcion, destacado, destacado_hasta', { count: 'exact' })
+      .select('id, titulo, precio, main_image_url, ciudad, estado, creado_en, tipo_nombre, operacion_nombre, caracteristicas, descripcion, destacado', { count: 'exact' })
       .eq('activo', true)
       .order('creado_en', { ascending: false })
       .limit(24)
 
     if (error || !data) return { products: [], count: 0 }
 
-    // Mismo ordenamiento que el cliente: destacado vigente > fecha
-    // Pre-computamos flags de estado para evitar hydration mismatch
-    const now = new Date().toISOString()
-    const sorted = data.sort((a: any, b: any) => {
-      const aDest = a.destacado && a.destacado_hasta && a.destacado_hasta > now
-      const bDest = b.destacado && b.destacado_hasta && b.destacado_hasta > now
-      if (aDest && !bDest) return -1
-      if (!aDest && bDest) return 1
-      if (aDest && bDest) return b.destacado_hasta.localeCompare(a.destacado_hasta)
-      return b.creado_en.localeCompare(a.creado_en)
-    }).map((p: any) => ({
+    // Ordenamiento simple por fecha
+    const sorted = data.sort((a, b) => new Date(b.creado_en).getTime() - new Date(a.creado_en).getTime()).map((p: any) => ({
       ...p,
-      // Normalizar datos: usar columnas nuevas si existen, sino las antiguas
       price: p.precio ?? 0,
       main_image_url: p.main_image_url ?? null,
       city: p.ciudad ?? 'Ubicación no especificada',
       state: p.estado ?? 'Estado no especificado',
       operation_type: p.operacion_nombre ?? 'venta',
       property_type: p.tipo_nombre ?? 'inmueble',
-      // Pre-computar flags para evitar hydration mismatch en cliente
-      _isFeatured: !!(p.destacado && p.destacado_hasta && p.destacado_hasta > now),
     }))
 
     return { products: sorted, count: count ?? 0 }
