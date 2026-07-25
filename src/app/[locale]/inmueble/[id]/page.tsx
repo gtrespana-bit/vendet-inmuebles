@@ -71,22 +71,32 @@ export default async function PropertyDetailPage({ params }: PageProps) {
     minimumFractionDigits: 0,
   });
 
-  // Las imágenes vienen como array JSON en la columna 'imagenes'
-  const imagenes = Array.isArray(propiedad.imagenes) ? propiedad.imagenes : [];
+  // Las imágenes vienen como array JSON en la columna 'imagenes' o usamos main_image_url
+  const imagenes = Array.isArray(propiedad.imagenes) ? propiedad.imagenes : 
+                   (propiedad.main_image_url ? [propiedad.main_image_url] : []);
   
-  // Características directas de la vista
+  // Características completas de la vista
   const caracteristicas = {
     habitaciones: propiedad.habitaciones,
     banos: propiedad.banos,
-    area_m2: propiedad.area_total,
+    area_total: propiedad.area_total,
+    area_construida: propiedad.area_construida,
+    puestos_estacionamiento: propiedad.puestos_estacionamiento,
+    piso: propiedad.piso,
+    condicion: propiedad.condicion,
+    antiguedad_anios: propiedad.antiguedad_anios,
+    municipio: propiedad.municipio,
+    zona: propiedad.zona,
   };
   
-  // Datos del propietario (ya vienen en la vista)
+  // Datos completos del propietario
   const perfil = {
     nombre: propiedad.propietario_nombre,
     telefono: propiedad.propietario_telefono,
+    email: propiedad.propietario_email,
     verificado: propiedad.propietario_verificado,
-    nivel_confianza: null, // No disponible en la vista actual
+    tipo: propiedad.propietario_tipo,
+    empresa: propiedad.propietario_empresa,
     foto_perfil_url: propiedad.propietario_foto,
   };
   
@@ -117,13 +127,18 @@ export default async function PropertyDetailPage({ params }: PageProps) {
         
         <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
           <div className="container mx-auto">
-            <span className="inline-block px-3 py-1 bg-blue-600 rounded-full text-sm font-medium mb-2">
-              {operacion || 'Venta'}
-            </span>
-            <h1 className="text-3xl md:text-4xl font-bold mb-2">{propiedad.titulo}</h1>
+            <div className="flex flex-wrap items-center gap-3 mb-3">
+              <span className="inline-block px-4 py-1.5 bg-blue-600 rounded-full text-sm font-semibold">
+                {operacion || 'Venta'}
+              </span>
+              <span className="text-2xl md:text-3xl font-bold">
+                ${propiedad.precio?.toLocaleString()} {propiedad.moneda || 'USD'}
+              </span>
+            </div>
+            <h1 className="text-3xl md:text-4xl font-bold mb-3">{propiedad.titulo}</h1>
             <div className="flex items-center gap-2 text-lg">
               <MapPin size={20} />
-              <span>{propiedad.ciudad}, {propiedad.estado}</span>
+              <span>{[propiedad.direccion_exacta, propiedad.zona, propiedad.municipio, propiedad.ciudad, propiedad.estado].filter(Boolean).join(', ')}</span>
             </div>
           </div>
         </div>
