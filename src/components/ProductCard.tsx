@@ -8,26 +8,23 @@ export interface ProductCardData {
   id: string
   titulo: string
   precio_usd: number | null
-  imagen_url: string | null
-  ubicacion_ciudad: string | null
-  ubicacion_estado: string | null
-  estado: string
+  main_image_url: string | null
+  ciudad: string | null
+  estado: string | null
   boosteado_en: string | null
   destacado: boolean | null
   destacado_hasta: string | null
   vendedor_verificado: boolean | null
 }
 
-const PLACEHOLDER_IMAGES = [
-  '/placeholder-product.webp',
-]
+const PLACEHOLDER_IMAGE = '/sinimagen.webp'
 
 export default function ProductCard({ p, isPromoted, isFeatured, priority }: { p: ProductCardData; isPromoted?: boolean; isFeatured?: boolean; priority?: boolean }) {
   const { t } = useLocalizedMessages()
   const isBoosted = p.boosteado_en != null
   const promoted = isPromoted ?? (isBoosted || isFeatured)
-
-  const imgUrl = p.imagen_url || PLACEHOLDER_IMAGES[p.titulo.charCodeAt(0) % PLACEHOLDER_IMAGES.length]
+  
+  const imgUrl = p.main_image_url || PLACEHOLDER_IMAGE
 
   return (
     <LocalLink
@@ -85,7 +82,7 @@ export default function ProductCard({ p, isPromoted, isFeatured, priority }: { p
           </div>
         )}
         <p className="text-xs text-gray-500 mt-1 truncate">
-          {p.estado}{p.ubicacion_ciudad ? ` · ${p.ubicacion_ciudad}` : ''}
+          {p.estado}{p.ciudad ? ` · ${p.ciudad}` : ''}
         </p>
       </div>
     </LocalLink>
