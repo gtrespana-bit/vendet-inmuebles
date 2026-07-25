@@ -32,7 +32,6 @@ async function getProductos(ciudadNombre: string, categoriaSlug: string) {
     .eq('activo', true)
     .eq('ciudad', ciudadNombre)
     .eq('tipo_slug', categoriaSlug)
-    .or('estado_moderacion.is.null,estado_moderacion.eq.aprobado')
     .order('creado_en', { ascending: false })
     .limit(24)
   return data || []

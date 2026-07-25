@@ -18,7 +18,6 @@ async function getProductos(ciudad: string) {
       .select('id, titulo, precio, estado, main_image_url, ciudad, destacado, destacado_hasta', { count: 'exact' })
       .eq('activo', true)
       .eq('ciudad', ciudad)
-      .or('estado_moderacion.is.null,estado_moderacion.eq.aprobado')
       .order('creado_en', { ascending: false })
       .limit(24)
     
