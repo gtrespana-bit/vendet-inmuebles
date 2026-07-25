@@ -64,9 +64,22 @@ export default async function VentasPorCiudadPage({ params, searchParams }: Page
         <p className="text-gray-500">No hay propiedades disponibles en esta zona.</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {propiedades.map((propiedad: any) => (
-            <PropertyCard key={propiedad.id} {...propiedad} />
-          ))}
+          {propiedades.map((propiedad: any) => {
+            const transformed = {
+              id: propiedad.id,
+              title: propiedad.titulo || 'Sin título',
+              slug: propiedad.slug || '',
+              price: propiedad.precio_usd ?? 0,
+              operation_type: 'alquiler' as ('venta' | 'alquiler'),
+              city: propiedad.ubicacion_ciudad ?? 'Ciudad no especificada',
+              state: propiedad.ubicacion_estado ?? 'Estado no especificado',
+              main_image_url: propiedad.imagen_url ?? null,
+              bedrooms: propiedad.caracteristicas?.habitaciones ?? 0,
+              bathrooms: propiedad.caracteristicas?.banos ?? 0,
+              area_size: propiedad.caracteristicas?.area_m2 ?? 0
+            };
+            return <PropertyCard key={propiedad.id} property={transformed} locale={locale} />;
+          })}
         </div>
       )}
     </div>
