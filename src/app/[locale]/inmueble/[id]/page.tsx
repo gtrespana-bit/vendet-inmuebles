@@ -169,11 +169,11 @@ export default async function PropertyDetailPage({ params }: PageProps) {
                       <span className="font-medium">{caracteristicas.banos}</span>
                     </div>
                   )}
-                  {caracteristicas.area_m2 && (
+                  {caracteristicas.area_total && (
                     <div className="flex items-center gap-2 text-gray-700">
                       <CheckCircle size={16} className="text-green-500" />
-                      <span className="capitalize">Área m²:</span>
-                      <span className="font-medium">{caracteristicas.area_m2}</span>
+                      <span className="capitalize">Área Total:</span>
+                      <span className="font-medium">{caracteristicas.area_total} m²</span>
                     </div>
                   )}
                 </div>
@@ -201,10 +201,10 @@ export default async function PropertyDetailPage({ params }: PageProps) {
                       <span>{caracteristicas.banos} Baños</span>
                     </div>
                   )}
-                  {caracteristicas.area_m2 && (
+                  {caracteristicas.area_total && (
                     <div className="flex items-center gap-2 text-gray-600">
                       <Square size={20} className="text-blue-600" />
-                      <span>{caracteristicas.area_m2} m²</span>
+                      <span>{caracteristicas.area_total} m²</span>
                     </div>
                   )}
                 </div>
