@@ -22,9 +22,9 @@ type Producto = {
   id: string
   titulo: string
   precio_usd: number
-  estado: string
   main_image_url: string | null
   ciudad: string | null
+  estado: string | null
   creado_en: string
   subcategoria: string | null
   destacado: boolean
