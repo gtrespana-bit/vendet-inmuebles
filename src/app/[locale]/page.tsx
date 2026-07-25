@@ -96,10 +96,10 @@ async function getDestacados(limit = 8) {
     )
     
     const { data, error } = await supabase
-      .from('productos')
+      .from('vw_inmuebles_api')
       .select('*')
       .eq('activo', true)
-      .neq('main_image_url', null)
+      .eq('destacado', true)
       .order('creado_en', { ascending: false })
       .limit(limit)
     
@@ -108,16 +108,16 @@ async function getDestacados(limit = 8) {
     return (data || []).map(p => ({
       id: p.id,
       titulo: p.titulo,
-      precio_usd: p.price || p.precio_usd || 0,
-      estado: p.state_name || p.estado,
-      imagen_url: p.main_image_url || p.imagen_url,
-      ubicacion_ciudad: p.city_name || p.ciudad,
+      precio_usd: Number(p.precio) || 0,
+      estado: p.estado,
+      imagen_url: p.imagenes_json?.[0]?.url_imagen || null,
+      ubicacion_ciudad: p.ciudad,
       creado_en: p.creado_en,
-      tipo_propiedad: p.tipo_propiedad || 'Inmueble',
-      operacion_tipo: p.operation_type === 'venta' ? 'Venta' : (p.operation_type === 'alquiler' ? 'Alquiler' : (p.operacion_tipo === 'Venta' ? 'Venta' : 'Alquiler')),
-      bedrooms: p.bedrooms || p.habitaciones,
-      bathrooms: p.bathrooms || p.banos,
-      area_total: p.area_size || p.area
+      tipo_propiedad: p.tipo_slug || 'Inmueble',
+      operacion_tipo: p.operacion_slug === 'venta' ? 'Venta' : 'Alquiler',
+      bedrooms: p.habitaciones,
+      bathrooms: p.banos,
+      area_total: p.area_total
     }))
   } catch (err) {
     console.error('[ERROR] getDestacados falló:', err)
@@ -134,7 +134,7 @@ async function getTrending(limit = 8) {
     )
     
     const { data, error } = await supabase
-      .from('productos')
+      .from('vw_inmuebles_api')
       .select('*')
       .eq('activo', true)
       .order('visitas', { ascending: false })
@@ -145,16 +145,16 @@ async function getTrending(limit = 8) {
     return (data || []).map(p => ({
       id: p.id,
       titulo: p.titulo,
-      precio_usd: p.price || p.precio_usd || 0,
-      imagen_url: p.main_image_url || p.imagen_url,
-      ubicacion_ciudad: p.city_name || p.ciudad,
+      precio_usd: Number(p.precio) || 0,
+      imagen_url: p.imagenes_json?.[0]?.url_imagen || null,
+      ubicacion_ciudad: p.ciudad,
       visitas: p.visitas || 0,
       creado_en: p.creado_en,
-      tipo_propiedad: p.tipo_propiedad || 'Inmueble',
-      operacion_tipo: p.operation_type === 'venta' ? 'Venta' : (p.operation_type === 'alquiler' ? 'Alquiler' : (p.operacion_tipo === 'Venta' ? 'Venta' : 'Alquiler')),
-      bedrooms: p.bedrooms || p.habitaciones,
-      bathrooms: p.bathrooms || p.banos,
-      area_total: p.area_size || p.area
+      tipo_propiedad: p.tipo_slug || 'Inmueble',
+      operacion_tipo: p.operacion_slug === 'venta' ? 'Venta' : 'Alquiler',
+      bedrooms: p.habitaciones,
+      bathrooms: p.banos,
+      area_total: p.area_total
     }))
   } catch (err) {
     console.error('[ERROR] getTrending falló:', err)
@@ -171,7 +171,7 @@ async function getRecentProducts(limit = 8) {
     )
     
     const { data, error } = await supabase
-      .from('productos')
+      .from('vw_inmuebles_api')
       .select('*')
       .eq('activo', true)
       .order('creado_en', { ascending: false })
@@ -182,19 +182,19 @@ async function getRecentProducts(limit = 8) {
     return (data || []).map(p => ({
       id: p.id,
       titulo: p.titulo,
-      precio_usd: p.price || p.precio_usd || 0,
-      estado: p.state_name || p.estado,
-      imagen_url: p.main_image_url || p.imagen_url,
-      ubicacion_ciudad: p.city_name || p.ciudad,
+      precio_usd: Number(p.precio) || 0,
+      estado: p.estado,
+      imagen_url: p.imagenes_json?.[0]?.url_imagen || null,
+      ubicacion_ciudad: p.ciudad,
       creado_en: p.creado_en,
       boosteado_en: p.destacado ? p.creado_en : null,
       destacado: p.destacado || false,
-      destacado_hasta: p.destacado_hasta,
-      tipo_propiedad: p.tipo_propiedad || 'Inmueble',
-      operacion_tipo: p.operation_type === 'venta' ? 'Venta' : (p.operation_type === 'alquiler' ? 'Alquiler' : (p.operacion_tipo === 'Venta' ? 'Venta' : 'Alquiler')),
-      bedrooms: p.bedrooms || p.habitaciones,
-      bathrooms: p.bathrooms || p.banos,
-      area_total: p.area_size || p.area
+      destacado_hasta: null,
+      tipo_propiedad: p.tipo_slug || 'Inmueble',
+      operacion_tipo: p.operacion_slug === 'venta' ? 'Venta' : 'Alquiler',
+      bedrooms: p.habitaciones,
+      bathrooms: p.banos,
+      area_total: p.area_total
     }))
   } catch (err) {
     console.error('[ERROR] getRecentProducts falló:', err)
