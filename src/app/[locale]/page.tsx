@@ -120,7 +120,7 @@ async function getDestacados(limit = 8) {
       operacion_tipo: p.operacion_slug === 'venta' ? 'Venta' : 'Alquiler',
       bedrooms: p.habitaciones,
       bathrooms: p.banos,
-      area_size: p.area_total ? Number(p.area_total) : null
+      area_size: p.area_size ? Number(p.area_size) : null
     }))
   } catch (err) {
     console.error('[ERROR] getDestacados falló:', err)
@@ -160,7 +160,7 @@ async function getTrending(limit = 8) {
       operacion_tipo: p.operacion_slug === 'venta' ? 'Venta' : 'Alquiler',
       bedrooms: p.habitaciones,
       bathrooms: p.banos,
-      area_size: p.area_total ? Number(p.area_total) : null
+      area_size: p.area_size ? Number(p.area_size) : null
     }))
   } catch (err) {
     console.error('[ERROR] getTrending falló:', err)
@@ -200,7 +200,7 @@ async function getRecentProducts(limit = 8) {
       operacion_tipo: p.operacion_slug === 'venta' ? 'Venta' : 'Alquiler',
       bedrooms: p.habitaciones,
       bathrooms: p.banos,
-      area_size: p.area_total ? Number(p.area_total) : null
+      area_size: p.area_size ? Number(p.area_size) : null
     }))
   } catch (err) {
     console.error('[ERROR] getRecentProducts falló:', err)

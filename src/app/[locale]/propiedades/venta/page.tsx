@@ -51,7 +51,7 @@ export default async function VentasPage({ params, searchParams }: PageProps) {
     main_image_url: p.main_image_url ?? null,
     bedrooms: p.bedrooms ?? 0,
     bathrooms: p.bathrooms ?? 0,
-    area_size: p.area_total ?? 0
+    area_size: p.area_size ?? 0
   }))
   
   return (
