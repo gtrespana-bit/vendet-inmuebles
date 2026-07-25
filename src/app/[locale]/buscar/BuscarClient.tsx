@@ -158,30 +158,31 @@ export default function BuscarClient({ searchParams: searchParamsPromise }: { se
         .from('vw_propiedades_publicas')
         .select('*', { count: 'exact' })
         .eq('activo', true)
-        .or('estado_moderacion.is.null,estado_moderacion.eq.aprobado')
 
+      // Solo filtramos por query si existe, usando columns reales
       if (query) {
-        sq = sq.textSearch('search_vector', query, { config: 'spanish', type: 'plain' })
+        // Filtro simple por titulo o descripcion
+        sq = sq.or(`titulo.ilike.%${query}%,descripcion.ilike.%${query}%`)
       }
 
-      if (categoria) {
-        const { data: catRow } = await supabase.from('categorias').select('id').eq('nombre', categoria).single()
-        if (catRow) sq = sq.eq('categoria_id', catRow.id)
-      }
-
+      // Filtramos por tipo_slug (tipo de inmueble)
       if (tipo_slug) sq = sq.eq('tipo_slug', tipo_slug)
-      if (marca) sq = sq.eq('marca', marca)
-      if (condicion) sq = sq.eq('estado', condicion)
+      
+      // Filtramos por condicion
+      if (condicion) sq = sq.eq('condicion', condicion)
 
+      // Filtros de ubicación
       if (ubicacionCiudad) {
         sq = sq.eq('ciudad', ubicacionCiudad)
       } else if (ubicacionEstado) {
         sq = sq.eq('estado', ubicacionEstado)
       }
 
+      // Filtros de precio
       if (precioMin) sq = sq.gte('precio', parseFloat(precioMin))
       if (precioMax) sq = sq.lte('precio', parseFloat(precioMax))
 
+      // Ordenamiento
       if (orden === 'precio_asc') sq = sq.order('precio', { ascending: true })
       else if (orden === 'precio_desc') sq = sq.order('precio', { ascending: false })
       else sq = sq.order('creado_en', { ascending: false })
@@ -190,6 +191,7 @@ export default function BuscarClient({ searchParams: searchParamsPromise }: { se
       if (!cancelled) {
         if (!error) {
           let sorted = data as Producto[]
+          // Ordenamiento personalizado para destacados y boosteados
           if (orden !== 'precio_asc' && orden !== 'precio_desc') {
             const now = new Date().toISOString()
             sorted = sorted.sort((a: any, b: any) => {
@@ -219,7 +221,7 @@ export default function BuscarClient({ searchParams: searchParamsPromise }: { se
 
     buscar()
     return () => { cancelled = true }
-  }, [query, categoria, tipo_slug, marca, condicion, ubicacionEstado, ubicacionCiudad, precioMin, precioMax, orden])
+  }, [query, tipo_slug, condicion, ubicacionEstado, ubicacionCiudad, precioMin, precioMax, orden])
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
