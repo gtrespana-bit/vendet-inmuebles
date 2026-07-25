@@ -2,51 +2,49 @@
  * Funciones para manejar propiedades (inmuebles) desde Supabase
  * Uso exclusivo en Server Components
  * 
- * NOTA: Usa la tabla 'productos' que contiene los inmuebles reales
+ * NOTA: Usa la tabla 'inmuebles' que es la estructura correcta y profesional
  */
 
 import { createServerClient } from './supabase-server';
 import type { Property, PropertyFilter } from '@/types/property';
 
 /**
- * Mapear datos de la tabla 'productos' al tipo Property
+ * Mapear datos de la tabla 'inmuebles' al tipo Property
  */
-function mapProductoToProperty(producto: any): Property {
-  const caracteristicas = producto.caracteristicas || {};
-  
+function mapInmuebleToProperty(inmueble: any): Property {
   return {
-    id: producto.id,
-    slug: producto.id,
-    title: producto.titulo || '',
-    description: producto.descripcion || null,
-    operation_type: (producto.operacion_tipo as 'venta' | 'alquiler') || 'venta',
-    property_type: (producto.tipo_propiedad as Property['property_type']) || 'casa',
-    price: producto.precio_usd || 0,
-    currency: 'USD' as const,
-    state_id: producto.ubicacion_estado || '',
-    state_name: producto.ubicacion_estado || '',
-    city_id: producto.ubicacion_ciudad || '',
-    city_name: producto.ubicacion_ciudad || '',
-    municipality_id: null,
-    municipality_name: null,
-    address: producto.ubicacion_detalles || null,
-    latitude: null,
-    longitude: null,
-    area_total: caracteristicas.area_m2 || null,
-    area_construida: null,
-    bedrooms: caracteristicas.habitaciones || null,
-    bathrooms: caracteristicas.banos || null,
-    parking_spaces: caracteristicas.puesto_estacionamiento || null,
-    floors: null,
-    year_built: null,
-    status: producto.activo ? 'active' as const : 'inactive' as const,
-    featured: producto.destacado || false,
-    amenities: null,
-    main_image_url: producto.imagen_url || null,
-    images: producto.imagenes_urls || (producto.imagen_url ? [producto.imagen_url] : null),
+    id: inmueble.id,
+    slug: inmueble.slug || `inmueble-${inmueble.id}`,
+    title: inmueble.titulo || 'Sin título',
+    description: inmueble.descripcion || null,
+    operation_type: inmueble.operacion_slug === 'alquiler' ? 'alquiler' : 'venta',
+    property_type: inmueble.tipo_slug || 'casa',
+    price: Number(inmueble.precio) || 0,
+    currency: (inmueble.moneda as Property['currency']) || 'USD',
+    state_id: inmueble.estado || '',
+    state_name: inmueble.estado || '',
+    city_id: inmueble.ciudad || '',
+    city_name: inmueble.ciudad || '',
+    municipality_id: inmueble.municipio || null,
+    municipality_name: inmueble.municipio || null,
+    address: inmueble.direccion_exacta || null,
+    latitude: inmueble.latitud ? Number(inmueble.latitud) : null,
+    longitude: inmueble.longitud ? Number(inmueble.longitud) : null,
+    area_total: inmueble.area_total ? Number(inmueble.area_total) : null,
+    area_construida: inmueble.area_construida ? Number(inmueble.area_construida) : null,
+    bedrooms: inmueble.habitaciones || null,
+    bathrooms: inmueble.banos || null,
+    parking_spaces: inmueble.puestos_estacionamiento || null,
+    floors: inmueble.piso || null,
+    year_built: inmueble.antiguedad_anios ? new Date().getFullYear() - inmueble.antiguedad_anios : null,
+    status: inmueble.activo ? 'active' as const : 'inactive' as const,
+    featured: inmueble.destacado || false,
+    amenities: null, // Se pueden obtener de inmueble_caracteristicas si es necesario
+    main_image_url: inmueble.imagen_portada || null,
+    images: inmueble.imagenes_urls || (inmueble.imagen_portada ? [inmueble.imagen_portada] : null),
     video_url: null,
     virtual_tour_url: null,
-    owner_id: producto.user_id || '',
+    owner_id: inmueble.usuario_id || '',
     owner_name: null,
     owner_phone: null,
     owner_email: null,
@@ -54,11 +52,11 @@ function mapProductoToProperty(producto: any): Property {
     agency_logo_url: null,
     meta_title: null,
     meta_description: null,
-    created_at: producto.creado_en || new Date().toISOString(),
-    updated_at: producto.creado_en || new Date().toISOString(),
-    published_at: producto.creado_en || null,
+    created_at: inmueble.creado_en || new Date().toISOString(),
+    updated_at: inmueble.actualizado_en || new Date().toISOString(),
+    published_at: inmueble.publicado_en || null,
     last_activity: null,
-    views_count: producto.visitas || 0,
+    views_count: inmueble.visitas || 0,
     contacts_count: 0,
     favorites_count: 0,
   };
@@ -92,41 +90,41 @@ export async function getProperties(filters: PropertyFilter = {}): Promise<{
     sort_by = 'newest'
   } = filters;
 
-  // Construir query base - usando tabla 'productos'
+  // Construir query base - usando tabla 'inmuebles' con joins
   let query = supabase
-    .from('productos')
-    .select('*', { count: 'exact' })
+    .from('inmuebles')
+    .select(`
+      *,
+      operaciones(slug),
+      tipos_inmueble(slug),
+      inmueble_imagenes(url_imagen, es_portada, orden)
+    `, { count: 'exact' })
     .eq('activo', true);
 
   // Aplicar filtros
   if (operation_type) {
-    // Capitalizar para coincidir con valores en DB ('Venta', 'Alquiler')
-    const normalizedOp = operation_type.charAt(0).toUpperCase() + operation_type.slice(1);
-    query = query.eq('operacion_tipo', normalizedOp);
+    query = query.eq('operaciones.slug', operationType);
   }
   
   if (property_type && property_type.length > 0) {
-    query = query.in('tipo_propiedad', property_type);
+    query = query.in('tipos_inmueble.slug', property_type);
   }
   
   if (state_id) {
-    query = query.eq('ubicacion_estado', state_id);
+    query = query.eq('estado', state_id);
   }
   
   if (city_id) {
-    query = query.eq('ubicacion_ciudad', city_id);
+    query = query.eq('ciudad', city_id);
   }
   
   if (min_price !== undefined) {
-    query = query.gte('precio_usd', min_price);
+    query = query.gte('precio', min_price);
   }
   
   if (max_price !== undefined) {
-    query = query.lte('precio_usd', max_price);
+    query = query.lte('precio', max_price);
   }
-  
-  // Filtros por características (se aplican después porque están en JSONB)
-  // Se manejan en código después de obtener los datos
   
   if (featured_only) {
     query = query.eq('destacado', true);
@@ -138,10 +136,10 @@ export async function getProperties(filters: PropertyFilter = {}): Promise<{
       query = query.order('creado_en', { ascending: true });
       break;
     case 'price_asc':
-      query = query.order('precio_usd', { ascending: true });
+      query = query.order('precio', { ascending: true });
       break;
     case 'price_desc':
-      query = query.order('precio_usd', { ascending: false });
+      query = query.order('precio', { ascending: false });
       break;
     case 'featured':
       query = query.order('destacado', { ascending: false }).order('creado_en', { ascending: false });
@@ -165,28 +163,37 @@ export async function getProperties(filters: PropertyFilter = {}): Promise<{
   }
 
   // Filtrar por características si es necesario
-  let productos = data || [];
+  let inmuebles = data || [];
   
   if (min_bedrooms !== undefined) {
-    productos = productos.filter(p => 
-      (p.caracteristicas as any)?.habitaciones >= min_bedrooms
+    inmuebles = inmuebles.filter(p => 
+      (p.habitaciones || 0) >= min_bedrooms
     );
   }
   
   if (min_bathrooms !== undefined) {
-    productos = productos.filter(p => 
-      (p.caracteristicas as any)?.banos >= min_bathrooms
+    inmuebles = inmuebles.filter(p => 
+      (p.banos || 0) >= min_bathrooms
     );
   }
   
   if (min_area !== undefined) {
-    productos = productos.filter(p => 
-      (p.caracteristicas as any)?.area_m2 >= min_area
+    inmuebles = inmuebles.filter(p => 
+      (Number(p.area_total) || 0) >= min_area
     );
   }
 
+  // Procesar datos para extraer imagen portada y slugs
+  const processedData = inmuebles.map(item => ({
+    ...item,
+    operacion_slug: item.operaciones?.[0]?.slug || 'venta',
+    tipo_slug: item.tipos_inmueble?.[0]?.slug || 'casa',
+    imagen_portada: item.inmueble_imagenes?.find((img: any) => img.es_portada)?.url_imagen || 
+                    item.inmueble_imagenes?.[0]?.url_imagen || null,
+  }));
+
   return {
-    data: productos.map(mapProductoToProperty),
+    data: processedData.map(mapInmuebleToProperty),
     total: count || 0,
     page,
     hasMore: (count || 0) > from + limit
@@ -200,8 +207,13 @@ export async function getPropertyById(id: string): Promise<Property | null> {
   const supabase = createServerClient();
   
   const { data, error } = await supabase
-    .from('productos')
-    .select('*')
+    .from('inmuebles')
+    .select(`
+      *,
+      operaciones(slug),
+      tipos_inmueble(slug),
+      inmueble_imagenes(url_imagen, es_portada, orden)
+    `)
     .eq('id', id)
     .single();
 
@@ -213,7 +225,16 @@ export async function getPropertyById(id: string): Promise<Property | null> {
     throw new Error('Failed to fetch property');
   }
 
-  return mapProductoToProperty(data);
+  // Procesar datos para extraer imagen portada y slugs
+  const processedData = {
+    ...data,
+    operacion_slug: data.operaciones?.[0]?.slug || 'venta',
+    tipo_slug: data.tipos_inmueble?.[0]?.slug || 'casa',
+    imagen_portada: data.inmueble_imagenes?.find((img: any) => img.es_portada)?.url_imagen || 
+                    data.inmueble_imagenes?.[0]?.url_imagen || null,
+  };
+
+  return mapInmuebleToProperty(processedData);
 }
 
 /**
@@ -222,14 +243,16 @@ export async function getPropertyById(id: string): Promise<Property | null> {
 export async function getFeaturedProperties(limit: number = 6): Promise<Property[]> {
   const supabase = createServerClient();
   
-  const now = new Date().toISOString();
-  
   const { data, error } = await supabase
-    .from('productos')
-    .select('*')
+    .from('inmuebles')
+    .select(`
+      *,
+      operaciones(slug),
+      tipos_inmueble(slug),
+      inmueble_imagenes(url_imagen, es_portada, orden)
+    `)
     .eq('activo', true)
     .eq('destacado', true)
-    .or(`destacado_hasta.is.null,destacado_hasta.gt.${now}`)
     .order('creado_en', { ascending: false })
     .limit(limit);
 
@@ -238,7 +261,16 @@ export async function getFeaturedProperties(limit: number = 6): Promise<Property
     return [];
   }
 
-  return (data || []).map(mapProductoToProperty);
+  // Procesar datos para extraer imagen portada y slugs
+  const processedData = (data || []).map(item => ({
+    ...item,
+    operacion_slug: item.operaciones?.[0]?.slug || 'venta',
+    tipo_slug: item.tipos_inmueble?.[0]?.slug || 'casa',
+    imagen_portada: item.inmueble_imagenes?.find((img: any) => img.es_portada)?.url_imagen || 
+                    item.inmueble_imagenes?.[0]?.url_imagen || null,
+  }));
+
+  return processedData.map(mapInmuebleToProperty);
 }
 
 /**
@@ -248,8 +280,13 @@ export async function getRecentProperties(limit: number = 6): Promise<Property[]
   const supabase = createServerClient();
   
   const { data, error } = await supabase
-    .from('productos')
-    .select('*')
+    .from('inmuebles')
+    .select(`
+      *,
+      operaciones(slug),
+      tipos_inmueble(slug),
+      inmueble_imagenes(url_imagen, es_portada, orden)
+    `)
     .eq('activo', true)
     .order('creado_en', { ascending: false })
     .limit(limit);
@@ -259,7 +296,16 @@ export async function getRecentProperties(limit: number = 6): Promise<Property[]
     return [];
   }
 
-  return (data || []).map(mapProductoToProperty);
+  // Procesar datos para extraer imagen portada y slugs
+  const processedData = (data || []).map(item => ({
+    ...item,
+    operacion_slug: item.operaciones?.[0]?.slug || 'venta',
+    tipo_slug: item.tipos_inmueble?.[0]?.slug || 'casa',
+    imagen_portada: item.inmueble_imagenes?.find((img: any) => img.es_portada)?.url_imagen || 
+                    item.inmueble_imagenes?.[0]?.url_imagen || null,
+  }));
+
+  return processedData.map(mapInmuebleToProperty);
 }
 
 /**
@@ -269,8 +315,13 @@ export async function getTrendingProperties(limit: number = 6): Promise<Property
   const supabase = createServerClient();
   
   const { data, error } = await supabase
-    .from('productos')
-    .select('*')
+    .from('inmuebles')
+    .select(`
+      *,
+      operaciones(slug),
+      tipos_inmueble(slug),
+      inmueble_imagenes(url_imagen, es_portada, orden)
+    `)
     .eq('activo', true)
     .order('visitas', { ascending: false })
     .limit(limit);
@@ -280,5 +331,14 @@ export async function getTrendingProperties(limit: number = 6): Promise<Property
     return [];
   }
 
-  return (data || []).map(mapProductoToProperty);
+  // Procesar datos para extraer imagen portada y slugs
+  const processedData = (data || []).map(item => ({
+    ...item,
+    operacion_slug: item.operaciones?.[0]?.slug || 'venta',
+    tipo_slug: item.tipos_inmueble?.[0]?.slug || 'casa',
+    imagen_portada: item.inmueble_imagenes?.find((img: any) => img.es_portada)?.url_imagen || 
+                    item.inmueble_imagenes?.[0]?.url_imagen || null,
+  }));
+
+  return processedData.map(mapInmuebleToProperty);
 }
