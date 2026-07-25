@@ -58,8 +58,6 @@ function mapInmuebleToProperty(item: any): Property {
     updated_at: item.actualizado_en || new Date().toISOString(),
     published_at: item.publicado_en || null,
     last_activity: null,
-    highlighted_until: item.destacado_hasta || null,
-    boosted_at: item.boosteado_en || null,
     views_count: item.visitas || 0,
     contacts_count: 0,
     favorites_count: 0,

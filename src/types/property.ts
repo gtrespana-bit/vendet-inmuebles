@@ -36,8 +36,6 @@ export interface Property {
   // Estado y disponibilidad
   status: 'active' | 'inactive' | 'sold' | 'rented' | 'reserved';
   featured: boolean;
-  destacado_hasta: string | null;
-  boosteado_en: string | null;
   
   // Multimedia
   main_image_url: string | null;
