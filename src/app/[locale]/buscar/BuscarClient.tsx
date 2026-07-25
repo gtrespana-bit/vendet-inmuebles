@@ -17,7 +17,6 @@ type Producto = {
   estado: string
   main_image_url: string | null
   ciudad: string | null
-  estado: string | null
   creado_en: string
   visitas: number
   tipo_slug: string | null
