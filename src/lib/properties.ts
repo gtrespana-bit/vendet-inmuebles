@@ -12,6 +12,12 @@ import type { Property, PropertyFilter } from '@/types/property';
  * Mapear datos de la tabla 'inmuebles' al tipo Property
  */
 function mapInmuebleToProperty(inmueble: any): Property {
+  // Procesar imágenes
+  const imagenes = inmueble.inmueble_imagenes || [];
+  const imagenPortada = imagenes.find((img: any) => img.es_portada)?.url_imagen || 
+                        imagenes[0]?.url_imagen || null;
+  const imagensUrls = imagenes.map((img: any) => img.url_imagen).filter(Boolean);
+
   return {
     id: inmueble.id,
     slug: inmueble.slug || `inmueble-${inmueble.id}`,
@@ -40,8 +46,8 @@ function mapInmuebleToProperty(inmueble: any): Property {
     status: inmueble.activo ? 'active' as const : 'inactive' as const,
     featured: inmueble.destacado || false,
     amenities: null, // Se pueden obtener de inmueble_caracteristicas si es necesario
-    main_image_url: inmueble.imagen_portada || null,
-    images: inmueble.imagenes_urls || (inmueble.imagen_portada ? [inmueble.imagen_portada] : null),
+    main_image_url: imagenPortada,
+    images: imagensUrls.length > 0 ? imagensUrls : (imagenPortada ? [imagenPortada] : null),
     video_url: null,
     virtual_tour_url: null,
     owner_id: inmueble.usuario_id || '',
@@ -103,7 +109,7 @@ export async function getProperties(filters: PropertyFilter = {}): Promise<{
 
   // Aplicar filtros
   if (operation_type) {
-    query = query.eq('operaciones.slug', operationType);
+    query = query.eq('operaciones.slug', operation_type);
   }
   
   if (property_type && property_type.length > 0) {
@@ -183,13 +189,15 @@ export async function getProperties(filters: PropertyFilter = {}): Promise<{
     );
   }
 
-  // Procesar datos para extraer imagen portada y slugs
+  // Procesar datos para extraer slugs de relaciones
   const processedData = inmuebles.map(item => ({
     ...item,
-    operacion_slug: item.operaciones?.[0]?.slug || 'venta',
-    tipo_slug: item.tipos_inmueble?.[0]?.slug || 'casa',
-    imagen_portada: item.inmueble_imagenes?.find((img: any) => img.es_portada)?.url_imagen || 
-                    item.inmueble_imagenes?.[0]?.url_imagen || null,
+    operacion_slug: Array.isArray(item.operaciones) && item.operaciones.length > 0 
+      ? item.operaciones[0].slug 
+      : 'venta',
+    tipo_slug: Array.isArray(item.tipos_inmueble) && item.tipos_inmueble.length > 0 
+      ? item.tipos_inmueble[0].slug 
+      : 'casa',
   }));
 
   return {
@@ -225,13 +233,15 @@ export async function getPropertyById(id: string): Promise<Property | null> {
     throw new Error('Failed to fetch property');
   }
 
-  // Procesar datos para extraer imagen portada y slugs
+  // Procesar datos para extraer slugs de relaciones
   const processedData = {
     ...data,
-    operacion_slug: data.operaciones?.[0]?.slug || 'venta',
-    tipo_slug: data.tipos_inmueble?.[0]?.slug || 'casa',
-    imagen_portada: data.inmueble_imagenes?.find((img: any) => img.es_portada)?.url_imagen || 
-                    data.inmueble_imagenes?.[0]?.url_imagen || null,
+    operacion_slug: Array.isArray(data.operaciones) && data.operaciones.length > 0 
+      ? data.operaciones[0].slug 
+      : 'venta',
+    tipo_slug: Array.isArray(data.tipos_inmueble) && data.tipos_inmueble.length > 0 
+      ? data.tipos_inmueble[0].slug 
+      : 'casa',
   };
 
   return mapInmuebleToProperty(processedData);
@@ -261,13 +271,15 @@ export async function getFeaturedProperties(limit: number = 6): Promise<Property
     return [];
   }
 
-  // Procesar datos para extraer imagen portada y slugs
+  // Procesar datos para extraer slugs de relaciones
   const processedData = (data || []).map(item => ({
     ...item,
-    operacion_slug: item.operaciones?.[0]?.slug || 'venta',
-    tipo_slug: item.tipos_inmueble?.[0]?.slug || 'casa',
-    imagen_portada: item.inmueble_imagenes?.find((img: any) => img.es_portada)?.url_imagen || 
-                    item.inmueble_imagenes?.[0]?.url_imagen || null,
+    operacion_slug: Array.isArray(item.operaciones) && item.operaciones.length > 0 
+      ? item.operaciones[0].slug 
+      : 'venta',
+    tipo_slug: Array.isArray(item.tipos_inmueble) && item.tipos_inmueble.length > 0 
+      ? item.tipos_inmueble[0].slug 
+      : 'casa',
   }));
 
   return processedData.map(mapInmuebleToProperty);
@@ -296,13 +308,15 @@ export async function getRecentProperties(limit: number = 6): Promise<Property[]
     return [];
   }
 
-  // Procesar datos para extraer imagen portada y slugs
+  // Procesar datos para extraer slugs de relaciones
   const processedData = (data || []).map(item => ({
     ...item,
-    operacion_slug: item.operaciones?.[0]?.slug || 'venta',
-    tipo_slug: item.tipos_inmueble?.[0]?.slug || 'casa',
-    imagen_portada: item.inmueble_imagenes?.find((img: any) => img.es_portada)?.url_imagen || 
-                    item.inmueble_imagenes?.[0]?.url_imagen || null,
+    operacion_slug: Array.isArray(item.operaciones) && item.operaciones.length > 0 
+      ? item.operaciones[0].slug 
+      : 'venta',
+    tipo_slug: Array.isArray(item.tipos_inmueble) && item.tipos_inmueble.length > 0 
+      ? item.tipos_inmueble[0].slug 
+      : 'casa',
   }));
 
   return processedData.map(mapInmuebleToProperty);
@@ -331,13 +345,15 @@ export async function getTrendingProperties(limit: number = 6): Promise<Property
     return [];
   }
 
-  // Procesar datos para extraer imagen portada y slugs
+  // Procesar datos para extraer slugs de relaciones
   const processedData = (data || []).map(item => ({
     ...item,
-    operacion_slug: item.operaciones?.[0]?.slug || 'venta',
-    tipo_slug: item.tipos_inmueble?.[0]?.slug || 'casa',
-    imagen_portada: item.inmueble_imagenes?.find((img: any) => img.es_portada)?.url_imagen || 
-                    item.inmueble_imagenes?.[0]?.url_imagen || null,
+    operacion_slug: Array.isArray(item.operaciones) && item.operaciones.length > 0 
+      ? item.operaciones[0].slug 
+      : 'venta',
+    tipo_slug: Array.isArray(item.tipos_inmueble) && item.tipos_inmueble.length > 0 
+      ? item.tipos_inmueble[0].slug 
+      : 'casa',
   }));
 
   return processedData.map(mapInmuebleToProperty);
