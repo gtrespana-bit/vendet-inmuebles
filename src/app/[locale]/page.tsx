@@ -96,7 +96,7 @@ async function getDestacados(limit = 8) {
     )
     
     const { data, error } = await supabase
-      .from('vw_inmuebles_api')
+      .from('vw_propiedades_publicas')
       .select('*')
       .eq('activo', true)
       .eq('destacado', true)
@@ -137,7 +137,7 @@ async function getTrending(limit = 8) {
     )
     
     const { data, error } = await supabase
-      .from('vw_inmuebles_api')
+      .from('vw_propiedades_publicas')
       .select('*')
       .eq('activo', true)
       .order('visitas', { ascending: false })
@@ -177,7 +177,7 @@ async function getRecentProducts(limit = 8) {
     )
     
     const { data, error } = await supabase
-      .from('vw_inmuebles_api')
+      .from('vw_propiedades_publicas')
       .select('*')
       .eq('activo', true)
       .order('creado_en', { ascending: false })

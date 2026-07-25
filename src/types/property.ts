@@ -2,7 +2,7 @@
  * Tipos TypeScript para el módulo de Inmuebles
  * 
  * NOTA: Estos tipos representan la estructura FINAL usada en el frontend.
- * Los datos vienen de la vista 'vw_inmuebles_api' y se mapean a estos campos en inglés.
+ * Los datos vienen de la vista 'vw_propiedades_publicas' y se mapean a estos campos en inglés.
  */
 
 export interface Property {
