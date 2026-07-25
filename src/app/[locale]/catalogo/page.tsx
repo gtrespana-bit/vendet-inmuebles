@@ -23,23 +23,17 @@ async function getInitialProducts() {
     // Usamos COALESCE en la consulta para soportar columnas antiguas y nuevas
     const { data, count, error } = await supabase
       .from('vw_propiedades_publicas')
-      .select('id, titulo, precio, main_image_url, ciudad, estado, creado_en, tipo_nombre, operacion_nombre, caracteristicas, descripcion, boosteado_en, destacado, destacado_hasta', { count: 'exact' })
+      .select('id, titulo, precio, main_image_url, ciudad, estado, creado_en, tipo_nombre, operacion_nombre, caracteristicas, descripcion, destacado, destacado_hasta', { count: 'exact' })
       .eq('activo', true)
-      .eq('estado_moderacion', 'aprobado')
       .order('creado_en', { ascending: false })
       .limit(24)
 
     if (error || !data) return { products: [], count: 0 }
 
-    // Mismo ordenamiento que el cliente: boost > destacado vigente > fecha
+    // Mismo ordenamiento que el cliente: destacado vigente > fecha
     // Pre-computamos flags de estado para evitar hydration mismatch
     const now = new Date().toISOString()
     const sorted = data.sort((a: any, b: any) => {
-      const aBoost = a.boosteado_en || null
-      const bBoost = b.boosteado_en || null
-      if (aBoost && !bBoost) return -1
-      if (!aBoost && bBoost) return 1
-      if (aBoost && bBoost) return bBoost.localeCompare(aBoost)
       const aDest = a.destacado && a.destacado_hasta && a.destacado_hasta > now
       const bDest = b.destacado && b.destacado_hasta && b.destacado_hasta > now
       if (aDest && !bDest) return -1
