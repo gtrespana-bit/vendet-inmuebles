@@ -13,14 +13,14 @@ import { useTranslations } from 'next-intl'
 type Producto = {
   id: string
   titulo: string
-  precio_usd: number | null
+  precio: number | null
   estado: string
-  imagen_url: string | null
-  ubicacion_ciudad: string | null
-  ubicacion_estado: string | null
+  main_image_url: string | null
+  ciudad: string | null
+  estado: string | null
   creado_en: string
   visitas: number
-  subcategoria: string | null
+  tipo_slug: string | null
   boosteado_en: string | null
   destacado: boolean | null
   destacado_hasta: string | null
@@ -40,7 +40,7 @@ function ProductCard({ p }: { p: Producto }) {
   const isBoosted = p.boosteado_en != null
   const isFeatured = p.destacado && p.destacado_hasta && new Date(p.destacado_hasta) > new Date()
   const isPromoted = isBoosted || isFeatured
-  const imgUrl = p.imagen_url || getPlaceholderImage(p.titulo)
+  const imgUrl = p.main_image_url || getPlaceholderImage(p.titulo)
 
   return (
     <LocalLink
@@ -84,7 +84,7 @@ function ProductCard({ p }: { p: Producto }) {
           {p.titulo}
         </h3>
         <p className="text-xl font-black text-brand-primary mt-1">
-          ${new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(Number(p.precio_usd || 0))}
+          ${new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(Number(p.precio || 0))}
         </p>
         {p.vendedor_verificado && (
           <div className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-full mt-1">
@@ -95,8 +95,8 @@ function ProductCard({ p }: { p: Producto }) {
           </div>
         )}
         <p className="text-xs text-gray-500 mt-1 truncate">
-          {p.ubicacion_ciudad
-            ? `${p.ubicacion_ciudad} · ${p.estado}`
+          {p.ciudad
+            ? `${p.ciudad} · ${p.estado}`
             : p.estado}
         </p>
       </div>
@@ -124,7 +124,7 @@ export default function BuscarClient({ searchParams: searchParamsPromise }: { se
   
   const query = searchParams?.q || ''
   const categoria = searchParams?.categoria || ''
-  const subcategoria = searchParams?.subcategoria || ''
+  const tipo_slug = searchParams?.tipo_slug || ''
   const marca = searchParams?.marca || ''
   const condicion = searchParams?.condicion || ''
   const ubicacionEstado = searchParams?.estado || ''
@@ -144,7 +144,7 @@ export default function BuscarClient({ searchParams: searchParamsPromise }: { se
   const setParam = useCallback((key: string, value: string) => {
     const params = new URLSearchParams(searchParams ? Object.entries(searchParams).filter(([_, v]) => v).map(([k, v]) => [k, v!]) : [])
     if (value) params.set(key, value); else params.delete(key)
-    if (key === 'categoria') params.delete('subcategoria')
+    if (key === 'categoria') params.delete('tipo_slug')
     router.push('/buscar?' + params.toString())
   }, [searchParams, router])
 
@@ -170,21 +170,21 @@ export default function BuscarClient({ searchParams: searchParamsPromise }: { se
         if (catRow) sq = sq.eq('categoria_id', catRow.id)
       }
 
-      if (subcategoria) sq = sq.eq('subcategoria', subcategoria)
+      if (tipo_slug) sq = sq.eq('tipo_slug', tipo_slug)
       if (marca) sq = sq.eq('marca', marca)
       if (condicion) sq = sq.eq('estado', condicion)
 
       if (ubicacionCiudad) {
-        sq = sq.eq('ubicacion_ciudad', ubicacionCiudad)
+        sq = sq.eq('ciudad', ubicacionCiudad)
       } else if (ubicacionEstado) {
-        sq = sq.eq('ubicacion_estado', ubicacionEstado)
+        sq = sq.eq('estado', ubicacionEstado)
       }
 
-      if (precioMin) sq = sq.gte('precio_usd', parseFloat(precioMin))
-      if (precioMax) sq = sq.lte('precio_usd', parseFloat(precioMax))
+      if (precioMin) sq = sq.gte('precio', parseFloat(precioMin))
+      if (precioMax) sq = sq.lte('precio', parseFloat(precioMax))
 
-      if (orden === 'precio_asc') sq = sq.order('precio_usd', { ascending: true })
-      else if (orden === 'precio_desc') sq = sq.order('precio_usd', { ascending: false })
+      if (orden === 'precio_asc') sq = sq.order('precio', { ascending: true })
+      else if (orden === 'precio_desc') sq = sq.order('precio', { ascending: false })
       else sq = sq.order('creado_en', { ascending: false })
 
       const { data, count, error } = await sq
@@ -220,7 +220,7 @@ export default function BuscarClient({ searchParams: searchParamsPromise }: { se
 
     buscar()
     return () => { cancelled = true }
-  }, [query, categoria, subcategoria, marca, condicion, ubicacionEstado, ubicacionCiudad, precioMin, precioMax, orden])
+  }, [query, categoria, tipo_slug, marca, condicion, ubicacionEstado, ubicacionCiudad, precioMin, precioMax, orden])
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
@@ -302,7 +302,7 @@ export default function BuscarClient({ searchParams: searchParamsPromise }: { se
               {subs.length > 0 && (
                 <div>
                   <label className="block text-sm font-bold text-gray-900 mb-1.5">Subcategoria</label>
-                  <select value={subcategoria} onChange={(e) => setParam('subcategoria', e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-gray-800 bg-white font-medium focus:outline-none focus:ring-2 focus:ring-brand-accent">
+                  <select value={tipo_slug} onChange={(e) => setParam('tipo_slug', e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-gray-800 bg-white font-medium focus:outline-none focus:ring-2 focus:ring-brand-accent">
                     <option value="">Todas</option>
                     {subs.map((s) => (
                       <option key={s.label} value={s.label}>{s.icon} {s.label}</option>
@@ -398,7 +398,7 @@ export default function BuscarClient({ searchParams: searchParamsPromise }: { se
           <div className="bg-white rounded-xl p-4 mb-4 shadow-sm">
             <form action="/buscar" method="GET" className="flex gap-2">
               {categoria && <input type="hidden" name="categoria" value={categoria} />}
-              {subcategoria && <input type="hidden" name="subcategoria" value={subcategoria} />}
+              {tipo_slug && <input type="hidden" name="tipo_slug" value={tipo_slug} />}
               {marca && <input type="hidden" name="marca" value={marca} />}
               {condicion && <input type="hidden" name="condicion" value={condicion} />}
               {ubicacionEstado && <input type="hidden" name="estado" value={ubicacionEstado} />}
@@ -451,7 +451,7 @@ export default function BuscarClient({ searchParams: searchParamsPromise }: { se
             </>
           )}
 
-          {!query && !categoria && !subcategoria && !marca && !condicion && !ubicacionEstado && !ubicacionCiudad && !precioMin && !precioMax && productos.length > 0 && (
+          {!query && !categoria && !tipo_slug && !marca && !condicion && !ubicacionEstado && !ubicacionCiudad && !precioMin && !precioMax && productos.length > 0 && (
             <p className="text-sm text-gray-500 mb-4">Mostrando todos los productos ({resultCount} resultados)</p>
           )}
         </div>

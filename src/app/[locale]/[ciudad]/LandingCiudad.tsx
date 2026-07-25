@@ -55,8 +55,8 @@ export default async function LandingCiudad({ slug, nombre, estado, descripcion 
                 {p.destacado && new Date(p.destacado_hasta) > new Date() && (
                   <div className="absolute top-2 left-2 z-10 bg-brand-accent text-brand-primary text-[10px] font-bold px-2 py-0.5 rounded-full">⭐ Destacado</div>
                 )}
-                {p.imagen_url ? (
-                  <Image src={p.imagen_url} alt={p.titulo} width={300} height={300} className="w-full h-full object-cover group-hover:scale-105 transition-transform" loading="lazy" />
+                {p.main_image_url ? (
+                  <Image src={p.main_image_url} alt={p.titulo} width={300} height={300} className="w-full h-full object-cover group-hover:scale-105 transition-transform" loading="lazy" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-gray-300 text-4xl"></div>
                 )}

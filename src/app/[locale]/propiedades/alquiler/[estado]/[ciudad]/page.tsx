@@ -37,7 +37,7 @@ export default async function VentasPorCiudadPage({ params, searchParams }: Page
     `)
     .eq('operacion_tipo', 'Alquiler')
     .eq('ubicacion_estado_id', estado)
-    .eq('ubicacion_ciudad_id', ciudad)
+    .eq('ciudad', ciudad)
     .eq('activo', true)
     .limit(50)
   
@@ -69,11 +69,11 @@ export default async function VentasPorCiudadPage({ params, searchParams }: Page
               id: propiedad.id,
               title: propiedad.titulo || 'Sin título',
               slug: propiedad.slug || '',
-              price: propiedad.precio_usd ?? 0,
+              price: propiedad.precio ?? 0,
               operation_type: 'alquiler' as ('venta' | 'alquiler'),
-              city: propiedad.ubicacion_ciudad ?? 'Ciudad no especificada',
+              city: propiedad.ciudad ?? 'Ciudad no especificada',
               state: propiedad.ubicacion_estado ?? 'Estado no especificado',
-              main_image_url: propiedad.imagen_url ?? null,
+              main_image_url: propiedad.main_image_url ?? null,
               bedrooms: propiedad.caracteristicas?.habitaciones ?? 0,
               bathrooms: propiedad.caracteristicas?.banos ?? 0,
               area_size: propiedad.caracteristicas?.area_m2 ?? 0

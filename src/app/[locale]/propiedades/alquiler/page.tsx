@@ -36,25 +36,25 @@ export default async function AlquilerPage({ params, searchParams }: PageProps) 
   // Obtener propiedades recientes de alquiler usando el nuevo sistema
   const { data: propiedadesData } = await supabase
     .from('vw_propiedades_publicas')
-    .select('*')
-    .eq('tipo_operacion', 'alquiler')
+    .select('id, titulo, slug, precio, ciudad, estado, main_image_url, habitaciones, banos, area_total, operacion_nombre, tipo_nombre, creado_en')
+    .eq('operacion_slug', 'alquiler')
     .eq('activo', true)
     .limit(50)
-    .order('created_at', { ascending: false })
+    .order('creado_en', { ascending: false })
   
   // Transformar datos para PropertyCard
   const propiedades = (propiedadesData ?? []).map(p => ({
     id: p.id,
     title: p.titulo || 'Sin título',
     slug: p.slug || '',
-    price: p.precio_usd ?? 0,
+    price: p.precio ?? 0,
     operation_type: 'alquiler' as ('venta' | 'alquiler'),
-    city: p.ubicacion_ciudad ?? 'Ciudad no especificada',
-    state: p.ubicacion_estado ?? 'Estado no especificado',
-    main_image_url: p.imagen_url ?? null,
-    bedrooms: p.caracteristicas?.habitaciones ?? 0,
-    bathrooms: p.caracteristicas?.banos ?? 0,
-    area_size: p.caracteristicas?.area_m2 ?? 0
+    city: p.ciudad ?? 'Ciudad no especificada',
+    state: p.estado ?? 'Estado no especificado',
+    main_image_url: p.main_image_url ?? null,
+    bedrooms: p.habitaciones ?? 0,
+    bathrooms: p.banos ?? 0,
+    area_size: p.area_total ?? 0
   }))
   
   return (

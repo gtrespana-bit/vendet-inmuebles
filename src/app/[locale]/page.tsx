@@ -11,8 +11,8 @@ function generateItemListSchema(properties: any[], baseUrl: string) {
     position: index + 1,
     url: `${baseUrl}/inmueble/${prop.id}`,
     name: prop.titulo,
-    description: prop.descripcion || `${prop.operacion_tipo?.toLowerCase() === 'venta' ? 'Venta' : 'Alquiler'} de ${prop.tipo_propiedad} en ${prop.ubicacion_ciudad}`,
-    image: prop.imagen_url || `${baseUrl}/placeholder-property.webp`,
+    description: prop.descripcion || `${prop.operacion_tipo?.toLowerCase() === 'venta' ? 'Venta' : 'Alquiler'} de ${prop.tipo_propiedad} en ${prop.ciudad}`,
+    image: prop.main_image_url || `${baseUrl}/placeholder-property.webp`,
     offers: {
       '@type': 'Offer',
       price: prop.price || 0,
@@ -108,10 +108,10 @@ async function getDestacados(limit = 8) {
     return (data || []).map(p => ({
       id: p.id,
       titulo: p.titulo,
-      precio_usd: Number(p.precio) || 0,
+      precio: Number(p.precio) || 0,
       estado: p.estado,
-      imagen_url: p.main_image_url || null,
-      ubicacion_ciudad: p.ciudad,
+      main_image_url: p.main_image_url || null,
+      ciudad: p.ciudad,
       creado_en: p.creado_en,
       boosteado_en: p.boosteado_en || null,
       destacado: p.destacado || false,
@@ -148,9 +148,9 @@ async function getTrending(limit = 8) {
     return (data || []).map(p => ({
       id: p.id,
       titulo: p.titulo,
-      precio_usd: Number(p.precio) || 0,
-      imagen_url: p.main_image_url || null,
-      ubicacion_ciudad: p.ciudad,
+      precio: Number(p.precio) || 0,
+      main_image_url: p.main_image_url || null,
+      ciudad: p.ciudad,
       visitas: p.visitas || 0,
       creado_en: p.creado_en,
       boosteado_en: p.boosteado_en || null,
@@ -188,10 +188,10 @@ async function getRecentProducts(limit = 8) {
     return (data || []).map(p => ({
       id: p.id,
       titulo: p.titulo,
-      precio_usd: Number(p.precio) || 0,
+      precio: Number(p.precio) || 0,
       estado: p.estado,
-      imagen_url: p.main_image_url || null,
-      ubicacion_ciudad: p.ciudad,
+      main_image_url: p.main_image_url || null,
+      ciudad: p.ciudad,
       creado_en: p.creado_en,
       boosteado_en: p.boosteado_en || null,
       destacado: p.destacado || false,
@@ -209,7 +209,7 @@ async function getRecentProducts(limit = 8) {
 }
 
 function PropertyCard({ p, highlighted = false, priority = false, t }: { p: any; highlighted?: boolean; priority?: boolean; t: any }) {
-  const imgUrl = p.imagen_url || p.imagen_portada || '/sinimagen.webp'
+  const imgUrl = p.main_image_url || p.imagen_portada || '/sinimagen.webp'
   const operacion = p.operacion_tipo === 'Venta' ? t('home.productCard.forSale') : t('home.productCard.forRent')
   return (
     <LocalLink
@@ -246,7 +246,7 @@ function PropertyCard({ p, highlighted = false, priority = false, t }: { p: any;
       </div>
       <div className="p-4">
         <p className="text-xs text-gray-500 mb-1 flex items-center gap-1">
-          <MapPin size={10} /> {p.ubicacion_ciudad || p.estado || 'Venezuela'}
+          <MapPin size={10} /> {p.ciudad || p.estado || 'Venezuela'}
         </p>
         <h3 className="font-semibold text-gray-900 truncate group-hover:text-brand-primary transition-colors">
           {p.titulo}
@@ -255,7 +255,7 @@ function PropertyCard({ p, highlighted = false, priority = false, t }: { p: any;
           {p.tipo_propiedad}
         </p>
         <p className="text-xl font-heading font-bold text-brand-primary mt-2">
-          ${new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(Number(p.precio_usd || 0))}
+          ${new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(Number(p.precio || 0))}
           <span className="text-xs font-normal text-gray-500"> USD</span>
         </p>
       </div>
