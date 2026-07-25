@@ -13,18 +13,48 @@ import { useTranslations } from 'next-intl'
 type Producto = {
   id: string
   titulo: string
+  descripcion: string | null
   precio: number | null
-  estado: string
-  main_image_url: string | null
+  moneda: string | null
   ciudad: string | null
-  creado_en: string
-  visitas: number
-  tipo_slug: string | null
-  boosteado_en: string | null
+  estado: string | null
+  municipio: string | null
+  zona: string | null
+  area_total: number | null
+  area_construida: number | null
+  habitaciones: number | null
+  banos: number | null
+  puestos_estacionamiento: number | null
+  piso: number | null
+  condicion: string | null
+  antiguedad_anios: number | null
+  latitud: number | null
+  longitud: number | null
+  direccion_exacta: string | null
+  slug: string | null
+  activo: boolean | null
   destacado: boolean | null
-  destacado_hasta: string | null
-  vendedor_verificado: boolean | null
-  descripcion?: string
+  visitas: number | null
+  creado_en: string | null
+  actualizado_en: string | null
+  publicado_en: string | null
+  operacion_nombre: string | null
+  operacion_slug: string | null
+  tipo_nombre: string | null
+  tipo_slug: string | null
+  tipo_icono: string | null
+  propietario_nombre: string | null
+  propietario_telefono: string | null
+  propietario_email: string | null
+  propietario_foto: string | null
+  propietario_verificado: boolean | null
+  propietario_tipo: string | null
+  propietario_empresa: string | null
+  main_image_url: string | null
+  imagenes: string[] | null
+  caracteristicas: string[] | null
+  boosteado_en?: string | null
+  destacado_hasta?: string | null
 }
 
 const PLACEHOLDER_IMAGES = [
@@ -85,7 +115,7 @@ function ProductCard({ p }: { p: Producto }) {
         <p className="text-xl font-black text-brand-primary mt-1">
           ${new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(Number(p.precio || 0))}
         </p>
-        {p.vendedor_verificado && (
+        {p.propietario_verificado && (
           <div className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-full mt-1">
             <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
               <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
@@ -154,9 +184,12 @@ export default function BuscarClient({ searchParams: searchParamsPromise }: { se
     setLoading(true)
 
     async function buscar() {
+      // Columnas REALES que existen en vw_propiedades_publicas
+      const columns = 'id,titulo,descripcion,precio,moneda,ciudad,estado,municipio,zona,area_total,area_construida,habitaciones,banos,puestos_estacionamiento,piso,condicion,antiguedad_anios,latitud,longitud,direccion_exacta,slug,activo,destacado,visitas,creado_en,actualizado_en,publicado_en,operacion_nombre,operacion_slug,tipo_nombre,tipo_slug,tipo_icono,propietario_nombre,propietario_telefono,propietario_email,propietario_foto,propietario_verificado,propietario_tipo,propietario_empresa,main_image_url,imagenes,caracteristicas'
+      
       let sq = supabase
         .from('vw_propiedades_publicas')
-        .select('*', { count: 'exact' })
+        .select(columns, { count: 'exact' })
         .eq('activo', true)
 
       // Solo filtramos por query si existe, usando columns reales
