@@ -11,54 +11,61 @@ import type { Property, PropertyFilter } from '@/types/property';
 
 /**
  * Mapear datos de la vista 'vw_inmuebles_api' al tipo Property
+ * La vista ya devuelve los campos en inglés y normalizados
  */
 function mapInmuebleToProperty(item: any): Property {
   // La vista ya devuelve imágenes como JSON array ordenado
-  const imagenes = item.imagenes_json || [];
-  const imagenPortada = imagenes.length > 0 ? imagenes[0].url_imagen : null;
-  const imagensUrls = imagenes.map((img: any) => img.url_imagen).filter(Boolean);
+  const imagenes = item.images || [];
+  const imagenPortada = Array.isArray(imagenes) && imagenes.length > 0 
+    ? (imagenes[0] as any).url_imagen || item.main_image_url 
+    : item.main_image_url;
+  
+  // Extraer URLs de imágenes si vienen como objetos
+  const imagensUrls = Array.isArray(imagenes) 
+    ? imagenes.map((img: any) => typeof img === 'string' ? img : img.url_imagen).filter(Boolean)
+    : [];
 
   return {
     id: item.id,
     slug: item.slug || `inmueble-${item.id}`,
-    title: item.titulo || 'Sin título',
-    description: item.descripcion || null,
-    operation_type: item.operacion_slug === 'alquiler' ? 'alquiler' : 'venta',
-    property_type: (item.tipo_slug || 'casa') as Property['property_type'],
-    price: Number(item.precio) || 0,
-    currency: (item.moneda as Property['currency']) || 'USD',
-    state_name: item.estado || '',
-    city_name: item.ciudad || '',
-    municipality_name: item.municipio || null,
-    address: item.direccion_exacta || null,
-    latitude: item.latitud ? Number(item.latitud) : null,
-    longitude: item.longitud ? Number(item.longitud) : null,
-    area_size: item.area_total ? Number(item.area_total) : null,
-    bedrooms: item.habitaciones || null,
-    bathrooms: item.banos || null,
-    parking_spaces: item.puestos_estacionamiento || null,
-    floors: item.piso || null,
-    year_built: item.antiguedad_anios ? new Date().getFullYear() - item.antiguedad_anios : null,
-    status: item.activo ? 'active' as const : 'inactive' as const,
-    featured: item.destacado || false,
-    amenities: null, // Se pueden obtener de inmueble_caracteristicas si es necesario
-    main_image_url: imagenPortada,
+    title: item.title || 'Sin título',
+    description: item.description || null,
+    operation_type: (item.operation_type as 'venta' | 'alquiler') || 'venta',
+    property_type: item.property_type || 'casa',
+    price: Number(item.price) || 0,
+    currency: (item.currency as 'USD' | 'EUR' | 'VES') || 'USD',
+    state_name: item.state_name || '',
+    city_name: item.city_name || '',
+    municipality_name: item.municipality_name || null,
+    address: item.address || null,
+    latitude: item.latitude ? Number(item.latitude) : null,
+    longitude: item.longitude ? Number(item.longitude) : null,
+    area_size: item.area_size ? Number(item.area_size) : null,
+    bedrooms: item.bedrooms ? Number(item.bedrooms) : null,
+    bathrooms: item.bathrooms ? Number(item.bathrooms) : null,
+    parking_spaces: item.parking_spaces ? Number(item.parking_spaces) : null,
+    floors: item.floors ? Number(item.floors) : null,
+    year_built: item.year_built ? Number(item.year_built) : null,
+    status: (item.status as 'active' | 'inactive' | 'sold' | 'rented' | 'reserved') || 'active',
+    featured: !!item.is_featured,
+    amenities: item.amenities || null,
+    main_image_url: imagenPortada || null,
     images: imagensUrls.length > 0 ? imagensUrls : (imagenPortada ? [imagenPortada] : null),
-    video_url: null,
-    virtual_tour_url: null,
-    owner_id: item.usuario_id || '',
-    owner_name: null,
-    owner_phone: null,
-    owner_email: null,
-    agency_name: null,
-    agency_logo_url: null,
-    meta_title: null,
-    meta_description: null,
-    created_at: item.creado_en || new Date().toISOString(),
-    updated_at: item.actualizado_en || new Date().toISOString(),
-    published_at: item.publicado_en || null,
+    video_url: item.video_url || null,
+    virtual_tour_url: item.virtual_tour_url || null,
+    owner_id: item.owner_id || '',
+    owner_name: item.owner_name || null,
+    owner_phone: item.owner_phone || null,
+    owner_email: item.owner_email || null,
+    agency_name: item.agency_name || null,
+    agency_logo_url: item.agency_logo_url || null,
+    meta_title: item.meta_title || null,
+    meta_description: item.meta_description || null,
+    created_at: item.created_at || new Date().toISOString(),
+    updated_at: item.updated_at || new Date().toISOString(),
+    published_at: item.published_at || null,
     last_activity: null,
-    views_count: item.visitas || 0,
+    views_count: Number(item.views_count) || 0,
     contacts_count: 0,
     favorites_count: 0,
   };
@@ -95,55 +102,54 @@ export async function getProperties(filters: PropertyFilter = {}): Promise<{
   // Construir query base - usando la vista segura 'vw_inmuebles_api'
   let query = supabase
     .from('vw_inmuebles_api')
-    .select('*', { count: 'exact' })
-    .eq('activo', true);
+    .select('*', { count: 'exact' });
 
-  // Aplicar filtros
+  // Aplicar filtros (la vista ya filtra activos por defecto, pero aseguramos)
   if (operation_type) {
-    query = query.eq('operacion_slug', operation_type);
+    query = query.eq('operation_type', operation_type);
   }
   
   if (property_type && property_type.length > 0) {
-    query = query.in('tipo_slug', property_type);
+    query = query.in('property_type', property_type);
   }
   
   if (state_id) {
-    query = query.eq('estado', state_id);
+    query = query.eq('state_name', state_id);
   }
   
   if (city_id) {
-    query = query.eq('ciudad', city_id);
+    query = query.eq('city_name', city_id);
   }
   
   if (min_price !== undefined) {
-    query = query.gte('precio', min_price);
+    query = query.gte('price', min_price);
   }
   
   if (max_price !== undefined) {
-    query = query.lte('precio', max_price);
+    query = query.lte('price', max_price);
   }
   
   if (featured_only) {
-    query = query.eq('destacado', true);
+    query = query.eq('is_featured', true);
   }
 
   // Ordenamiento
   switch (sort_by) {
     case 'oldest':
-      query = query.order('creado_en', { ascending: true });
+      query = query.order('created_at', { ascending: true });
       break;
     case 'price_asc':
-      query = query.order('precio', { ascending: true });
+      query = query.order('price', { ascending: true });
       break;
     case 'price_desc':
-      query = query.order('precio', { ascending: false });
+      query = query.order('price', { ascending: false });
       break;
     case 'featured':
-      query = query.order('destacado', { ascending: false }).order('creado_en', { ascending: false });
+      query = query.order('is_featured', { ascending: false }).order('created_at', { ascending: false });
       break;
     case 'newest':
     default:
-      query = query.order('creado_en', { ascending: false });
+      query = query.order('created_at', { ascending: false });
       break;
   }
 
@@ -164,19 +170,19 @@ export async function getProperties(filters: PropertyFilter = {}): Promise<{
   
   if (min_bedrooms !== undefined) {
     inmuebles = inmuebles.filter(p => 
-      (p.habitaciones || 0) >= min_bedrooms
+      (p.bedrooms || 0) >= min_bedrooms
     );
   }
   
   if (min_bathrooms !== undefined) {
     inmuebles = inmuebles.filter(p => 
-      (p.banos || 0) >= min_bathrooms
+      (p.bathrooms || 0) >= min_bathrooms
     );
   }
   
   if (min_area !== undefined) {
     inmuebles = inmuebles.filter(p => 
-      (Number(p.area_total) || 0) >= min_area
+      (Number(p.area_size) || 0) >= min_area
     );
   }
 
