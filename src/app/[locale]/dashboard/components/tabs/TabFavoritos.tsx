@@ -35,7 +35,7 @@ export default function TabFavoritos({ favoritos }: { favoritos: any[] }) {
                 <div className="flex-1 min-w-0">
                   <h4 className="font-medium text-gray-800 truncate">{p.titulo}</h4>
                   <p className="text-sm text-brand-primary font-bold">${new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(Number(p.price || 0))}</p>
-                  {p.city && <p className="text-xs text-gray-500">{p.city}</p>}
+                  {p.city_name && <p className="text-xs text-gray-500">{p.city_name}</p>}
                 </div>
               </LocalLink>
               <button onClick={async () => { await supabase.from('favoritos').delete().eq('producto_id', p.id); window.location.reload() }} className="p-2 hover:bg-red-50 rounded-lg transition text-red-500" title="Quitar de favoritos">

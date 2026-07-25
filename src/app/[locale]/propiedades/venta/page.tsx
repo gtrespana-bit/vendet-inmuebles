@@ -46,12 +46,12 @@ export default async function VentasPage({ params, searchParams }: PageProps) {
     slug: p.slug || '',
     price: p.price ?? 0,
     operation_type: (p.operation_type ?? 'venta') as ('venta' | 'alquiler'),
-    city: p.city ?? 'Ciudad no especificada',
-    state: p.state ?? 'Estado no especificado',
+    city: p.city_name ?? 'Ciudad no especificada',
+    state: p.state_name ?? 'Estado no especificado',
     main_image_url: p.main_image_url ?? null,
     bedrooms: p.bedrooms ?? 0,
     bathrooms: p.bathrooms ?? 0,
-    area_size: p.area_size ?? 0
+    area_size: p.area_total ?? 0
   }))
   
   return (
