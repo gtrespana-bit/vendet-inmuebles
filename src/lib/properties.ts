@@ -29,7 +29,6 @@ function mapInmuebleToProperty(item: any): Property {
     currency: (item.moneda as Property['currency']) || 'USD',
     state_name: item.estado || '',
     city_name: item.ciudad || '',
-    municipality_id: item.municipio || null,
     municipality_name: item.municipio || null,
     address: item.direccion_exacta || null,
     latitude: item.latitud ? Number(item.latitud) : null,
