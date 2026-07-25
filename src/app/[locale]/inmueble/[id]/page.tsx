@@ -2,11 +2,12 @@ import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { createServerClient } from '@/lib/supabase-server';
 import Image from 'next/image';
-import { 
-  MapPin, Home, Bath, Bed, Square, Phone, MessageCircle, 
-  CheckCircle, Mail, Building, Calendar, Eye, User, 
+import {
+  MapPin, Home, Bath, Bed, Square, Phone, MessageCircle,
+  CheckCircle, Mail, Building, Calendar, Eye, User,
   Ruler, Key, DollarSign, TrendingUp, Shield, Award,
-  ChevronLeft, Share2, Heart, ExternalLink
+  ChevronLeft, Share2, Heart, ExternalLink, Star, Zap,
+  Clock, ArrowLeft
 } from 'lucide-react';
 import Link from 'next/link';
 
