@@ -175,7 +175,7 @@ export default function DashboardPage() {
     } else {
       data.setCreditos(result.balance)
       data.setToast(t('boostApplied'))
-      const { data: prods } = await supabase.from('vw_propiedades_publicas').select('id, titulo, precio, estado, ciudad, activo, visitas, creado_en, main_image_url, operacion_nombre, destacado, destacado_hasta').eq('usuario_id', user!.id).order('creado_en', { ascending: false })
+      const { data: prods } = await supabase.from('vw_propiedades_publicas').select('id, titulo, precio, estado, ciudad, activo, visitas, creado_en, main_image_url, operacion_nombre, destacado').eq('usuario_id', user!.id).order('creado_en', { ascending: false })
       data.setProductos(prods || [])
     }
     setBoostTarget(null)
@@ -189,7 +189,7 @@ export default function DashboardPage() {
     } else {
       data.setCreditos(result.balance)
       data.setToast(t('featuredActivated', { hours: horas }))
-      const { data: prods } = await supabase.from('vw_propiedades_publicas').select('id, titulo, precio, estado, ciudad, activo, visitas, creado_en, main_image_url, operacion_nombre, destacado, destacado_hasta').eq('usuario_id', user!.id).order('creado_en', { ascending: false })
+      const { data: prods } = await supabase.from('vw_propiedades_publicas').select('id, titulo, precio, estado, ciudad, activo, visitas, creado_en, main_image_url, operacion_nombre, destacado').eq('usuario_id', user!.id).order('creado_en', { ascending: false })
       data.setProductos(prods || [])
     }
     setDestacadoTarget(null)
