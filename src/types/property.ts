@@ -32,6 +32,8 @@ export interface Property {
   // Estado y disponibilidad
   activo: boolean;
   destacado: boolean;
+  destacado_hasta: string | null;
+  boosteado_en: string | null;
   
   // Amenities (JSON array) - viene de inmueble_caracteristicas si se agrega
   amenities: string[] | null;
