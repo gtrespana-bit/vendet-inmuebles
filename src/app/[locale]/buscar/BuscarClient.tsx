@@ -207,7 +207,11 @@ export default function BuscarClient({ searchParams: searchParamsPromise }: { se
           let sorted = data as Producto[]
           // Ordenamiento simple por fecha de creación
           if (orden !== 'precio_asc' && orden !== 'precio_desc') {
-            sorted = sorted.sort((a, b) => new Date(b.creado_en).getTime() - new Date(a.creado_en).getTime())
+            sorted = sorted.sort((a, b) => {
+              const dateA = a.creado_en ? new Date(a.creado_en).getTime() : 0;
+              const dateB = b.creado_en ? new Date(b.creado_en).getTime() : 0;
+              return dateB - dateA;
+            });
           }
           setResultCount(count ?? 0)
           setProductos(sorted)
