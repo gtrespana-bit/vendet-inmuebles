@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { createServerClient } from '@/lib/supabase-server';
 import Image from 'next/image';
-import { MapPin, Home, Bath, Bed, Square, Phone, MessageCircle, CheckCircle, Mail, Building } from 'lucide-react';
+import { MapPin, Home, Bath, Bed, Square, Phone, MessageCircle, CheckCircle, Mail, Building, Calendar, Eye } from 'lucide-react';
 
 interface PageProps {
   params: Promise<{ id: string; locale: string }>;
@@ -50,44 +50,77 @@ export default async function PropertyDetailPage({ params }: PageProps) {
     minimumFractionDigits: 0,
   });
 
-  // Parsear imágenes correctamente (pueden venir como string JSON o array)
+  // Parsear imágenes - manejar múltiples formatos posibles
   let imagenes: string[] = [];
-  if (Array.isArray(propiedad.imagenes)) {
-    imagenes = propiedad.imagenes;
-  } else if (propiedad.imagenes && typeof propiedad.imagenes === 'string') {
-    try {
-      imagenes = JSON.parse(propiedad.imagenes);
-    } catch {
-      imagenes = propiedad.main_image_url ? [propiedad.main_image_url] : [];
-    }
-  } else if (propiedad.main_image_url) {
-    imagenes = [propiedad.main_image_url];
+  
+  // Caso 1: main_image_url siempre disponible
+  if (propiedad.main_image_url) {
+    imagenes.push(propiedad.main_image_url);
   }
+  
+  // Caso 2: imagenes puede ser array o string JSON
+  if (propiedad.imagenes) {
+    if (Array.isArray(propiedad.imagenes)) {
+      // Si es array, agregar los que no estén ya
+      propiedad.imagenes.forEach((url: string) => {
+        if (!imagenes.includes(url)) {
+          imagenes.push(url);
+        }
+      });
+    } else if (typeof propiedad.imagenes === 'string') {
+      try {
+        const parsed = JSON.parse(propiedad.imagenes);
+        if (Array.isArray(parsed)) {
+          parsed.forEach((url: string) => {
+            if (!imagenes.includes(url)) {
+              imagenes.push(url);
+            }
+          });
+        }
+      } catch (e) {
+        console.error('Error parsing imagenes:', e);
+      }
+    }
+  }
+
+  // Fallback a imagen genérica si no hay ninguna
+  if (imagenes.length === 0) {
+    imagenes = ['/sinimagen.webp'];
+  }
+
+  // Construir ubicación completa
+  const ubicacionParts = [
+    propiedad.direccion_exacta,
+    propiedad.zona,
+    propiedad.municipio,
+    propiedad.ciudad,
+    propiedad.estado
+  ].filter(Boolean);
+  const ubicacionCompleta = ubicacionParts.join(', ');
 
   return (
     <div className="min-h-screen bg-gray-50 pb-12">
       {/* Header con Imagen Principal */}
       <div className="relative h-[50vh] md:h-[60vh] w-full bg-gray-200">
-        {imagenes.length > 0 ? (
-          <Image
-            src={imagenes[0]}
-            alt={propiedad.titulo}
-            fill
-            className="object-cover"
-            priority
-            unoptimized
-          />
-        ) : (
-          <div className="flex items-center justify-center h-full text-gray-400 bg-gray-100">
-            <Home size={64} />
-            <span className="ml-2">Sin imagen disponible</span>
-          </div>
-        )}
+        <Image
+          src={imagenes[0]}
+          alt={propiedad.titulo}
+          fill
+          className="object-cover"
+          priority
+          unoptimized
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            if (target.src !== '/sinimagen.webp') {
+              target.src = '/sinimagen.webp';
+            }
+          }}
+        />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
 
         {/* Información sobre la imagen */}
         <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
-          <div className="container mx-auto">
+          <div className="container mx-auto max-w-6xl">
             <div className="flex flex-col gap-3">
               <div className="flex flex-wrap items-center gap-3">
                 <span className="px-4 py-1.5 bg-blue-600 rounded-full text-sm font-semibold">
@@ -98,18 +131,19 @@ export default async function PropertyDetailPage({ params }: PageProps) {
                 </span>
               </div>
               <h1 className="text-3xl md:text-4xl font-bold">{propiedad.titulo}</h1>
-              <div className="flex items-center gap-2 text-base md:text-lg">
-                <MapPin size={20} />
-                <span>
-                  {[propiedad.ciudad, propiedad.estado].filter(Boolean).join(', ')}
-                </span>
-              </div>
+              {ubicacionCompleta && (
+                <div className="flex items-center gap-2 text-lg">
+                  <MapPin size={20} />
+                  <span>{ubicacionCompleta}</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 -mt-6 relative z-10">
+      {/* Contenido Principal */}
+      <div className="container mx-auto max-w-6xl px-4 -mt-8 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
           {/* Columna Principal */}
@@ -119,35 +153,35 @@ export default async function PropertyDetailPage({ params }: PageProps) {
             <div className="bg-white rounded-xl shadow-sm p-6">
               <h2 className="text-xl font-semibold mb-4">Características</h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {propiedad.habitaciones !== null && propiedad.habitaciones > 0 && (
+                {propiedad.habitaciones !== null && (
                   <div className="flex flex-col items-center p-4 bg-gray-50 rounded-lg">
                     <Bed size={24} className="text-blue-600 mb-2" />
                     <span className="text-2xl font-bold text-gray-900">{propiedad.habitaciones}</span>
                     <span className="text-sm text-gray-600">Habitaciones</span>
                   </div>
                 )}
-                {propiedad.banos !== null && propiedad.banos > 0 && (
+                {propiedad.banos !== null && (
                   <div className="flex flex-col items-center p-4 bg-gray-50 rounded-lg">
                     <Bath size={24} className="text-blue-600 mb-2" />
                     <span className="text-2xl font-bold text-gray-900">{propiedad.banos}</span>
                     <span className="text-sm text-gray-600">Baños</span>
                   </div>
                 )}
-                {propiedad.area_total !== null && propiedad.area_total > 0 && (
+                {propiedad.area_total !== null && (
                   <div className="flex flex-col items-center p-4 bg-gray-50 rounded-lg">
                     <Square size={24} className="text-blue-600 mb-2" />
                     <span className="text-2xl font-bold text-gray-900">{propiedad.area_total}</span>
                     <span className="text-sm text-gray-600">m² Total</span>
                   </div>
                 )}
-                {propiedad.area_construida !== null && propiedad.area_construida > 0 && (
+                {propiedad.area_construida !== null && (
                   <div className="flex flex-col items-center p-4 bg-gray-50 rounded-lg">
                     <Home size={24} className="text-blue-600 mb-2" />
                     <span className="text-2xl font-bold text-gray-900">{propiedad.area_construida}</span>
                     <span className="text-sm text-gray-600">m² Construidos</span>
                   </div>
                 )}
-                {propiedad.puestos_estacionamiento !== null && propiedad.puestos_estacionamiento > 0 && (
+                {propiedad.puestos_estacionamiento !== null && (
                   <div className="flex flex-col items-center p-4 bg-gray-50 rounded-lg">
                     <CheckCircle size={24} className="text-blue-600 mb-2" />
                     <span className="text-2xl font-bold text-gray-900">{propiedad.puestos_estacionamiento}</span>
@@ -162,7 +196,7 @@ export default async function PropertyDetailPage({ params }: PageProps) {
                   </div>
                 )}
               </div>
-              
+
               {/* Más detalles */}
               {(propiedad.condicion || propiedad.antiguedad_anios !== null) && (
                 <div className="mt-4 pt-4 border-t border-gray-100 grid grid-cols-2 gap-4">
@@ -205,6 +239,12 @@ export default async function PropertyDetailPage({ params }: PageProps) {
                         fill
                         className="object-cover hover:scale-110 transition-transform duration-300"
                         unoptimized
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          if (target.src !== '/sinimagen.webp') {
+                            target.src = '/sinimagen.webp';
+                          }
+                        }}
                       />
                     </div>
                   ))}
@@ -229,10 +269,14 @@ export default async function PropertyDetailPage({ params }: PageProps) {
                       height={64}
                       className="object-cover w-full h-full"
                       unoptimized
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                      }}
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-gray-400 bg-gray-100">
-                      <Home size={32} />
+                      <Building size={32} />
                     </div>
                   )}
                 </div>
@@ -274,7 +318,7 @@ export default async function PropertyDetailPage({ params }: PageProps) {
                     </a>
                   </>
                 )}
-                
+
                 {propiedad.propietario_email && (
                   <a
                     href={`mailto:${propiedad.propietario_email}`}
@@ -294,10 +338,16 @@ export default async function PropertyDetailPage({ params }: PageProps) {
 
               {/* Info adicional */}
               <div className="mt-6 pt-6 border-t border-gray-100 text-sm text-gray-500 space-y-2">
-                <p>Publicado: {new Date(propiedad.creado_en).toLocaleDateString()}</p>
+                <div className="flex items-center gap-2">
+                  <Calendar size={14} />
+                  <p>Publicado: {new Date(propiedad.creado_en).toLocaleDateString()}</p>
+                </div>
                 <p>ID: {propiedad.id.slice(0, 8)}...</p>
                 {propiedad.visitas !== null && (
-                  <p>Visitas: {propiedad.visitas}</p>
+                  <div className="flex items-center gap-2">
+                    <Eye size={14} />
+                    <p>Visitas: {propiedad.visitas}</p>
+                  </div>
                 )}
               </div>
             </div>
