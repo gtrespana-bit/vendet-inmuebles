@@ -99,16 +99,15 @@ export const COLUMN_MAPPING: Record<string, string> = {
   // Imágenes
   'imagen_url': 'main_image_url',
   'imagenes_urls': 'imagenes',
-  'images': 'imagenes',
-  
-  // Estado (eliminamos filtros por columnas inexistentes)
-  'estado_moderacion': null, // NO EXISTE - Ignorar
-  'boosteado_en': null,      // NO EXISTE - Ignorar
-  'destacado_hasta': null,   // NO EXISTE - Ignorar
-  'categoria_id': null,      // NO EXISTE - Ignorar
-  'subcategoria': null,      // NO EXISTE - Ignorar
-  'marca': null,             // NO EXISTE - Ignorar
-  'user_id': 'usuario_id'    // Ojo: en la vista no está user_id directo, se usa propietario_*
+  'images': 'imagenes'
+  // NOTA: Las siguientes columnas NO EXISTEN en la vista y deben ser ignoradas en los filtros:
+  // - estado_moderacion
+  // - boosteado_en
+  // - destacado_hasta
+  // - categoria_id
+  // - subcategoria
+  // - marca
+  // El frontend debe filtrar estos campos después de obtener los datos, no en la consulta SQL
 };
 
 // Verifica si una columna existe realmente
