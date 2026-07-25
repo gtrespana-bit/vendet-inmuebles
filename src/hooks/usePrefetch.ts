@@ -35,44 +35,20 @@ export const usePrefetch = () => {
     try {
       let query = supabase
         .from('vw_propiedades_publicas')
-        .select('id, titulo, precio_usd, estado, imagen_url, ubicacion_ciudad, ubicacion_estado, creado_en, subcategoria, boosteado_en, destacado, destacado_hasta, vendedor_verificado', { count: 'exact' })
-        .eq('activo', true)
-        .or('estado_moderacion.is.null,estado_moderacion.eq.aprobado');
-
-      if (filters.categoria) {
-        const { data: catRow } = await supabase
-          .from('categorias')
-          .select('id')
-          .eq('nombre', filters.categoria)
-          .single();
-        if (catRow) {
-          query = query.eq('categoria_id', catRow.id);
-        }
-      }
-
-      if (filters.subcategoria) {
-        query = query.eq('subcategoria', filters.subcategoria);
-      }
-
-      if (filters.marca) {
-        query = query.eq('marca', filters.marca);
-      }
-
-      if (filters.q) {
-        query = query.textSearch('search_vector', filters.q, { config: 'spanish', type: 'plain' });
-      }
+        .select('id, titulo, precio, main_image_url, ciudad, estado, creado_en, tipo_nombre, operacion_nombre, caracteristicas, descripcion, destacado', { count: 'exact' })
+        .eq('activo', true);
 
       if (filters.ubicacionCiudad) {
-        query = query.eq('ubicacion_ciudad', filters.ubicacionCiudad);
+        query = query.eq('ciudad', filters.ubicacionCiudad);
       } else if (filters.ubicacionEstado) {
-        query = query.eq('ubicacion_estado', filters.ubicacionEstado);
+        query = query.eq('estado', filters.ubicacionEstado);
       }
 
       if (filters.precioMin) {
-        query = query.gte('precio_usd', parseFloat(filters.precioMin));
+        query = query.gte('precio', parseFloat(filters.precioMin));
       }
       if (filters.precioMax) {
-        query = query.lte('precio_usd', parseFloat(filters.precioMax));
+        query = query.lte('precio', parseFloat(filters.precioMax));
       }
 
       // Aplicar offset para la página específica
