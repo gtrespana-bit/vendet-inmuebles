@@ -21,15 +21,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     .eq('id', id)
     .single();
 
-  if (error || !propiedad) {
+  if (error || !propiedad || !propiedad.activo) {
     return { title: 'Propiedad no encontrada' };
   }
 
-  if (!propiedad.activo) {
-    return { title: 'Propiedad no encontrada' };
-  }
-
-  const operacion = propiedad.tipo_operacion?.toLowerCase() === 'venta' ? 'Venta' : 'Alquiler';
+  const operacion = propiedad.operacion_nombre?.toLowerCase() === 'alquiler' ? 'Alquiler' : 'Venta';
   return {
     title: `${operacion}: ${propiedad.titulo} en ${propiedad.ciudad}, ${propiedad.estado}`,
     description: propiedad.descripcion?.substring(0, 160),
@@ -42,64 +38,60 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 async function getPropertyData(id: string) {
+  // Esta función ya no se usa, la eliminamos para evitar confusión
+  return null;
+}
+
+export default async function PropertyDetailPage({ params }: PageProps) {
+  const { id } = await params;
+  
   const supabase = createServerClient();
   
-  // Obtener propiedad sin filtro de activo primero para verificar existencia
-  let { data: propiedad, error } = await supabase
+  // Consulta SIMPLE usando solo columnas que existen en vw_propiedades_publicas
+  const { data: propiedad, error } = await supabase
     .from('vw_propiedades_publicas')
-    .select(`
-      *,
-      perfiles (
-        id,
-        nombre,
-        telefono,
-        verificado,
-        nivel_confianza,
-        foto_perfil_url
-      )
-    `)
+    .select('*')
     .eq('id', id)
     .single();
 
   if (error || !propiedad) {
     console.error('Error al cargar propiedad o no existe:', error?.message || 'No encontrada', 'ID:', id);
-    return null;
+    notFound();
   }
 
   if (!propiedad.activo) {
     console.warn('Propiedad existe pero está inactiva:', id);
-    return null;
-  }
-
-  return propiedad;
-}
-
-export default async function PropertyDetailPage({ params }: PageProps) {
-  const { id } = await params;
-  const propiedad = await getPropertyData(id);
-
-  if (!propiedad) {
     notFound();
   }
 
-  const operacion = propiedad.tipo_operacion?.toLowerCase() === 'venta' ? 'Venta' : 'Alquiler';
+  const operacion = propiedad.operacion_nombre?.toLowerCase() === 'alquiler' ? 'Alquiler' : 'Venta';
   const formatoMoneda = new Intl.NumberFormat('es-US', {
     style: 'currency',
     currency: 'USD',
     minimumFractionDigits: 0,
   });
 
-  const imagenes = propiedad.imagenes as string[] || propiedad.imagenes_urls as string[] || [];
-  // Leer características:优先 usar columnas directas, fallback a JSON caracteristicas
-  const caracteristicas = {
-    habitaciones: propiedad.habitaciones ?? (propiedad.caracteristicas as any)?.habitaciones,
-    banos: propiedad.banos ?? (propiedad.caracteristicas as any)?.banos,
-    area_m2: propiedad.area ?? (propiedad.caracteristicas as any)?.area_m2,
-  };
-  const perfil = propiedad.perfiles;
+  // Las imágenes vienen como array JSON en la columna 'imagenes'
+  const imagenes = Array.isArray(propiedad.imagenes) ? propiedad.imagenes : [];
   
-  const whatsappMessage = `Hola, me interesa el inmueble: ${propiedad.titulo} (${formatoMoneda.format(propiedad.precio)})`;
-  const whatsappLink = perfil?.telefono 
+  // Características directas de la vista
+  const caracteristicas = {
+    habitaciones: propiedad.habitaciones,
+    banos: propiedad.banos,
+    area_m2: propiedad.area_total,
+  };
+  
+  // Datos del propietario (ya vienen en la vista)
+  const perfil = {
+    nombre: propiedad.propietario_nombre,
+    telefono: propiedad.propietario_telefono,
+    verificado: propiedad.propietario_verificado,
+    nivel_confianza: null, // No disponible en la vista actual
+    foto_perfil_url: propiedad.propietario_foto,
+  };
+  
+  const whatsappMessage = `Hola, me interesa el inmueble: ${propiedad.titulo} (${formatoMoneda.format(propiedad.precio || 0)})`;
+  const whatsappLink = perfil.telefono 
     ? `https://wa.me/${perfil.telefono.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(whatsappMessage)}`
     : null;
 
