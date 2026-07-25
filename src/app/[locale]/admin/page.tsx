@@ -44,8 +44,8 @@ function MetricasTab() {
     async function load() {
       const [{ count: totalUsuarios }, { count: totalProductos }, { count: activos }] = await Promise.all([
         supabase.from('perfiles').select('*', { count: 'exact', head: true }),
-        supabase.from('productos').select('*', { count: 'exact', head: true }),
-        supabase.from('productos').select('*', { count: 'exact', head: true }).eq('activo', true),
+        supabase.from('vw_propiedades_publicas').select('*', { count: 'exact', head: true }),
+        supabase.from('vw_propiedades_publicas').select('*', { count: 'exact', head: true }).eq('activo', true),
       ])
 
       const { data: trans } = await supabase
@@ -352,7 +352,7 @@ function PublicacionesTab({ notify }: Notifier) {
 
   useEffect(() => {
     async function load() {
-      const { data } = await supabase.from('productos').select('id, titulo, precio_usd, estado, categoria_id, subcategoria, marca, ubicacion_ciudad, activo, visitas, creado_en, user_id, imagen_url, destacado, destacado_hasta, boosteado_en, estado_moderacion').order('creado_en', { ascending: false }).limit(500)
+      const { data } = await supabase.from('vw_propiedades_publicas').select('id, titulo, precio_usd, estado, categoria_id, subcategoria, marca, ubicacion_ciudad, activo, visitas, creado_en, user_id, imagen_url, destacado, destacado_hasta, boosteado_en, estado_moderacion').order('creado_en', { ascending: false }).limit(500)
       if (data) setPublicaciones(data)
       setCargando(false)
     }
@@ -472,7 +472,7 @@ function PublicacionesTab({ notify }: Notifier) {
         </div>
         <button onClick={async () => {
           setCargando(true)
-          const { data } = await supabase.from('productos').select('id, titulo, precio_usd, estado, categoria_id, subcategoria, marca, ubicacion_ciudad, activo, visitas, creado_en, user_id, imagen_url, destacado, destacado_hasta, boosteado_en, estado_moderacion').order('creado_en', { ascending: false }).limit(500)
+          const { data } = await supabase.from('vw_propiedades_publicas').select('id, titulo, precio_usd, estado, categoria_id, subcategoria, marca, ubicacion_ciudad, activo, visitas, creado_en, user_id, imagen_url, destacado, destacado_hasta, boosteado_en, estado_moderacion').order('creado_en', { ascending: false }).limit(500)
           if (data) setPublicaciones(data); setCargando(false)
         }} className="p-2.5 rounded-xl border hover:bg-gray-50">
           <RefreshCw size={18} />
@@ -843,7 +843,7 @@ function TabExportar() {
 
   async function exportarProductos() {
     setExportando(true)
-    const { data } = await supabase.from('productos').select('id, titulo, precio_usd, estado, categoria_id, subcategoria, marca, ubicacion_ciudad, activo, visitas, creado_en, user_id, imagen_url, destacado, destacado_hasta, boosteado_en, estado_moderacion')
+    const { data } = await supabase.from('vw_propiedades_publicas').select('id, titulo, precio_usd, estado, categoria_id, subcategoria, marca, ubicacion_ciudad, activo, visitas, creado_en, user_id, imagen_url, destacado, destacado_hasta, boosteado_en, estado_moderacion')
     if (!data) { setExportando(false); return }
 
     const headers = ['id', 'titulo', 'precio_usd', 'estado', 'categoria_id', 'subcategoria', 'marca', 'ubicacion_ciudad', 'activo', 'visitas', 'creado_en']
@@ -940,11 +940,11 @@ function ModeracionTab({ notify, adminEmail }: { notify: (msg: string) => void; 
     const [{ data: denies }, { data: pends }] = await Promise.all([
       supabase
         .from('denuncias')
-        .select(`id, producto_id, reportante_id, motivo, estado, creada_en, producto:productos(titulo, user_id, precio_usd, imagen_url), reportante:perfiles(nombre)`)
+        .select(`id, producto_id, reportante_id, motivo, estado, creada_en, producto:vw_propiedades_publicas(titulo, user_id, precio_usd, imagen_url), reportante:perfiles(nombre)`)
         .eq('estado', 'activa')
         .order('creada_en', { ascending: false }),
       supabase
-        .from('productos')
+        .from('vw_propiedades_publicas')
         .select('id, titulo, precio_usd, imagen_url, estado, categoria_id, subcategoria, marca, ubicacion_ciudad, activo, visitas, creado_en, user_id, estado_moderacion')
         .eq('estado_moderacion', 'pendiente')
         .order('creado_en', { ascending: false }),

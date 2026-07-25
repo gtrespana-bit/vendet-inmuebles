@@ -48,7 +48,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   let productUrls: MetadataRoute.Sitemap = []
   try {
     const { data: productos, error } = await supabase
-      .from('productos')
+      .from('vw_propiedades_publicas')
       .select('id, actualizado_en')
       .eq('activo', true)
       .or('estado_moderacion.is.null,estado_moderacion.eq.aprobado')

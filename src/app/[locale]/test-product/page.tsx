@@ -4,7 +4,7 @@ export default async function TestProductPage() {
   try {
     // First get a product ID
     const { data: products } = await supabase
-      .from('productos')
+      .from('vw_propiedades_publicas')
       .select('id')
       .limit(1)
 
@@ -22,7 +22,7 @@ export default async function TestProductPage() {
 
     // Now try to fetch the product by ID (same query as getProduct function)
     const { data: product, error } = await supabase
-      .from('productos')
+      .from('vw_propiedades_publicas')
       .select('id, titulo, descripcion, precio_usd, estado, categoria_id, subcategoria, marca, modelo, ubicacion_estado, ubicacion_ciudad, activo, visitas, creado_en, user_id, imagen_url, destacado, destacado_hasta, boosteado_en')
       .eq('id', productId)
       .eq('activo', true)

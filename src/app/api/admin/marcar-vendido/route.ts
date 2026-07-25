@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     )
 
 
-    const { data: producto } = await supabaseAdmin.from('productos').select('user_id, activo, vendido').eq('id', productoId).single() as any
+    const { data: producto } = await supabaseAdmin.from('vw_propiedades_publicas').select('user_id, activo, vendido').eq('id', productoId).single() as any
 
 
     if (!producto || producto.user_id !== userId) {
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { error } = await supabaseAdmin
-      .from('productos')
+      .from('vw_propiedades_publicas')
       .update(updateData)
       .eq('id', productoId)
 
@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
     )
 
 
-    const { data: producto } = await supabaseAdmin.from('productos').select('user_id').eq('id', productoId).single() as any
+    const { data: producto } = await supabaseAdmin.from('vw_propiedades_publicas').select('user_id').eq('id', productoId).single() as any
 
     if (!producto || producto.user_id !== userId) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 403 })

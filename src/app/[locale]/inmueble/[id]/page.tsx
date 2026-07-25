@@ -16,7 +16,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   
   // Fetch property data with all fields to check existence and active status
   const { data: propiedad, error } = await supabase
-    .from('productos')
+    .from('vw_propiedades_publicas')
     .select('*')
     .eq('id', id)
     .single();
@@ -46,7 +46,7 @@ async function getPropertyData(id: string) {
   
   // Obtener propiedad sin filtro de activo primero para verificar existencia
   let { data: propiedad, error } = await supabase
-    .from('productos')
+    .from('vw_propiedades_publicas')
     .select(`
       *,
       perfiles (

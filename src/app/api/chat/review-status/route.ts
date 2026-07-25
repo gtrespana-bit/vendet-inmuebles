@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
 
     // 2. Obtener datos del producto (activo = no vendido, inactivo = vendido/pausado)
     const { data: prod } = await sb
-      .from('productos')
+      .from('vw_propiedades_publicas')
       .select('user_id, activo')
       .eq('id', conv.producto_id)
       .single()

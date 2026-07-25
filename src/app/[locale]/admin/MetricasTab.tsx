@@ -26,9 +26,9 @@ export default function MetricasTab() {
           { count: pendingTransactions },
         ] = await Promise.all([
           supabase.from('perfiles').select('id', { count: 'exact', head: true }),
-          supabase.from('productos').select('id', { count: 'exact', head: true }),
-          supabase.from('productos').select('id', { count: 'exact', head: true }).eq('activo', true),
-          supabase.from('productos').select('visitas', { count: 'exact' }).then(({ data }: { data: any[] }) => {
+          supabase.from('vw_propiedades_publicas').select('id', { count: 'exact', head: true }),
+          supabase.from('vw_propiedades_publicas').select('id', { count: 'exact', head: true }).eq('activo', true),
+          supabase.from('vw_propiedades_publicas').select('visitas', { count: 'exact' }).then(({ data }: { data: any[] }) => {
             return { count: data?.reduce((s: number, p: any) => s + (p.visitas || 0), 0) || 0 }
           }),
           supabase.from('resenas').select('id', { count: 'exact', head: true }),
@@ -39,14 +39,14 @@ export default function MetricasTab() {
 
         // Recent activity (last 20 products)
         const { data: recent } = await supabase
-          .from('productos')
+          .from('vw_propiedades_publicas')
           .select('id, titulo, creado_en, visitas, activo, seller_nombre, precio_usd')
           .order('creado_en', { ascending: false })
           .limit(20)
 
         // Top sellers by visits
         const { data: sellers } = await supabase
-          .from('productos')
+          .from('vw_propiedades_publicas')
           .select('seller_nombre, seller_telefono, user_id')
           .eq('activo', true)
           .order('visitas', { ascending: false })
@@ -55,7 +55,7 @@ export default function MetricasTab() {
         // Aggregate by seller
         const sellerStats: Record<string, any> = {}
         const { data: prods } = await supabase
-          .from('productos')
+          .from('vw_propiedades_publicas')
           .select('seller_nombre, visitas, activo')
 
         prods?.forEach((p: any) => {

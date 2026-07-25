@@ -57,7 +57,7 @@ export default async function VentasPorEstadoPage({ params, searchParams }: Page
   
   // Obtener propiedades de venta en este estado
   const { data: propiedades } = await supabase
-    .from('productos')
+    .from('vw_propiedades_publicas')
     .select(`
       *,
       property_images (url),

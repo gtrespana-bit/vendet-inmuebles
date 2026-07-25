@@ -56,7 +56,7 @@ export default function VendedorPage() {
 
       // Productos activos
       const { data: prods } = await supabase
-        .from('productos')
+        .from('vw_propiedades_publicas')
         .select('id, titulo, precio_usd, imagen_url, categoria_id, subcategoria')
         .eq('user_id', vendedorId)
         .eq('activo', true)

@@ -156,7 +156,7 @@ export default function BuscarClient({ searchParams: searchParamsPromise }: { se
 
     async function buscar() {
       let sq = supabase
-        .from('productos')
+        .from('vw_propiedades_publicas')
         .select('*', { count: 'exact' })
         .eq('activo', true)
         .or('estado_moderacion.is.null,estado_moderacion.eq.aprobado')

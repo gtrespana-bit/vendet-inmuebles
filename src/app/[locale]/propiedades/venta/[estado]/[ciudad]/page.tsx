@@ -28,7 +28,7 @@ export default async function VentasPorCiudadPage({ params, searchParams }: Page
   const supabase = createServerClient()
   
   const { data: propiedades, error } = await supabase
-    .from('productos')
+    .from('vw_propiedades_publicas')
     .select(`
       *,
       property_images (url),

@@ -58,7 +58,7 @@ export default function TabProductos({
   const reactivarVendido = async (productoId: string) => {
     cerrarMenus()
     if (!confirm('¿Reactivar esta publicacion como no vendida?')) return
-    await supabase.from('productos').update({ activo: true, vendido: false, vendido_en: null, comprador_id: null }).eq('id', productoId)
+    await supabase.from('vw_propiedades_publicas').update({ activo: true, vendido: false, vendido_en: null, comprador_id: null }).eq('id', productoId)
     window.location.reload()
   }
 
@@ -203,7 +203,7 @@ export default function TabProductos({
 
   const pausarActivar = async (id: string, activoActual: boolean) => {
     cerrarMenus()
-    await supabase.from('productos').update({ activo: !activoActual }).eq('id', id)
+    await supabase.from('vw_propiedades_publicas').update({ activo: !activoActual }).eq('id', id)
     window.location.reload()
   }
 

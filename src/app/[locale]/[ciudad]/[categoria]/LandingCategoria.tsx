@@ -27,7 +27,7 @@ const CATEGORIA_MAP: Record<string, string> = {
 
 async function getProductos(ciudadNombre: string, categoriaSlug: string) {
   const { data } = await supabase
-    .from('productos')
+    .from('vw_propiedades_publicas')
     .select('id, titulo, precio_usd, estado, imagen_url, ubicacion_ciudad, subcategoria, destacado, destacado_hasta')
     .eq('activo', true)
     .eq('ubicacion_ciudad', ciudadNombre)

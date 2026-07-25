@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
     // --- Push notification al dueño del producto ---
     // Get product owner
     const { data: product } = await supabaseAdmin
-      .from('productos')
+      .from('vw_propiedades_publicas')
       .select('user_id, titulo')
       .eq('id', productId)
       .single()

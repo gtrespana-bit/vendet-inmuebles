@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
     )
 
     const { error } = await supabaseAdmin
-      .from('productos')
+      .from('vw_propiedades_publicas')
       .update({ activo })
       .eq('id', productId)
 

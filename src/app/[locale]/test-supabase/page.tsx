@@ -4,7 +4,7 @@ export default async function TestSupabasePage() {
   try {
     // Test basic connection
     const { data, error } = await supabase
-      .from('productos')
+      .from('vw_propiedades_publicas')
       .select('id, titulo, categoria_id')
       .limit(5)
 

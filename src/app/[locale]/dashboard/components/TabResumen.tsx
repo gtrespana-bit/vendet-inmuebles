@@ -14,13 +14,13 @@ export default function TabResumen({ userId }: { userId: string }) {
       const uid = userId
 
       const { count: activos } = await supabase
-        .from('productos')
+        .from('vw_propiedades_publicas')
         .select('id', { count: 'exact', head: true })
         .eq('user_id', uid)
         .eq('activo', true)
 
       const { data: productos } = await supabase
-        .from('productos')
+        .from('vw_propiedades_publicas')
         .select('visitas')
         .eq('user_id', uid)
         .eq('activo', true)
@@ -37,12 +37,12 @@ export default function TabResumen({ userId }: { userId: string }) {
         .from('favoritos')
         .select('id', { count: 'exact', head: true })
         .in('producto_id',
-          (await supabase.from('productos').select('id').eq('user_id', uid).eq('activo', true))
+          (await supabase.from('vw_propiedades_publicas').select('id').eq('user_id', uid).eq('activo', true))
             ?.data?.map((p: any) => p.id) || []
         )
 
       const { count: vendidos } = await supabase
-        .from('productos')
+        .from('vw_propiedades_publicas')
         .select('id', { count: 'exact', head: true })
         .eq('user_id', uid)
         .eq('activo', false)

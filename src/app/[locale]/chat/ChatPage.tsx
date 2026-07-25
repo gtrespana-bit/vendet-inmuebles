@@ -176,7 +176,7 @@ export default function ChatPageClient() {
     }
     const [, productosRes] = await Promise.all([
       Promise.resolve(null),
-      prodIds.length ? supabase.from('productos').select('id, titulo').in('id', prodIds) : Promise.resolve({ data: [] }),
+      prodIds.length ? supabase.from('vw_propiedades_publicas').select('id, titulo').in('id', prodIds) : Promise.resolve({ data: [] }),
     ])
 
     const prodMap = new Map<string, string>()

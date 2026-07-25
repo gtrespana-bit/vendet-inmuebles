@@ -50,7 +50,7 @@ export const useProductLoader = (
 
     try {
       let query = supabase
-        .from('productos')
+        .from('vw_propiedades_publicas')
         .select(
           `id,
            titulo,

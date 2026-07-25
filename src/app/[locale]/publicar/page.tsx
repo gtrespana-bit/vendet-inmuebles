@@ -96,7 +96,7 @@ export default function PublicarPage() {
     if (user) {
       // Contar publicaciones para el progreso emprendedor
       supabase
-        .from('productos')
+        .from('vw_propiedades_publicas')
         .select('*', { count: 'exact' })
         .eq('user_id', user.id)
         .eq('activo', true)
@@ -332,7 +332,7 @@ export default function PublicarPage() {
 
       // Check Pack Emprendedor (10+ publicaciones = 5 creditos gratis)
       const { count: pubCount } = await supabase
-        .from('productos')
+        .from('vw_propiedades_publicas')
         .select('*', { count: 'exact' })
         .eq('user_id', user?.id)
         .eq('activo', true)

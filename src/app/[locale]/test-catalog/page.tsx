@@ -4,7 +4,7 @@ export default async function TestCatalogPage() {
   try {
     // Test the same query as used in catalog page
     const { data, count, error } = await supabase
-      .from('productos')
+      .from('vw_propiedades_publicas')
       .select('id, titulo, precio_usd, estado, imagen_url, ubicacion_ciudad, ubicacion_estado, creado_en, subcategoria, boosteado_en, destacado, destacado_hasta, vendedor_verificado', { count: 'exact' })
       .eq('activo', true)
       .or('estado_moderacion.is.null,estado_moderacion.eq.aprobado')

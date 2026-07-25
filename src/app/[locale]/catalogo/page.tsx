@@ -22,7 +22,7 @@ async function getInitialProducts() {
     // Optimización: Seleccionar solo columnas necesarias para la vista de catálogo
     // Usamos COALESCE en la consulta para soportar columnas antiguas y nuevas
     const { data, count, error } = await supabase
-      .from('productos')
+      .from('vw_propiedades_publicas')
       .select('id, titulo, price, precio_usd, main_image_url, imagen_url, imagenes_urls, city, ubicacion_ciudad, state, ubicacion_estado, creado_en, tipo_propiedad, operation_type, operacion_tipo, caracteristicas, descripcion, boosteado_en, destacado, destacado_hasta', { count: 'exact' })
       .eq('activo', true)
       .eq('estado_moderacion', 'aprobado')

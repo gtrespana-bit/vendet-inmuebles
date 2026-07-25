@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
 
     // Boost = poner boosteado_en a ahora para que suba al tope
     const { error } = await supabaseAdmin
-      .from('productos')
+      .from('vw_propiedades_publicas')
       .update({ boosteado_en: new Date().toISOString() })
       .eq('id', productId)
 

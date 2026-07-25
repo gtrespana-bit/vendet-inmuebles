@@ -57,7 +57,7 @@ export default async function AlquilerPorEstadoPage({ params, searchParams }: Pa
   
   // Obtener propiedades de alquiler en este estado
   const { data: propiedades } = await supabase
-    .from('productos')
+    .from('vw_propiedades_publicas')
     .select(`
       *,
       property_images (url),

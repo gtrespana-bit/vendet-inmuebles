@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
     }
 
     const { data, error } = await supabase
-      .from('productos')
+      .from('vw_propiedades_publicas')
       .insert(propertyData)
       .select()
       .single()

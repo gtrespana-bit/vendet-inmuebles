@@ -35,7 +35,7 @@ export default async function AlquilerPage({ params, searchParams }: PageProps) 
   
   // Obtener propiedades recientes de alquiler usando el nuevo sistema
   const { data: propiedadesData } = await supabase
-    .from('productos')
+    .from('vw_propiedades_publicas')
     .select('*')
     .eq('tipo_operacion', 'alquiler')
     .eq('activo', true)

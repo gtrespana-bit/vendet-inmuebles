@@ -14,7 +14,7 @@ interface Props {
 async function getProductos(ciudad: string) {
   try {
     const { data, count } = await supabase
-      .from('productos')
+      .from('vw_propiedades_publicas')
       .select('id, titulo, precio_usd, estado, imagen_url, ubicacion_ciudad, destacado, destacado_hasta', { count: 'exact' })
       .eq('activo', true)
       .eq('ubicacion_ciudad', ciudad)

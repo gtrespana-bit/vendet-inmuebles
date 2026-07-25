@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
       : { estado_moderacion: 'rechazado', motivo_moderacion: 'Bloqueado por admin', activo: false }
 
     const { error } = await sb
-      .from('productos')
+      .from('vw_propiedades_publicas')
       .update(updateData)
       .eq('id', productId)
 

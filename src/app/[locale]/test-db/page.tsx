@@ -8,7 +8,7 @@ export default async function TestDBPage({ params }: { params: { locale: string 
   
   // Consultar las primeras 5 propiedades activas directamente
   const { data: propiedades, error } = await supabase
-    .from('productos')
+    .from('vw_propiedades_publicas')
     .select('id, titulo, activo, precio_usd')
     .eq('activo', true)
     .limit(5);
