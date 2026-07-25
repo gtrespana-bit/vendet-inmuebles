@@ -49,95 +49,94 @@ export const useProductLoader = (
     setError(null);
 
     try {
+      // Columnas REALES que existen en vw_propiedades_publicas
       let query = supabase
         .from('vw_propiedades_publicas')
         .select(
           `id,
            titulo,
            descripcion,
-           price,
-           precio_usd,
-           state,
+           precio,
+           moneda,
+           ciudad,
            estado,
-           city,
-           ubicacion_ciudad,
-           main_image_url,
-           imagen_url,
-           imagenes_urls,
-           images,
-           operation_type,
-           operacion_tipo,
-           bedrooms,
+           municipio,
+           zona,
+           area_total,
+           area_construida,
            habitaciones,
-           bathrooms,
            banos,
-           area_size,
-           area,
-           categoria_id,
-           subcategoria,
-           marca,
+           puestos_estacionamiento,
+           piso,
+           condicion,
+           antiguedad_anios,
+           latitud,
+           longitud,
+           direccion_exacta,
+           slug,
            activo,
+           destacado,
            visitas,
            creado_en,
-           destacado,
-           destacado_hasta,
-           boosteado_en,
-           estado_moderacion,
-           caracteristicas,
-           tipo_propiedad`,
+           actualizado_en,
+           publicado_en,
+           operacion_nombre,
+           operacion_slug,
+           tipo_nombre,
+           tipo_slug,
+           tipo_icono,
+           propietario_nombre,
+           propietario_telefono,
+           propietario_email,
+           propietario_foto,
+           propietario_verificado,
+           propietario_tipo,
+           propietario_empresa,
+           main_image_url,
+           imagenes,
+           caracteristicas`,
           { count: 'exact' }
         )
-        .eq('activo', true)
-        .eq('estado_moderacion', 'aprobado');
+        .eq('activo', true);
 
       // Filtro por tipo de operación (Venta / Alquiler)
       if (activeFilters.operacionTipo) {
         const op = activeFilters.operacionTipo.toLowerCase();
-        // Intentar con nueva columna primero, fallback a antigua
-        query = query.or(`operation_type.eq.${op},operacion_tipo.ilike.%${op}%`);
+        // Usar columna real: operacion_nombre
+        query = query.ilike('operacion_nombre', `%${op}%`);
       }
 
       // Filtro por tipo de propiedad
       if (activeFilters.tipoPropiedad) {
-        query = query.ilike('tipo_propiedad', `%${activeFilters.tipoPropiedad}%`);
+        query = query.ilike('tipo_nombre', `%${activeFilters.tipoPropiedad}%`);
       }
 
-      // Filtro por categoría - mapear slug a tipo_propiedad real en BD
+      // Filtro por categoría - mapear slug a tipo_nombre real en BD
       if (activeFilters.categoria) {
         const catStr = String(activeFilters.categoria).toLowerCase();
-        const catNum = parseInt(catStr, 10);
-        if (!isNaN(catNum)) {
-          query = query.eq('categoria_id', catNum);
-        } else {
-          // Mapeo slug URL → valor real en BD
-          const tipoMap: Record<string, string> = {
-            casas: 'Casa',
-            apartamentos: 'Apartamento',
-            terrenos: 'Terreno',
-            oficinas: 'Oficina',
-            locales: 'Local',
-            edificios: 'Edificio',
-            quintas: 'Quinta',
-            galpones: 'Galpón',
-          };
-          const tipoReal = tipoMap[catStr];
-          if (tipoReal) {
-            query = query.ilike('tipo_propiedad', tipoReal);
-          } else {
-            query = query.ilike('tipo_propiedad', `%${catStr}%`);
-          }
+        // Mapeo slug URL → valor real en BD (tipo_nombre)
+        const tipoMap: Record<string, string> = {
+          casas: 'Casa',
+          apartamentos: 'Apartamento',
+          terrenos: 'Terreno',
+          oficinas: 'Oficina',
+          locales: 'Local',
+          edificios: 'Edificio',
+          quintas: 'Quinta',
+          galpones: 'Galpón',
+        };
+        const tipoReal = tipoMap[catStr];
+        if (tipoReal) {
+          query = query.eq('tipo_nombre', tipoReal);
         }
       }
 
-      // Filtro por subcategoría
-      if (activeFilters.subcategoria) {
-        query = query.ilike('subcategoria', `%${activeFilters.subcategoria}%`);
-      }
+      // Filtro por subcategoría (eliminado - no existe en vw_propiedades_publicas)
+      // if (activeFilters.subcategoria) { ... }
 
-      // Filtro por marca
-      if (activeFilters.marca) {
-        query = query.ilike('marca', `%${activeFilters.marca}%`);
-      }
+      // Filtro por marca (eliminado - no existe en vw_propiedades_publicas)
+      // Filtro por marca (eliminado - no existe en vw_propiedades_publicas)
+      // if (activeFilters.marca) { ... }
 
       // Búsqueda por título o descripción
       if (activeFilters.q) {
@@ -146,21 +145,21 @@ export const useProductLoader = (
         );
       }
 
-      // Filtro por ubicación - ciudad
+      // Filtro por ubicación - ciudad (usar columnas reales)
       if (activeFilters.ubicacionCiudad) {
-        query = query.eq('ubicacion_ciudad', activeFilters.ubicacionCiudad);
+        query = query.eq('ciudad', activeFilters.ubicacionCiudad);
       } else if (activeFilters.ubicacionEstado) {
-        query = query.eq('ubicacion_estado', activeFilters.ubicacionEstado);
+        query = query.eq('estado', activeFilters.ubicacionEstado);
       }
 
-      // Filtro por precio mínimo
+      // Filtro por precio mínimo (usar columna real: precio)
       if (activeFilters.precioMin) {
-        query = query.gte('precio_usd', parseFloat(activeFilters.precioMin as string));
+        query = query.gte('precio', parseFloat(activeFilters.precioMin as string));
       }
 
-      // Filtro por precio máximo
+      // Filtro por precio máximo (usar columna real: precio)
       if (activeFilters.precioMax) {
-        query = query.lte('precio_usd', parseFloat(activeFilters.precioMax as string));
+        query = query.lte('precio', parseFloat(activeFilters.precioMax as string));
       }
 
       // Ordenar por fecha de creación, más recientes primero
