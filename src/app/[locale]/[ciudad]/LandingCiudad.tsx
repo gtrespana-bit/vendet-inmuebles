@@ -15,9 +15,9 @@ async function getProductos(ciudad: string) {
   try {
     const { data, count } = await supabase
       .from('vw_propiedades_publicas')
-      .select('id, titulo, precio_usd, estado, imagen_url, ubicacion_ciudad, destacado, destacado_hasta', { count: 'exact' })
+      .select('id, titulo, precio, estado, main_image_url, ciudad, destacado, destacado_hasta', { count: 'exact' })
       .eq('activo', true)
-      .eq('ubicacion_ciudad', ciudad)
+      .eq('ciudad', ciudad)
       .or('estado_moderacion.is.null,estado_moderacion.eq.aprobado')
       .order('creado_en', { ascending: false })
       .limit(24)
@@ -63,10 +63,10 @@ export default async function LandingCiudad({ slug, nombre, estado, descripcion 
               </div>
               <div className="p-3">
                 <h3 className="font-semibold text-gray-900 text-sm truncate">{p.titulo}</h3>
-                <p className="text-lg font-black text-brand-primary mt-1">${new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(Number(p.precio_usd || 0))}</p>
+                <p className="text-lg font-black text-brand-primary mt-1">${new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(Number(p.precio || 0))}</p>
                 <p className="text-xs text-gray-500">{p.estado}</p>
-                {p.ubicacion_ciudad && (
-                  <p className="text-xs text-gray-400 flex items-center gap-1"><MapPin size={10} />{p.ubicacion_ciudad}</p>
+                {p.ciudad && (
+                  <p className="text-xs text-gray-400 flex items-center gap-1"><MapPin size={10} />{p.ciudad}</p>
                 )}
               </div>
             </LocalLink>

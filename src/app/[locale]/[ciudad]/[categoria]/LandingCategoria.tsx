@@ -28,10 +28,10 @@ const CATEGORIA_MAP: Record<string, string> = {
 async function getProductos(ciudadNombre: string, categoriaSlug: string) {
   const { data } = await supabase
     .from('vw_propiedades_publicas')
-    .select('id, titulo, precio_usd, estado, imagen_url, ubicacion_ciudad, subcategoria, destacado, destacado_hasta')
+    .select('id, titulo, precio, estado, main_image_url, ciudad, tipo_slug, destacado, destacado_hasta')
     .eq('activo', true)
-    .eq('ubicacion_ciudad', ciudadNombre)
-    .eq('subcategoria', categoriaSlug)
+    .eq('ciudad', ciudadNombre)
+    .eq('tipo_slug', categoriaSlug)
     .or('estado_moderacion.is.null,estado_moderacion.eq.aprobado')
     .order('creado_en', { ascending: false })
     .limit(24)
@@ -76,8 +76,8 @@ function ProductosGrid({ productos, categoriaNombre, ciudadNombre, t }: { produc
           </div>
           <div className="p-3">
             <h3 className="font-semibold text-gray-900 text-sm truncate">{p.titulo}</h3>
-            <p className="text-lg font-black text-brand-primary mt-1">${new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(Number(p.precio_usd || 0))}</p>
-            <p className="text-xs text-gray-500">{p.estado} · {p.subcategoria}</p>
+            <p className="text-lg font-black text-brand-primary mt-1">${new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(Number(p.precio || 0))}</p>
+            <p className="text-xs text-gray-500">{p.estado} · {p.tipo_slug}</p>
           </div>
         </LocalLink>
       ))}

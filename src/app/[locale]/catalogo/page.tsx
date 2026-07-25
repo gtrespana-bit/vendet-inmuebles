@@ -23,7 +23,7 @@ async function getInitialProducts() {
     // Usamos COALESCE en la consulta para soportar columnas antiguas y nuevas
     const { data, count, error } = await supabase
       .from('vw_propiedades_publicas')
-      .select('id, titulo, price, precio_usd, main_image_url, imagen_url, imagenes_urls, city, ubicacion_ciudad, state, ubicacion_estado, creado_en, tipo_propiedad, operation_type, operacion_tipo, caracteristicas, descripcion, boosteado_en, destacado, destacado_hasta', { count: 'exact' })
+      .select('id, titulo, precio, main_image_url, ciudad, estado, creado_en, tipo_nombre, operacion_nombre, caracteristicas, descripcion, boosteado_en, destacado, destacado_hasta', { count: 'exact' })
       .eq('activo', true)
       .eq('estado_moderacion', 'aprobado')
       .order('creado_en', { ascending: false })
@@ -49,12 +49,12 @@ async function getInitialProducts() {
     }).map((p: any) => ({
       ...p,
       // Normalizar datos: usar columnas nuevas si existen, sino las antiguas
-      price: p.price ?? 0,
+      price: p.precio ?? 0,
       main_image_url: p.main_image_url ?? null,
-      city: p.city_name ?? 'Ubicación no especificada',
-      state: p.state_name ?? 'Estado no especificado',
-      operation_type: p.operation_type ?? 'venta',
-      property_type: p.tipo_propiedad ?? 'inmueble',
+      city: p.ciudad ?? 'Ubicación no especificada',
+      state: p.estado ?? 'Estado no especificado',
+      operation_type: p.operacion_nombre ?? 'venta',
+      property_type: p.tipo_nombre ?? 'inmueble',
       // Pre-computar flags para evitar hydration mismatch en cliente
       _isFeatured: !!(p.destacado && p.destacado_hasta && p.destacado_hasta > now),
     }))
