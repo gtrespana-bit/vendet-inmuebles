@@ -42,9 +42,9 @@ export default function TabResumen({ userId }: { userId: string }) {
         )
 
       const { count: vendidos } = await supabase
-        .from('vw_propiedades_publicas')
+        .from('inmuebles')
         .select('id', { count: 'exact', head: true })
-        .eq('user_id', uid)
+        .eq('usuario_id', uid)
         .eq('activo', false)
 
       setStats({

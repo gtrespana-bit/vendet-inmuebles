@@ -9,6 +9,8 @@
 import { createServerClient } from './supabase-server';
 import type { Property, PropertyFilter } from '@/types/property';
 
+const FALLBACK_IMAGE = '/sinimagen.webp';
+
 /**
  * Mapear datos de la vista 'vw_propiedades_publicas' al tipo Property
  * La vista devuelve los campos en español
@@ -24,6 +26,10 @@ function mapInmuebleToProperty(item: any): Property {
   const imagensUrls = Array.isArray(imagenes) 
     ? imagenes.map((img: any) => typeof img === 'string' ? img : img.url_imagen).filter(Boolean)
     : [];
+
+  // Usar imagen de fallback si no hay imagen
+  const mainImage = imagenPortada || FALLBACK_IMAGE;
+  const imagesList = imagensUrls.length > 0 ? imagensUrls : (imagenPortada ? [imagenPortada] : [FALLBACK_IMAGE]);
 
   return {
     id: item.id,
@@ -49,8 +55,8 @@ function mapInmuebleToProperty(item: any): Property {
     status: item.condicion ? (item.condicion as 'active' | 'inactive' | 'sold' | 'rented' | 'reserved') : 'active',
     featured: !!item.destacado,
     amenities: item.caracteristicas || null,
-    main_image_url: imagenPortada || null,
-    images: imagensUrls.length > 0 ? imagensUrls : (imagenPortada ? [imagenPortada] : null),
+    main_image_url: mainImage,
+    images: imagesList,
     video_url: item.video_url || null,
     virtual_tour_url: item.virtual_tour_url || null,
     owner_id: item.usuario_id || '',

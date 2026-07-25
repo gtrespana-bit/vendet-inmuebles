@@ -209,11 +209,11 @@ async function getRecentProducts(limit = 8) {
 }
 
 function PropertyCard({ p, highlighted = false, priority = false, t }: { p: any; highlighted?: boolean; priority?: boolean; t: any }) {
-  const imgUrl = p.imagen_url || getPlaceholderImage(p.titulo)
+  const imgUrl = p.imagen_url || p.imagen_portada || '/sinimagen.webp'
   const operacion = p.operacion_tipo === 'Venta' ? t('home.productCard.forSale') : t('home.productCard.forRent')
   return (
     <LocalLink
-      href={`/inmueble/${p.id}`}
+      href={`/${t('locale')}/inmueble/${p.id}`}
       className={`bg-white rounded-xl overflow-hidden transition-all duration-200 group block border ${
         highlighted
           ? 'border-2 border-brand-accent shadow-lg hover:shadow-xl hover:-translate-y-1'
@@ -241,7 +241,7 @@ function PropertyCard({ p, highlighted = false, priority = false, t }: { p: any;
           fetchPriority={priority ? 'high' : 'auto'}
           quality={75}
           placeholder="blur"
-          blurDataURL="/placeholder-property.webp"
+          blurDataURL="/sinimagen.webp"
         />
       </div>
       <div className="p-4">
