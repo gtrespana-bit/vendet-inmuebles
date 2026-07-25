@@ -53,8 +53,6 @@ type Producto = {
   main_image_url: string | null
   imagenes: string[] | null
   caracteristicas: string[] | null
-  boosteado_en?: string | null
-  destacado_hasta?: string | null
 }
 
 const PLACEHOLDER_IMAGES = [
@@ -66,31 +64,14 @@ function getPlaceholderImage(titulo: string) {
 }
 
 function ProductCard({ p }: { p: Producto }) {
-  const isBoosted = p.boosteado_en != null
-  const isFeatured = p.destacado && p.destacado_hasta && new Date(p.destacado_hasta) > new Date()
-  const isPromoted = isBoosted || isFeatured
   const imgUrl = p.main_image_url || getPlaceholderImage(p.titulo)
 
   return (
     <LocalLink
       href={`/inmueble/${p.id}`}
-      className={`bg-white rounded-xl overflow-hidden transition-all duration-200 group block border
-        ${isPromoted
-          ? 'border-2 border-brand-accent shadow-md hover:shadow-xl hover:-translate-y-1'
-          : 'border-gray-100 shadow-sm hover:shadow-lg hover:-translate-y-1 hover:border-gray-200'
-        }`}
+      className="bg-white rounded-xl overflow-hidden transition-all duration-200 group block border border-gray-100 shadow-sm hover:shadow-lg hover:-translate-y-1 hover:border-gray-200"
     >
       <div className="aspect-square bg-gray-100 relative overflow-hidden">
-        {isFeatured && (
-          <div className="absolute top-2 left-2 z-10 bg-brand-accent text-brand-primary text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
-            ⭐ Destacado
-          </div>
-        )}
-        {isBoosted && !isFeatured && (
-          <div className="absolute top-2 left-2 z-10 bg-green-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
-            ⚡ Boost
-          </div>
-        )}
         <Image
           src={imgUrl}
           alt={p.titulo}
@@ -224,22 +205,9 @@ export default function BuscarClient({ searchParams: searchParamsPromise }: { se
       if (!cancelled) {
         if (!error) {
           let sorted = data as Producto[]
-          // Ordenamiento personalizado para destacados y boosteados
+          // Ordenamiento simple por fecha de creación
           if (orden !== 'precio_asc' && orden !== 'precio_desc') {
-            const now = new Date().toISOString()
-            sorted = sorted.sort((a: any, b: any) => {
-              const aBoost = a.boosteado_en || null
-              const bBoost = b.boosteado_en || null
-              if (aBoost && !bBoost) return -1
-              if (!aBoost && bBoost) return 1
-              if (aBoost && bBoost) return bBoost.localeCompare(aBoost)
-              const aDest = a.destacado && a.destacado_hasta && a.destacado_hasta > now
-              const bDest = b.destacado && b.destacado_hasta && b.destacado_hasta > now
-              if (aDest && !bDest) return -1
-              if (!aDest && bDest) return 1
-              if (aDest && bDest) return b.destacado_hasta!.localeCompare(a.destacado_hasta!)
-              return new Date(b.creado_en).getTime() - new Date(a.creado_en).getTime()
-            })
+            sorted = sorted.sort((a, b) => new Date(b.creado_en).getTime() - new Date(a.creado_en).getTime())
           }
           setResultCount(count ?? 0)
           setProductos(sorted)
