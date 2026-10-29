@@ -24,8 +24,8 @@ ESTADOS.forEach((estado) => {
       slug,
       nombre: municipio.capital,
       estado,
-      titulo: `Clasificados en ${municipio.capital}, ${estado} | VendeT.online`,
-      descripcion: `Compra y vende en ${municipio.capital}, ${estado}. Miles de anuncios clasificados: carros, casas, celulares, empleo y más. Publica gratis en VendeT.online.`,
+      titulo: `Clasificados en ${municipio.capital}, ${estado} | VendeT Inmuebles`,
+      descripcion: `Explora anuncios de carros, casas, celulares, empleo y más en ${municipio.capital}, ${estado}. Publica gratis en VendeT Inmuebles.`,
       keywords: [
         `clasificados ${municipio.capital}`,
         `compra venta ${municipio.capital}`,

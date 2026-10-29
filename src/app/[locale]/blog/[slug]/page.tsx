@@ -69,11 +69,11 @@ async function generateMetadata(props: { params: Promise<{ slug: string }> }): P
   return {
     title: `${post.title} — Blog VendeT Venezuela`,
     description: post.excerpt,
-    alternates: { canonical: `https://vendet.online/blog/${post.slug}` },
+    alternates: { canonical: `https://venezuela-inmuebles.online/blog/${post.slug}` },
     openGraph: {
       title: post.title,
       description: post.excerpt,
-      url: `https://vendet.online/blog/${post.slug}`,
+      url: `https://venezuela-inmuebles.online/blog/${post.slug}`,
       siteName: 'VendeT-Venezuela',
       type: 'article',
       locale: 'es_VE',
@@ -91,21 +91,21 @@ function generateArticleSchema(post: Post) {
     "dateModified": post.date,
     "author": {
       "@type": "Organization",
-      "name": "VendeT.online",
-      "url": "https://vendet.online"
+      "name": "VendeT Inmuebles",
+      "url": "https://venezuela-inmuebles.online"
     },
     "publisher": {
       "@type": "Organization",
-      "name": "VendeT.online",
-      "url": "https://vendet.online",
+      "name": "VendeT Inmuebles",
+      "url": "https://venezuela-inmuebles.online",
       "logo": {
         "@type": "ImageObject",
-        "url": "https://vendet.online/logo.png"
+        "url": "https://venezuela-inmuebles.online/logo.png"
       }
     },
     "mainEntityOfPage": {
       "@type": "WebPage",
-      "@id": `https://vendet.online/blog/${post.slug}`
+      "@id": `https://venezuela-inmuebles.online/blog/${post.slug}`
     },
     "articleSection": post.category,
     "keywords": post.tags.join(', '),

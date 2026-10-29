@@ -10,22 +10,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // URLs estáticas
   const staticUrls: MetadataRoute.Sitemap = [
-    { url: 'https://vendet.online', lastModified: new Date(), changeFrequency: 'daily', priority: 1 },
-    { url: 'https://vendet.online/en', lastModified: new Date(), changeFrequency: 'daily', priority: 0.8 },
-    { url: 'https://vendet.online/catalogo', lastModified: new Date(), changeFrequency: 'daily', priority: 0.9 },
-    { url: 'https://vendet.online/publicar', lastModified: new Date(), changeFrequency: 'weekly', priority: 0.8 },
-    { url: 'https://vendet.online/creditos', lastModified: new Date(), changeFrequency: 'weekly', priority: 0.7 },
-    { url: 'https://vendet.online/como-funciona', lastModified: new Date(), changeFrequency: 'monthly', priority: 0.6 },
-    { url: 'https://vendet.online/contacto', lastModified: new Date(), changeFrequency: 'monthly', priority: 0.5 },
-    { url: 'https://vendet.online/faq', lastModified: new Date(), changeFrequency: 'monthly', priority: 0.5 },
-    { url: 'https://vendet.online/sobre-nosotros', lastModified: new Date(), changeFrequency: 'monthly', priority: 0.5 },
-    { url: 'https://vendet.online/terminos-y-condiciones', lastModified: new Date(), changeFrequency: 'yearly', priority: 0.3 },
-    { url: 'https://vendet.online/politica-de-privacidad', lastModified: new Date(), changeFrequency: 'yearly', priority: 0.3 },
+    { url: 'https://venezuela-inmuebles.online', lastModified: new Date(), changeFrequency: 'daily', priority: 1 },
+    { url: 'https://venezuela-inmuebles.online/en', lastModified: new Date(), changeFrequency: 'daily', priority: 0.8 },
+    { url: 'https://venezuela-inmuebles.online/catalogo', lastModified: new Date(), changeFrequency: 'daily', priority: 0.9 },
+    { url: 'https://venezuela-inmuebles.online/publicar', lastModified: new Date(), changeFrequency: 'weekly', priority: 0.8 },
+    { url: 'https://venezuela-inmuebles.online/creditos', lastModified: new Date(), changeFrequency: 'weekly', priority: 0.7 },
+    { url: 'https://venezuela-inmuebles.online/como-funciona', lastModified: new Date(), changeFrequency: 'monthly', priority: 0.6 },
+    { url: 'https://venezuela-inmuebles.online/contacto', lastModified: new Date(), changeFrequency: 'monthly', priority: 0.5 },
+    { url: 'https://venezuela-inmuebles.online/faq', lastModified: new Date(), changeFrequency: 'monthly', priority: 0.5 },
+    { url: 'https://venezuela-inmuebles.online/sobre-nosotros', lastModified: new Date(), changeFrequency: 'monthly', priority: 0.5 },
+    { url: 'https://venezuela-inmuebles.online/terminos-y-condiciones', lastModified: new Date(), changeFrequency: 'yearly', priority: 0.3 },
+    { url: 'https://venezuela-inmuebles.online/politica-de-privacidad', lastModified: new Date(), changeFrequency: 'yearly', priority: 0.3 },
   ]
 
   // URLs de ciudades
   const cityUrls: MetadataRoute.Sitemap = CIUDADES_SEO.map(ciudad => ({
-    url: `https://vendet.online/${ciudad.slug}`,
+    url: `https://venezuela-inmuebles.online/${ciudad.slug}`,
     lastModified: new Date(),
     changeFrequency: 'weekly' as const,
     priority: 0.7,
@@ -36,7 +36,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   for (const ciudad of CIUDADES_SEO) {
     for (const categoria of CATEGORIAS_POPULARES) {
       cityCategoryUrls.push({
-        url: `https://vendet.online/${ciudad.slug}/${categoria}`,
+        url: `https://venezuela-inmuebles.online/${ciudad.slug}/${categoria}`,
         lastModified: new Date(),
         changeFrequency: 'weekly' as const,
         priority: 0.6,
@@ -56,7 +56,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     if (!error && productos) {
       productUrls = productos.map(p => ({
-        url: `https://vendet.online/inmueble/${p.id}`,
+        url: `https://venezuela-inmuebles.online/inmueble/${p.id}`,
         lastModified: new Date(p.actualizado_en || Date.now()),
         changeFrequency: 'weekly' as const,
         priority: 0.8,
@@ -77,7 +77,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     if (!error && posts) {
       blogUrls = posts.map(post => ({
-        url: `https://vendet.online/blog/${post.slug}`,
+        url: `https://venezuela-inmuebles.online/blog/${post.slug}`,
         lastModified: new Date(post.actualizado_en || Date.now()),
         changeFrequency: 'monthly' as const,
         priority: 0.5,

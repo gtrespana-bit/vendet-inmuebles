@@ -2,25 +2,25 @@
 
 import nodemailer from 'nodemailer'
 
-const FROM = '"VendeT-Venezuela" <noreply@vendet.online>'
+const FROM = process.env.SMTP_FROM || '"VendeT-Venezuela" <noreply@vendet.online>'
 const CONTACT = 'contacto@vendet.online'
-const URL = process.env.NEXT_PUBLIC_URL || 'https://vendet.online'
+const URL = process.env.NEXT_PUBLIC_URL || 'https://venezuela-inmuebles.online'
 const LOGO = `${URL}/logo-vendet.png`
 
 // ─── Transporter ───────────────────────────────────────────
 
 function getTransporter() {
+  const port = Number(process.env.SMTP_PORT) || 465
   return nodemailer.createTransport({
-    host: process.env.ZOHO_SMTP_HOST || 'smtp.zoho.com',
-    port: Number(process.env.ZOHO_SMTP_PORT) || 587,
-    secure: process.env.ZOHO_SMTP_PORT === '465',
-    auth: { user: process.env.ZOHO_SMTP_USER, pass: process.env.ZOHO_SMTP_PASS },
-    tls: { rejectUnauthorized: false },
+    host: process.env.SMTP_HOST || 'smtp.resend.com',
+    port,
+    secure: port === 465,
+    auth: { user: process.env.SMTP_USER || 'resend', pass: process.env.SMTP_PASS },
   })
 }
 
 async function enviar(to: string, subject: string, html: string): Promise<boolean> {
-  if (!process.env.ZOHO_SMTP_USER || !process.env.ZOHO_SMTP_PASS) {
+  if (!process.env.SMTP_PASS) {
     console.warn('⚠️ SMTP no configurado')
     return false
   }
@@ -171,7 +171,7 @@ export async function emailProductoPublicado(
   return enviar(email, '✅ Tu anuncio fue publicado', emailLayout(
     'Anuncio publicado',
     `<p style="margin:0 0 16px">Hola <strong>${nombre}</strong>,</p>
-     <p style="margin:0 0 20px">Tu anuncio ya está visible en VendeT-Venezuela para que miles de compradores lo vean.</p>
+     <p style="margin:0 0 20px">Tu anuncio ya está visible en VendeT Inmuebles para quienes buscan en Venezuela.</p>
      ${card(`
        <p style="margin:0 0 8px;font-weight:600;font-size:16px;color:${COLORS.dark}">${titulo}</p>
        <p style="margin:0;font-size:22px;font-weight:700;color:${COLORS.primary}">$${precio} USD</p>

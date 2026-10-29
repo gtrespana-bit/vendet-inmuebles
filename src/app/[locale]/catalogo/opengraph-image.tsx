@@ -26,7 +26,7 @@ export default async function Image({ params }: { params: { locale: string } }, 
         <div style={{ fontSize: '120px', marginBottom: '20px' }}>{cat.icon}</div>
         <h1 style={{ fontSize: '60px', fontWeight: 'bold', textAlign: 'center', textShadow: '2px 2px 4px rgba(0,0,0,0.5)', lineHeight: 1.2 }}>{cat.name}</h1>
         <p style={{ fontSize: '36px', marginTop: '20px', textAlign: 'center', opacity: 0.9 }}>Marketplace de Venezuela</p>
-        <div style={{ position: 'absolute', bottom: '20px', fontSize: '24px', fontWeight: 'bold', color: 'white', textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>VendeT.online</div>
+        <div style={{ position: 'absolute', bottom: '20px', fontSize: '24px', fontWeight: 'bold', color: 'white', textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>VendeT Inmuebles</div>
       </div>
     ),
     { width: 1200, height: 630 }

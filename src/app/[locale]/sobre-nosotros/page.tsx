@@ -14,11 +14,11 @@ export default async function SobreNosotrosPage() {
     '@type': 'AboutPage',
     name: t('title'),
     description: t('subtitle'),
-    url: 'https://vendet.online/sobre-nosotros',
+    url: 'https://venezuela-inmuebles.online/sobre-nosotros',
     mainEntity: {
       '@type': 'Organization',
       name: 'VendeT-Venezuela',
-      url: 'https://vendet.online',
+      url: 'https://venezuela-inmuebles.online',
       description: t('subtitle'),
       foundingDate: '2024',
       areaServed: { '@type': 'Country', name: 'Venezuela' },

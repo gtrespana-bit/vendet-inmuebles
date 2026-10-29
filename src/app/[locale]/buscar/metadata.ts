@@ -13,20 +13,20 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
   const ciudad = (searchParams.ciudad as string) || ''
   const estado = (searchParams.estado as string) || ''
   
-  let title = 'Buscar productos — VendeT.online Venezuela'
+  let title = 'Buscar productos — VendeT Inmuebles Venezuela'
   let description = 'Busca y encuentra los mejores clasificados en Venezuela. Compra y vende productos nuevos y usados.'
   
   if (q) {
-    title = `${q} en Venezuela — Clasificados VendeT.online`
+    title = `${q} en Venezuela — Clasificados VendeT Inmuebles`
     description = `Resultados de búsqueda para "${q}". Encuentra los mejores productos y clasificados en Venezuela.`
   } else if (categoria) {
     const categoriaNombre = categoria.charAt(0).toUpperCase() + categoria.slice(1)
-    title = `${categoriaNombre} en Venezuela — Clasificados VendeT.online`
+    title = `${categoriaNombre} en Venezuela — Clasificados VendeT Inmuebles`
     description = `Explora ${categoriaNombre.toLowerCase()} en venta. Los mejores clasificados de ${categoriaNombre.toLowerCase()} en Venezuela.`
   } else if (ciudad || estado) {
     const ubicacion = ciudad || estado
     const ubicacionCapitalizada = ubicacion.charAt(0).toUpperCase() + ubicacion.slice(1)
-    title = `Clasificados en ${ubicacionCapitalizada}, Venezuela — VendeT.online`
+    title = `Clasificados en ${ubicacionCapitalizada}, Venezuela — VendeT Inmuebles`
     description = `Compra y vende en ${ubicacionCapitalizada}. Encuentra los mejores clasificados y productos en ${ubicacionCapitalizada}, Venezuela.`
   }
   

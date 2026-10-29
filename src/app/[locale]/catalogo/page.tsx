@@ -7,10 +7,10 @@ export const metadata: Metadata = {
   title: 'Catálogo — Compra y Venta en Venezuela | VendeT-Venezuela',
   description: 'Explora el catálogo de productos en VendeT-Venezuela. Carros, tecnología, moda, hogar, herramientas y más.',
   alternates: {
-    canonical: 'https://vendet.online/catalogo',
+    canonical: 'https://venezuela-inmuebles.online/catalogo',
     languages: {
-      es: 'https://vendet.online/catalogo',
-      en: 'https://vendet.online/en/catalogo',
+      es: 'https://venezuela-inmuebles.online/catalogo',
+      en: 'https://venezuela-inmuebles.online/en/catalogo',
     },
   },
 }

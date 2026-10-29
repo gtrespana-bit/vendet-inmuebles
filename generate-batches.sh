@@ -1,7 +1,7 @@
 #!/bin/bash
 # Script para generar archivos individuales por batch de 10 URLs
 
-BASE_URL="https://vendet.online"
+BASE_URL="https://venezuela-inmuebles.online"
 
 # Lista completa de URLs
 readarray -t URLs < vendet_urls_completas.txt

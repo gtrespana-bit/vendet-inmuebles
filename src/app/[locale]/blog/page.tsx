@@ -54,12 +54,12 @@ export const metadata: Metadata = {
   title: 'Blog — VendeT Venezuela | Consejos de compra, venta y emprendimiento',
   description: 'Guías, precios del mercado venezolano y consejos para comprar y vender sin estafas. Todo sobre emprendimiento y comercio electrónico en Venezuela.',
   alternates: {
-    canonical: 'https://vendet.online/blog',
+    canonical: 'https://venezuela-inmuebles.online/blog',
   },
   openGraph: {
     title: 'Blog VendeT Venezuela — Compra, Venta y Emprendimiento',
     description: 'Guías del mercado venezolano, consejos para emprendedores y mucho más.',
-    url: 'https://vendet.online/blog',
+    url: 'https://venezuela-inmuebles.online/blog',
     siteName: 'VendeT-Venezuela',
     type: 'website',
     locale: 'es_VE',

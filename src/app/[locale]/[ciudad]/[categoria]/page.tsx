@@ -45,7 +45,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   
   if (!ciudadSEO) {
     return {
-      title: 'Categoría no encontrada | VendeT.online',
+      title: 'Categoría no encontrada | VendeT Inmuebles',
       description: 'La ciudad o categoría solicitada no existe.',
     }
   }
@@ -53,8 +53,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const cityName = ciudadSEO.nombre
   const stateName = ciudadSEO.estado
   
-  const title = `${cat.nombre} en ${cityName}, ${stateName} | Clasificados VendeT.online`
-  const description = `Compra y vende ${cat.descripcion.toLowerCase()} en ${cityName}, ${stateName}. Anuncios clasificados gratis. Publica sin costo en VendeT.online.`
+  const title = `${cat.nombre} en ${cityName}, ${stateName} | Clasificados VendeT Inmuebles`
+  const description = `Compra y vende ${cat.descripcion.toLowerCase()} en ${cityName}, ${stateName}. Anuncios clasificados gratis. Publica sin costo en VendeT Inmuebles.`
   
   const keywords = [
     `${cat.nombre.toLowerCase()} ${cityName}`,
@@ -75,7 +75,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       locale: 'es_VE',
     },
     alternates: {
-      canonical: `https://vendet.online/${ciudad}/${categoria}`,
+      canonical: `https://venezuela-inmuebles.online/${ciudad}/${categoria}`,
     },
     robots: {
       index: true,

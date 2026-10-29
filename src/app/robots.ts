@@ -7,7 +7,7 @@ export default function robots(): MetadataRoute.Robots {
       allow: '/',
       disallow: ['/admin/', '/dashboard/', '/api/'],
     },
-    sitemap: 'https://vendet.online/sitemap.xml',
-    host: 'https://vendet.online',
+    sitemap: 'https://venezuela-inmuebles.online/sitemap.xml',
+    host: 'https://venezuela-inmuebles.online',
   }
 }

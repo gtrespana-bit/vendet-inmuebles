@@ -13,7 +13,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   
   if (!ciudadSEO) {
     return {
-      title: 'Ciudad no encontrada | VendeT.online',
+      title: 'Ciudad no encontrada | VendeT Inmuebles',
       description: 'La ciudad solicitada no existe en nuestro directorio de clasificados.',
     }
   }
@@ -33,7 +33,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       locale: 'es_VE',
     },
     alternates: {
-      canonical: `https://vendet.online/${ciudad}`,
+      canonical: `https://venezuela-inmuebles.online/${ciudad}`,
     },
     robots: {
       index: true,
@@ -80,7 +80,7 @@ export default async function CiudadPage({ params }: Props) {
       }
     },
     description: ciudadSEO.descripcion,
-    sameAs: `https://vendet.online/${ciudad}`
+    sameAs: `https://venezuela-inmuebles.online/${ciudad}`
   }
 
   return (

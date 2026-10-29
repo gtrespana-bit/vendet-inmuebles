@@ -267,7 +267,6 @@ export default function PublicarPage() {
       // Alerta al admin si contenido sospechoso (envía notificación Telegram)
       if (estadoModeracion === 'pendiente') {
         try {
-          const ALERTA_URL = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://marketplacevzla.vercel.app'}`
           await fetch('/api/moderacion-alerta', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', ...(await getSupabaseAuthHeaders()) },

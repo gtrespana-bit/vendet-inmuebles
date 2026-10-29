@@ -257,7 +257,7 @@ export default function CatalogoClient({ initialProducts = [], initialCount = 0 
       '@type': 'ListItem',
       position: index + 1,
       name: item.label.replace(/^[^ ]+ /, ''), // Remover emoji del nombre para schema
-      item: item.href ? `https://vendet.online${item.href}` : undefined
+      item: item.href ? `https://venezuela-inmuebles.online${item.href}` : undefined
     }))
   }
 

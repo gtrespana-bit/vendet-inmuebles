@@ -43,7 +43,7 @@ export default async function LandingCiudad({ slug, nombre, estado, descripcion 
         Clasificados en {nombre}, {estado} - Compra y Venta en Venezuela
       </h1>
       <p className="text-gray-500 mb-8">
-        {descripcion} Encuentra miles de productos nuevos y usados en {nombre}. Publica gratis tu anuncio.
+        {descripcion} Explora anuncios disponibles en {nombre} y publica gratis tu propiedad.
       </p>
 
       {productos.length > 0 ? (
