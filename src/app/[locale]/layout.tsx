@@ -1,4 +1,4 @@
-﻿import { NextIntlClientProvider } from 'next-intl'
+import { NextIntlClientProvider } from 'next-intl'
 import { notFound } from 'next/navigation'
 import { routing } from '@/i18n/routing'
 import type { Metadata, Viewport } from 'next'
@@ -30,10 +30,10 @@ async function getDictionary(locale: string) {
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params
   
-  const metadataBase = new URL('https://vendet-inmuebles.online')
+  const metadataBase = new URL('https://venezuela-inmuebles.online')
   const canonicalUrl = locale === 'es' 
-    ? 'https://vendet-inmuebles.online' 
-    : `https://vendet-inmuebles.online/${locale}`
+    ? 'https://venezuela-inmuebles.online'
+    : `https://venezuela-inmuebles.online/${locale}`
 
   return {
     metadataBase,
@@ -44,8 +44,8 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
       template: '%s | VendeT Inmuebles',
     },
     description: locale === 'es'
-      ? 'El portal líder de bienes raíces en Venezuela. Encuentra casas, apartamentos, terrenos, locales y oficinas en venta y alquiler en todo el país.'
-      : 'The leading real estate portal in Venezuela. Find houses, apartments, land, commercial spaces and offices for sale and rent across the country.',
+      ? 'Explora casas, apartamentos, terrenos, locales y oficinas en venta y alquiler en Venezuela.'
+      : 'Explore houses, apartments, land, commercial spaces and offices for sale and rent in Venezuela.',
     keywords: locale === 'es'
       ? ['inmuebles venezuela', 'casas en venta venezuela', 'apartamentos venezuela', 'terrenos venezuela', 'alquiler venezuela', 'bienes raices venezuela', 'propiedades venezuela', 'inmobiliaria venezuela']
       : ['venezuela real estate', 'houses for sale venezuela', 'apartments venezuela', 'land venezuela', 'rent venezuela', 'properties venezuela'],
@@ -66,10 +66,10 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
         ? 'VendeT Inmuebles - Bienes Raíces en Venezuela'
         : 'VendeT Real Estate - Properties in Venezuela',
       description: locale === 'es'
-        ? 'El portal líder de bienes raíces en Venezuela. Encuentra tu próximo hogar o inversión.'
-        : 'The leading real estate portal in Venezuela. Find your next home or investment.',
+        ? 'Explora inmuebles en venta y alquiler en Venezuela y encuentra tu próximo hogar o inversión.'
+        : 'Explore properties for sale and rent in Venezuela and find your next home or investment.',
       images: [{
-        url: 'https://vendet-inmuebles.online/og-image.png',
+        url: 'https://venezuela-inmuebles.online/og-image.png',
         width: 1200,
         height: 630,
         alt: 'VendeT Inmuebles - Bienes Raíces Venezuela'
@@ -81,9 +81,9 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
         ? 'VendeT Inmuebles - Bienes Raíces en Venezuela'
         : 'VendeT Real Estate - Properties in Venezuela',
       description: locale === 'es'
-        ? 'El portal líder de bienes raíces en Venezuela.'
-        : 'The leading real estate portal in Venezuela.',
-      images: ['https://vendet-inmuebles.online/og-image.png'],
+        ? 'Explora inmuebles en venta y alquiler en Venezuela.'
+        : 'Explore properties for sale and rent in Venezuela.',
+      images: ['https://venezuela-inmuebles.online/og-image.png'],
     },
     robots: {
       index: true,
@@ -99,8 +99,8 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
     alternates: {
       canonical: canonicalUrl,
       languages: {
-        'es-VE': 'https://vendet-inmuebles.online',
-        'en-US': 'https://vendet-inmuebles.online/en',
+        'es-VE': 'https://venezuela-inmuebles.online',
+        'en-US': 'https://venezuela-inmuebles.online/en',
       },
     },
     verification: {

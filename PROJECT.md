@@ -1,9 +1,12 @@
-# Marketplace VZLA — Proyecto Completo
+# VendeT Inmuebles — Proyecto
 
 ## General
-- **Repo:** `gtrespana-bit/Marketplace-vzla` (GitHub)
-- **Branch:** `main`
-- **Deploy:** Vercel (`https://vendet.online`)
+- **Repo:** `gtrespana-bit/vendet-inmuebles` (GitHub)
+- **Branch principal:** `main`
+- **Dominio canónico:** `https://venezuela-inmuebles.online`
+- **Deploy:** Vercel (`vendet-inmuebles`)
+- **Supabase:** `VendeT Inmuebles` (`quxbqmqwiacfwbpqioev`, `us-east-1`)
+- **Estado inicial:** esquema y catálogos configurados; sin usuarios ni publicaciones importados.
 - **Stack:** Next.js (App Router, TS), Supabase (Postgres + Auth + Storage + Realtime), PWA
 - **Node:** v24.14.0
 
@@ -216,13 +219,16 @@
 - ~~Producto activo mostrando botón de reseña~~ → solo si `!prod.activo`
 - ~~Review check sin filtro por producto_id~~ → ahora filtra por producto
 
-## Variables de Entorno (conocidas)
+## Variables de Entorno
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `SUPABASE_SERVICE_ROLE_KEY`
-- `SENTRY_AUTH_TOKEN` (para SourceMaps)
-- `NEXT_PUBLIC_BASE_URL` (para alertas de moderación)
-- Resend API key (para emails)
+- `SUPABASE_SERVICE_ROLE_KEY` (sólo servidor)
+- `NEXT_PUBLIC_URL` y `NEXT_PUBLIC_BASE_URL` (dominio canónico y enlaces)
+- `R2_*` (almacenamiento de imágenes)
+- `TELEGRAM_*` (alertas y webhook)
+- `ZOHO_SMTP_*` (correo transaccional)
+- `NEXT_PUBLIC_VAPID_PUBLIC_KEY` y `VAPID_PRIVATE_KEY` (notificaciones push)
+- `SENTRY_AUTH_TOKEN` (Source Maps, opcional)
 
 ## Notas de Diseño
 - BottomTabNav: siempre visible, no remover

@@ -2,16 +2,14 @@
 import nodemailer from 'nodemailer'
 
 function getTransporter() {
+  const port = Number(process.env.ZOHO_SMTP_PORT) || 587
   return nodemailer.createTransport({
     host: process.env.ZOHO_SMTP_HOST || 'smtp.zoho.com',
-    port: Number(process.env.ZOHO_SMTP_PORT) || 587,
-    secure: process.env.ZOHO_SMTP_PORT === '465',
+    port,
+    secure: port === 465,
     auth: {
       user: process.env.ZOHO_SMTP_USER,
       pass: process.env.ZOHO_SMTP_PASS,
-    },
-    tls: {
-      rejectUnauthorized: false,
     },
   })
 }
@@ -50,7 +48,7 @@ export async function enviarEmailProducto(
   precio: string,
   slug: string
 ) {
-  const url = `${process.env.NEXT_PUBLIC_URL || 'https://vendet.online'}/inmueble/${slug}`
+  const url = `${process.env.NEXT_PUBLIC_URL || 'https://venezuela-inmuebles.online'}/inmueble/${slug}`
   return enviar('VendeT-Venezuela', email, '✅ Tu anuncio fue publicado', `
     <div style="font-family:sans-serif;max-width:500px;margin:0 auto">
       <h2 style="color:#1e3a8a">Hola ${nombre}!</h2>
@@ -81,7 +79,7 @@ export async function enviarEmailMensaje(
       <p><strong>${nombreComprador}</strong> te envió un mensaje sobre:</p>
       <p style="font-weight:bold">${producto}</p>
       <div style="background:#f3f4f6;padding:16px;border-radius:10px;margin:16px 0;font-style:italic">"${mensajePreview}"</div>
-      <a href="${process.env.NEXT_PUBLIC_URL || 'https://vendet.online'}/dashboard?tab=mensajes" style="display:inline-block;background:#1e3a8a;color:#fff;padding:12px 28px;text-decoration:none;border-radius:8px;font-weight:bold">Responder →</a>
+      <a href="${process.env.NEXT_PUBLIC_URL || 'https://venezuela-inmuebles.online'}/dashboard?tab=mensajes" style="display:inline-block;background:#1e3a8a;color:#fff;padding:12px 28px;text-decoration:none;border-radius:8px;font-weight:bold">Responder →</a>
       <p style="color:#6b7280;font-size:12px;margin-top:28px">VendeT-Venezuela</p>
     </div>
   `)
@@ -124,7 +122,7 @@ export async function enviarEmailVerificacion(
         <p style="font-size:20px;font-weight:bold;margin:12px 0">Tu cuenta fue verificada</p>
         <p>Ahora tienes el sello de verificación visible en todos tus anuncios. Los compradores confían más en vendedores verificados.</p>
       </div>
-      <a href="${process.env.NEXT_PUBLIC_URL || 'https://vendet.online'}/dashboard" style="display:inline-block;background:#1e3a8a;color:#fff;padding:12px 28px;text-decoration:none;border-radius:8px;font-weight:bold">Ir a tu perfil →</a>
+      <a href="${process.env.NEXT_PUBLIC_URL || 'https://venezuela-inmuebles.online'}/dashboard" style="display:inline-block;background:#1e3a8a;color:#fff;padding:12px 28px;text-decoration:none;border-radius:8px;font-weight:bold">Ir a tu perfil →</a>
       <p style="color:#6b7280;font-size:12px;margin-top:28px">VendeT-Venezuela</p>
     </div>
   `)
@@ -154,7 +152,7 @@ export async function enviarEmailNivel(
         <p style="font-size:20px;font-weight:bold;margin:12px 0">Ahora eres ${nivelNuevo}</p>
         <p>Subiste de <strong>${nivelAnterior}</strong> a <strong>${nivelNuevo}</strong>!</p>
       </div>
-      <a href="${process.env.NEXT_PUBLIC_URL || 'https://vendet.online'}/dashboard?tab=perfil" style="display:inline-block;background:#1e3a8a;color:#fff;padding:12px 28px;text-decoration:none;border-radius:8px;font-weight:bold">Ver perfil →</a>
+      <a href="${process.env.NEXT_PUBLIC_URL || 'https://venezuela-inmuebles.online'}/dashboard?tab=perfil" style="display:inline-block;background:#1e3a8a;color:#fff;padding:12px 28px;text-decoration:none;border-radius:8px;font-weight:bold">Ver perfil →</a>
       <p style="color:#6b7280;font-size:12px;margin-top:28px">VendeT-Venezuela</p>
     </div>
   `)

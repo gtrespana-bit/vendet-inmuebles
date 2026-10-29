@@ -36,25 +36,25 @@ export async function generateMetadata({ params }: { params: { locale: string } 
       default: 'Inmuebles en Venezuela | VendeT Inmuebles - Casas, Apartamentos, Terrenos',
       template: `%s | VendeT Inmuebles`
     },
-    description: 'VendeT Inmuebles es el portal líder de bienes raíces en Venezuela. Encuentra casas, apartamentos, terrenos, locales y oficinas en venta y alquiler en todo el país.',
+    description: 'VendeT Inmuebles te ayuda a explorar casas, apartamentos, terrenos, locales y oficinas en venta y alquiler en Venezuela.',
     keywords: ['inmuebles venezuela', 'casas en venta venezuela', 'apartamentos venezuela', 'terrenos venezuela', 'alquiler venezuela', 'bienes raices venezuela', 'propiedades venezuela', 'inmobiliaria venezuela'],
     authors: [{ name: 'VendeT Inmuebles' }],
     creator: 'VendeT Inmuebles',
     publisher: 'VendeT Inmuebles',
     alternates: {
-      canonical: 'https://vendet-inmuebles.online/',
+      canonical: 'https://venezuela-inmuebles.online/',
       languages: {
-        es: 'https://vendet-inmuebles.online/',
-        en: 'https://vendet-inmuebles.online/en/',
+        es: 'https://venezuela-inmuebles.online/',
+        en: 'https://venezuela-inmuebles.online/en/',
       },
     },
     openGraph: {
       title: 'Inmuebles en Venezuela | VendeT Inmuebles',
-      description: 'El portal líder de bienes raíces en Venezuela. Encuentra tu próximo hogar o inversión.',
-      url: 'https://vendet-inmuebles.online/',
+      description: 'Explora casas, apartamentos, terrenos, locales y oficinas en venta y alquiler en Venezuela.',
+      url: 'https://venezuela-inmuebles.online/',
       siteName: 'VendeT Inmuebles',
       images: [{
-        url: 'https://vendet-inmuebles.online/og-image.png',
+        url: 'https://venezuela-inmuebles.online/og-image.png',
         width: 1200,
         height: 630,
         alt: 'VendeT Inmuebles - Bienes Raíces Venezuela'
@@ -65,8 +65,8 @@ export async function generateMetadata({ params }: { params: { locale: string } 
     twitter: {
       card: 'summary_large_image',
       title: 'Inmuebles en Venezuela | VendeT Inmuebles',
-      description: 'El portal líder de bienes raíces en Venezuela.',
-      images: ['https://vendet-inmuebles.online/og-image.png'],
+      description: 'Explora inmuebles en venta y alquiler en Venezuela.',
+      images: ['https://venezuela-inmuebles.online/og-image.png'],
     },
     robots: {
       index: true,
@@ -270,7 +270,7 @@ export default async function HomePage() {
     getTrending(),
     getRecentProducts(),
   ])
-  const baseUrl = 'https://vendet-inmuebles.online'
+  const baseUrl = 'https://venezuela-inmuebles.online'
   const allProperties = [...destacados, ...propiedades].slice(0, 20)
   const itemListSchema = generateItemListSchema(allProperties, baseUrl)
 
@@ -309,7 +309,7 @@ export default async function HomePage() {
             <div className="text-center mb-8">
               <div className="inline-flex items-center gap-2 bg-brand-accent/20 backdrop-blur-sm border border-brand-accent/30 rounded-full px-4 py-2 mb-6">
                 <Star size={16} className="fill-brand-accent text-brand-accent" />
-                <span className="text-brand-accent font-semibold text-sm">El marketplace #1 de inmuebles en Venezuela</span>
+                <span className="text-brand-accent font-semibold text-sm">El portal inmobiliario de Venezuela</span>
               </div>
               
               <h1 className="text-3xl md:text-5xl font-heading font-bold text-white mb-4 leading-tight">
@@ -319,7 +319,7 @@ export default async function HomePage() {
               </h1>
               
               <p className="text-lg md:text-xl text-white/90 mb-6 max-w-2xl mx-auto font-medium">
-                Miles de propiedades en venta y alquiler. Publica gratis o busca tu próximo hogar hoy mismo.
+                Busca propiedades en venta y alquiler en todo el país. Publica gratis o encuentra tu próximo hogar.
               </p>
             </div>
 
@@ -405,23 +405,23 @@ export default async function HomePage() {
               </LocalLink>
             </div>
 
-            {/* Stats Bar */}
+            {/* Beneficios sin métricas de publicaciones o usuarios heredadas */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
               <div className="text-center">
-                <p className="text-3xl md:text-4xl font-heading font-bold text-brand-accent">+1,200</p>
-                <p className="text-xs md:text-sm text-white/90 mt-1">Propiedades Activas</p>
+                <p className="text-2xl md:text-3xl font-heading font-bold text-brand-accent">24</p>
+                <p className="text-xs md:text-sm text-white/90 mt-1">Estados disponibles</p>
               </div>
               <div className="text-center">
-                <p className="text-3xl md:text-4xl font-heading font-bold text-brand-accent">24</p>
-                <p className="text-xs md:text-sm text-white/90 mt-1">Estados Cubiertos</p>
+                <p className="text-2xl md:text-3xl font-heading font-bold text-brand-accent">Gratis</p>
+                <p className="text-xs md:text-sm text-white/90 mt-1">Publica tus anuncios</p>
               </div>
               <div className="text-center">
-                <p className="text-3xl md:text-4xl font-heading font-bold text-brand-accent">100%</p>
-                <p className="text-xs md:text-sm text-white/90 mt-1">Gratis para Publicar</p>
+                <p className="text-2xl md:text-3xl font-heading font-bold text-brand-accent">Directo</p>
+                <p className="text-xs md:text-sm text-white/90 mt-1">Contacta con vendedores</p>
               </div>
               <div className="text-center">
-                <p className="text-3xl md:text-4xl font-heading font-bold text-brand-accent">+5K</p>
-                <p className="text-xs md:text-sm text-white/90 mt-1">Usuarios Registrados</p>
+                <p className="text-2xl md:text-3xl font-heading font-bold text-brand-accent">Venezuela</p>
+                <p className="text-xs md:text-sm text-white/90 mt-1">Inmuebles en todo el país</p>
               </div>
             </div>
           </div>

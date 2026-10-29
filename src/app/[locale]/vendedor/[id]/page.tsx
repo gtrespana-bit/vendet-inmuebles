@@ -94,7 +94,7 @@ export default function VendedorPage() {
         "addressRegion": vendedor.estado || "",
         "addressCountry": "VE"
       },
-      "url": `https://vendet.online/vendedor/${vendedorId}`,
+      "url": `https://venezuela-inmuebles.online/vendedor/${vendedorId}`,
       "aggregateRating": {
         "@type": "AggregateRating",
         "ratingValue": promedio.toFixed(1),

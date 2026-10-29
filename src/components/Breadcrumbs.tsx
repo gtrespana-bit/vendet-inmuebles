@@ -20,7 +20,7 @@ export default function Breadcrumbs({ items }: BreadcrumbsProps) {
       '@type': 'ListItem',
       position: index + 1,
       name: item.label,
-      item: item.href ? `https://vendet.online${item.href}` : undefined
+      item: item.href ? `https://venezuela-inmuebles.online${item.href}` : undefined
     }))
   }
 

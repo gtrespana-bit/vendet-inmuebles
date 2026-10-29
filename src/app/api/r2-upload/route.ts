@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getUploadPresignedUrl, getR2PublicUrl } from '@/lib/r2-client'
+import { getUploadPresignedUrl, getR2PublicUrl, isR2Configured } from '@/lib/r2-client'
 import { requireAuthenticatedUser } from '@/lib/api-auth'
 import { checkRateLimit } from '@/lib/rate-limit'
 
@@ -9,6 +9,9 @@ export async function POST(req: NextRequest) {
   try {
     const auth = await requireAuthenticatedUser(req)
     if (!auth.ok) return auth.response
+    if (!isR2Configured()) {
+      return NextResponse.json({ error: 'Almacenamiento de imágenes no configurado' }, { status: 503 })
+    }
 
     const body = await req.json()
     const key = typeof body.key === 'string' ? body.key : ''

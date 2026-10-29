@@ -30,6 +30,6 @@ export default function robots(): MetadataRoute.Robots {
         ],
       },
     ],
-    sitemap: 'https://vendet.online/sitemap.xml',
+    sitemap: 'https://venezuela-inmuebles.online/sitemap.xml',
   }
 }

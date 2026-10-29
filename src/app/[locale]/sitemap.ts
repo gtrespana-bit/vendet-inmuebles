@@ -3,7 +3,7 @@ import { MetadataRoute } from 'next'
 import fs from 'fs'
 import path from 'path'
 
-const BASE_URL = 'https://vendet.online'
+const BASE_URL = 'https://venezuela-inmuebles.online'
 
 // Blog post dates helper
 function getBlogPostDate(slug: string): Date {

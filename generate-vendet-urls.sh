@@ -3,7 +3,7 @@
 # Script para generar lista de URLs de VendeT para inspeccionar en Google Search Console
 # Genera URLs de landing pages por ciudad × categoría
 
-BASE_URL="https://vendet.online"
+BASE_URL="https://venezuela-inmuebles.online"
 
 # Ciudades
 CIUDADES=(
@@ -73,7 +73,7 @@ TOTAL_CATEGORIAS=${#CATEGORIAS[@]}
 TOTAL_CIUDAD_CATEGORIA=$((TOTAL_CIUDADES * TOTAL_CATEGORIAS))
 
 cat > vendet_urls_resumen.txt <<EOF
-# RESUMEN DE Vendet.online URLs para Google Search Console
+# Resumen de URLs de venezuela-inmuebles.online para Google Search Console
 # Generado: $(date "+%Y-%m-%d %H:%M:%S")
 
 === PÁGINAS PRINCIPALES (14 URLs) ===

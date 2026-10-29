@@ -7,12 +7,12 @@ const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID
 
 function getTransporter() {
+  const port = Number(process.env.ZOHO_SMTP_PORT) || 587
   return nodemailer.createTransport({
     host: process.env.ZOHO_SMTP_HOST || 'smtp.zoho.com',
-    port: Number(process.env.ZOHO_SMTP_PORT) || 587,
-    secure: process.env.ZOHO_SMTP_PORT === '465',
+    port,
+    secure: port === 465,
     auth: { user: process.env.ZOHO_SMTP_USER, pass: process.env.ZOHO_SMTP_PASS },
-    tls: { rejectUnauthorized: false },
   })
 }
 

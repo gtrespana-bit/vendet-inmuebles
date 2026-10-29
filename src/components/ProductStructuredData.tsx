@@ -34,8 +34,8 @@ export default function ProductStructuredData({ product, seller }: ProductStruct
     '@type': 'Product',
     name: product.titulo,
     description: product.descripcion || `${product.titulo} en venta en VendeT Marketplace Venezuela`,
-    image: product.imagen_url || 'https://vendet.online/og-image.webp',
-    url: `https://vendet.online/inmueble/${product.id}`,
+    image: product.imagen_url || 'https://venezuela-inmuebles.online/og-image.webp',
+    url: `https://venezuela-inmuebles.online/inmueble/${product.id}`,
     sku: product.id,
     brand: {
       '@type': 'Brand',
@@ -43,7 +43,7 @@ export default function ProductStructuredData({ product, seller }: ProductStruct
     },
     offers: {
       '@type': 'Offer',
-      url: `https://vendet.online/inmueble/${product.id}`,
+      url: `https://venezuela-inmuebles.online/inmueble/${product.id}`,
       priceCurrency: 'USD',
       price: product.precio_usd,
       availability: 'https://schema.org/InStock',
@@ -51,7 +51,7 @@ export default function ProductStructuredData({ product, seller }: ProductStruct
       seller: seller ? {
         '@type': seller.verificado ? 'Verified' : 'Person',
         name: seller.nombre || 'Vendedor VendeT',
-        url: `https://vendet.online/vendedor/${seller.id}`
+        url: `https://venezuela-inmuebles.online/vendedor/${seller.id}`
       } : {
         '@type': 'Organization',
         name: 'VendeT'

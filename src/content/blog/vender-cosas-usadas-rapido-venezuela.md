@@ -65,4 +65,4 @@ Acepta:
 
 ### Publica gratis en VendeT
 
-Sin comisiones, con chat integrado y miles de compradores. [Publicar ahora](/publicar)
+Sin comisiones y con chat integrado, VendeT te ayuda a conectar con compradores. [Publicar ahora](/publicar)

@@ -238,18 +238,18 @@ export default function BuscarClient({ searchParams: searchParamsPromise }: { se
               Resultados de búsqueda para &ldquo;{query}&rdquo; en Venezuela
             </h1>
             <p className="text-gray-600">
-              Encuentra los mejores clasificados y productos relacionados con &ldquo;{query}&rdquo; en VendeT.online. 
+              Encuentra los mejores clasificados y productos relacionados con &ldquo;{query}&rdquo; en VendeT Inmuebles.
               Compra y vende de forma segura en todo el país.
             </p>
           </>
         ) : categoria ? (
           <>
             <h1 className="text-2xl font-bold text-gray-900 mb-2">
-              {cat?.label || categoria} en Venezuela — Clasificados VendeT.online
+              {cat?.label || categoria} en Venezuela — Clasificados VendeT Inmuebles
             </h1>
             <p className="text-gray-600">
               Explora {cat?.label || categoria.toLowerCase()} en venta. Los mejores clasificados de {cat?.label || categoria.toLowerCase()} en Venezuela. 
-              Publica gratis y llega a miles de compradores.
+              Publica gratis y conecta con compradores de todo el país.
             </p>
           </>
         ) : ubicacionCiudad || ubicacionEstado ? (
@@ -269,7 +269,7 @@ export default function BuscarClient({ searchParams: searchParamsPromise }: { se
             </h1>
             <p className="text-gray-600">
               Busca y encuentra los mejores clasificados en Venezuela. Compra y vende productos nuevos y usados 
-              de forma segura en VendeT.online, el marketplace líder venezolano.
+              de forma segura en VendeT Inmuebles, el marketplace inmobiliario venezolano.
             </p>
           </>
         )}
