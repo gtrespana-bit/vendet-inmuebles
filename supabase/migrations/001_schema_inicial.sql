@@ -35,6 +35,7 @@ AS $$
 $$;
 
 REVOKE ALL ON FUNCTION public.slugify(text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.slugify(text) TO authenticated, service_role;
 
 CREATE OR REPLACE FUNCTION public.set_updated_at_column()
 RETURNS trigger
