@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import LocalLink from '@/components/LocalLink'
 import { useRouter } from 'next/navigation'
 import { supabase, isSupabaseConfigured } from '@/lib/supabase'
+import { getSupabaseAuthHeaders } from '@/lib/supabase-auth-headers'
 import { useAuth } from '@/components/AuthProvider'
 import { categoriasData } from '@/lib/categorias'
 import { ESTADOS, getMunicipiosNombres } from '@/lib/ubicaciones'
@@ -172,7 +173,7 @@ export default function PublicarPage() {
       // Pedir presigned URL al servidor
       const res = await fetch('/api/r2-upload', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(await getSupabaseAuthHeaders()) },
         body: JSON.stringify({ key, contentType: img.file.type || 'image/jpeg' }),
       })
 
@@ -269,10 +270,11 @@ export default function PublicarPage() {
           const ALERTA_URL = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://marketplacevzla.vercel.app'}`
           await fetch('/api/moderacion-alerta', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', ...(await getSupabaseAuthHeaders()) },
             body: JSON.stringify({
               nivel: 'sospechoso',
               titulo,
+              descripcion,
               palabras: resultado.palabras,
               userId: user?.id,
               userName: user?.email || 'Desconocido',
@@ -286,7 +288,7 @@ export default function PublicarPage() {
       // Insert product via API route with rate limiting
       const res = await fetch('/api/publicar', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(await getSupabaseAuthHeaders()) },
         body: JSON.stringify({
           userId: user?.id,
           moderacionAlerta: estadoModeracion === 'pendiente' ? {

@@ -1,58 +1,46 @@
-﻿import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
-import { requireUUIDs } from '@/lib/validation'
+import { requireAuthenticatedUser } from '@/lib/api-auth'
+import { isValidUUID } from '@/lib/validation'
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireAuthenticatedUser(request)
+    if (!auth.ok) return auth.response
+
     const body = await request.json()
     const { productoId, userId, vendidoEn, compradorId } = body
-
-    // Validar UUIDs
-    const uuidCheck = requireUUIDs(body, ['productoId', 'userId'])
-    if (!uuidCheck.valid) {
-      return NextResponse.json({ error: uuidCheck.error }, { status: 400 })
-    }
-
-    // compradorId es opcional pero si existe debe ser válido
-    if (compradorId && !requireUUIDs({ compradorId }, ['compradorId']).valid) {
+    if (!isValidUUID(productoId)) return NextResponse.json({ error: 'productoId inválido' }, { status: 400 })
+    if (userId !== auth.user.id) return NextResponse.json({ error: 'No autorizado' }, { status: 403 })
+    if (compradorId && (!isValidUUID(compradorId) || compradorId === auth.user.id)) {
       return NextResponse.json({ error: 'compradorId inválido' }, { status: 400 })
     }
 
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    )
+    const fuenteVenta = ['plataforma', 'otra_pagina', 'no_especificado'].includes(vendidoEn)
+      ? vendidoEn
+      : 'no_especificado'
 
-
-    const { data: producto } = await supabaseAdmin.from('vw_propiedades_publicas').select('user_id, activo, vendido').eq('id', productoId).single() as any
-
-
-    if (!producto || producto.user_id !== userId) {
+    const { data: inmueble, error: fetchError } = await auth.supabaseAdmin
+      .from('inmuebles')
+      .select('id, usuario_id, vendido')
+      .eq('id', productoId)
+      .maybeSingle()
+    if (fetchError) return NextResponse.json({ error: fetchError.message }, { status: 500 })
+    if (!inmueble || inmueble.usuario_id !== auth.user.id) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 403 })
     }
+    if (inmueble.vendido) return NextResponse.json({ error: 'El inmueble ya está marcado como vendido' }, { status: 400 })
 
-
-    if (producto.vendido) {
-      return NextResponse.json({ error: 'El producto ya estÃ¡ marcado como vendido' }, { status: 400 })
-    }
-
-    const updateData: Record<string, string | boolean | null> = {
+    const updateData: Record<string, any> = {
       activo: false,
       vendido: true,
-      vendido_en: vendidoEn || 'no_especificado',
+      vendido_en: fuenteVenta,
+      comprador_id: compradorId || null,
     }
-    if (compradorId) {
-      updateData.comprador_id = compradorId
-    }
-
-    const { error } = await supabaseAdmin
-      .from('vw_propiedades_publicas')
+    const { error: updateError } = await auth.supabaseAdmin
+      .from('inmuebles')
       .update(updateData)
       .eq('id', productoId)
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
+    if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 })
 
     return NextResponse.json({ ok: true })
   } catch (err: any) {
@@ -62,78 +50,62 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
+    const auth = await requireAuthenticatedUser(request)
+    if (!auth.ok) return auth.response
+
     const { searchParams } = new URL(request.url)
     const productoId = searchParams.get('productoId')
     const userId = searchParams.get('userId')
-
-    if (!productoId || !userId) {
-      return NextResponse.json({ error: 'Datos incompletos' }, { status: 400 })
+    if (!productoId || !isValidUUID(productoId) || userId !== auth.user.id) {
+      return NextResponse.json({ error: 'Datos incompletos o no autorizados' }, { status: 400 })
     }
 
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    )
-
-
-    const { data: producto } = await supabaseAdmin.from('vw_propiedades_publicas').select('user_id').eq('id', productoId).single() as any
-
-    if (!producto || producto.user_id !== userId) {
+    const { data: inmueble, error: inmuebleError } = await auth.supabaseAdmin
+      .from('inmuebles')
+      .select('id, usuario_id')
+      .eq('id', productoId)
+      .maybeSingle()
+    if (inmuebleError) return NextResponse.json({ error: inmuebleError.message }, { status: 500 })
+    if (!inmueble || inmueble.usuario_id !== auth.user.id) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 403 })
     }
 
-    // Buscar conversaciones de este producto
-
-    const { data: conversacionesList }: { data: any[] | null } = await supabaseAdmin
+    const { data: conversaciones, error: conversacionesError } = await auth.supabaseAdmin
       .from('conversaciones')
       .select('id, user1_id, user2_id')
       .eq('producto_id', productoId)
-
-    if (!conversacionesList || conversacionesList.length === 0) {
-      return NextResponse.json({ ok: true, interesados: [] })
-    }
+    if (conversacionesError) return NextResponse.json({ error: conversacionesError.message }, { status: 500 })
 
     const compradorIds = new Set<string>()
+    for (const conv of conversaciones || []) {
+      if (conv.user1_id === auth.user.id && conv.user2_id !== auth.user.id) compradorIds.add(conv.user2_id)
+      if (conv.user2_id === auth.user.id && conv.user1_id !== auth.user.id) compradorIds.add(conv.user1_id)
+    }
+    if (compradorIds.size === 0) return NextResponse.json({ ok: true, interesados: [] })
 
-    for (const conv of conversacionesList as any[]) {
-      const u1: string | null = conv.user1_id || null
-      const u2: string | null = conv.user2_id || null
-      if (u1 === userId && u2 && u2 !== userId) {
-        compradorIds.add(u2)
-      } else if (u2 === userId && u1 && u1 !== userId) {
-        compradorIds.add(u1)
+    const ids = Array.from(compradorIds)
+    const [{ data: perfiles, error: perfilesError }, { data: mensajes, error: mensajesError }] = await Promise.all([
+      auth.supabaseAdmin.from('perfiles').select('id, nombre').in('id', ids),
+      auth.supabaseAdmin.from('mensajes')
+        .select('remitente_id, contenido, creado_en')
+        .in('remitente_id', ids)
+        .order('creado_en', { ascending: false }),
+    ])
+    if (perfilesError) return NextResponse.json({ error: perfilesError.message }, { status: 500 })
+    if (mensajesError) return NextResponse.json({ error: mensajesError.message }, { status: 500 })
+
+    const ultimoMensaje = new Map<string, string>()
+    for (const mensaje of mensajes || []) {
+      if (!ultimoMensaje.has(mensaje.remitente_id)) {
+        ultimoMensaje.set(mensaje.remitente_id, (mensaje.contenido || '').slice(0, 60))
       }
     }
 
-    if (compradorIds.size === 0) {
-      return NextResponse.json({ ok: true, interesados: [] })
-    }
-
-    const idsArray = Array.from(compradorIds)
-
-
-    const { data: perfiles } = await supabaseAdmin.from('perfiles').select('id, nombre').in('id', idsArray) as { data: { id: string; nombre: string | null }[] | null }
-
-    const { data: ultimosMensajes } = await supabaseAdmin.from('mensajes').select('remitente_id, contenido').in('remitente_id', idsArray).order('creado_en', { ascending: false }) as { data: { remitente_id: string; contenido: string | null }[] | null }
-
-
-    const ultimoMsgMap = new Map<string, string>()
-    if (ultimosMensajes) {
-
-      for (const m of ultimosMensajes as any[]) {
-        if (!ultimoMsgMap.has(m.remitente_id)) {
-          ultimoMsgMap.set(m.remitente_id, m.contenido ? m.contenido.substring(0, 60) : '')
-        }
-      }
-    }
-
-
-    const interesados = (perfiles || []).map((p: any) => ({
-      userId: p.id,
-      nombre: p.nombre || 'Usuario',
-      ultimoMensaje: ultimoMsgMap.get(p.id) || '',
+    const interesados = (perfiles || []).map(perfil => ({
+      userId: perfil.id,
+      nombre: perfil.nombre || 'Usuario',
+      ultimoMensaje: ultimoMensaje.get(perfil.id) || '',
     }))
-
     return NextResponse.json({ ok: true, interesados })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })

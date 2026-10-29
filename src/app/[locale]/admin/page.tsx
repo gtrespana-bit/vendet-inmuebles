@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import LocalLink from '@/components/LocalLink'
 import { supabase } from '@/lib/supabase'
+import { getSupabaseAuthHeaders } from '@/lib/supabase-auth-headers'
 import { useAuth } from '@/components/AuthProvider'
 import {
   CreditCard, Shield, Users, BarChart3, ShieldCheck,
@@ -109,6 +110,10 @@ function UsuariosTab({ notify }: Notifier) {
   const [creditCantidad, setCreditCantidad] = useState('')
   const [creditMotivo, setCreditMotivo] = useState('')
   const [creditProcesando, setCreditProcesando] = useState(false)
+  const mapProfile = (profile: any) => ({
+    ...profile,
+    email_publico: profile.email_visible ? profile.email : null,
+  })
 
   useEffect(() => {
     async function load() {
@@ -116,7 +121,7 @@ function UsuariosTab({ notify }: Notifier) {
         .from('perfiles')
         .select('*')
         .limit(1000)
-      if (data) setUsuarios(data)
+      if (data) setUsuarios(data.map(mapProfile))
       setCargando(false)
     }
     load()
@@ -154,7 +159,7 @@ function UsuariosTab({ notify }: Notifier) {
     try {
       const res = await fetch('/api/admin/add-creditos', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(await getSupabaseAuthHeaders()) },
         body: JSON.stringify({
           userId,
           cantidad: parseInt(creditCantidad),
@@ -171,7 +176,7 @@ function UsuariosTab({ notify }: Notifier) {
       try {
         await fetch('/api/notify', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...(await getSupabaseAuthHeaders()) },
           body: JSON.stringify({
             mensaje: `💰 Creditos Admin\n+${creditCantidad} créditos a ${perfil?.nombre || 'Usuario'}\nMotivo: ${creditMotivo || 'N/A'}`,
           }),
@@ -182,8 +187,8 @@ function UsuariosTab({ notify }: Notifier) {
       setCreditCantidad('')
       setCreditMotivo('')
       // reload user list
-      await supabase.from('perfiles').select('id, nombre, telefono, estado, ciudad, credito_balance, verificado, nivel_confianza, creado_en').limit(1000).then(({data}: {data: any[]}) => {
-        if (data) setUsuarios(data)
+      await supabase.from('perfiles').select('id, email, email_visible, nombre, telefono, estado, ciudad, credito_balance, verificado, nivel_confianza, creado_en').limit(1000).then(({data}: {data: any[]}) => {
+        if (data) setUsuarios(data.map(mapProfile))
       })
     } catch (err: any) {
       notify('❌ Error: ' + (err.message || 'desconocido'))
@@ -194,7 +199,7 @@ function UsuariosTab({ notify }: Notifier) {
   async function toggleVerificado(userId: string, estado: boolean) {
     const res = await fetch('/api/admin/toggle-verificado', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...(await getSupabaseAuthHeaders()) },
       body: JSON.stringify({ userId, verificado: estado }),
     })
     const result = await res.json()
@@ -225,8 +230,8 @@ function UsuariosTab({ notify }: Notifier) {
         </div>
         <button onClick={async () => {
           setCargando(true)
-          const { data } = await supabase.from('perfiles').select('id, nombre, telefono, estado, ciudad, credito_balance, verificado, nivel_confianza, creado_en').limit(1000)
-          if (data) setUsuarios(data); setCargando(false)
+          const { data } = await supabase.from('perfiles').select('id, email, email_visible, nombre, telefono, estado, ciudad, credito_balance, verificado, nivel_confianza, creado_en').limit(1000)
+          if (data) setUsuarios(data.map(mapProfile)); setCargando(false)
         }} className="p-2.5 rounded-xl border hover:bg-gray-50" title="Refrescar">
           <RefreshCw size={18} />
         </button>
@@ -385,7 +390,7 @@ function PublicacionesTab({ notify }: Notifier) {
     setProcesando(id)
     const res = await fetch('/api/admin/toggle-activo', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...(await getSupabaseAuthHeaders()) },
       body: JSON.stringify({ productId: id, activo }),
     })
     const result = await res.json()
@@ -403,7 +408,7 @@ function PublicacionesTab({ notify }: Notifier) {
     setProcesando(id)
     const res = await fetch('/api/admin/eliminar-producto', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...(await getSupabaseAuthHeaders()) },
       body: JSON.stringify({ productId: id }),
     })
     const result = await res.json()
@@ -420,7 +425,7 @@ function PublicacionesTab({ notify }: Notifier) {
     setProcesando(id)
     const res = await fetch('/api/admin/toggle-destacado', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...(await getSupabaseAuthHeaders()) },
       body: JSON.stringify({ productId: id, destacado }),
     })
     const result = await res.json()
@@ -438,7 +443,7 @@ function PublicacionesTab({ notify }: Notifier) {
     setProcesando(id)
     const res = await fetch('/api/admin/boost-producto', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...(await getSupabaseAuthHeaders()) },
       body: JSON.stringify({ productId: id }),
     })
     const result = await res.json()
@@ -563,6 +568,7 @@ function PublicacionesTab({ notify }: Notifier) {
 function TabTransacciones({ perfiles, notify }: { perfiles: Record<string, any>; notify: (m: string) => void }) {
   const [pendientes, setPendientes] = useState<any[]>([])
   const [historial, setHistorial] = useState<any[]>([])
+  const [comprobanteUrls, setComprobanteUrls] = useState<Record<string, string>>({})
   const [procesando, setProcesando] = useState<string | null>(null)
 
   async function cargar() {
@@ -574,6 +580,15 @@ function TabTransacciones({ perfiles, notify }: { perfiles: Record<string, any>;
       .limit(50)
 
     if (!trans) return
+
+    const urls = await Promise.all(trans.map(async (t: any) => {
+      if (!t.comprobante_url) return [t.id, ''] as const
+      const { data, error } = await supabase.storage
+        .from('comprobantes')
+        .createSignedUrl(t.comprobante_url, 600)
+      return [t.id, error ? '' : data?.signedUrl || ''] as const
+    }))
+    setComprobanteUrls(Object.fromEntries(urls))
     setPendientes(trans.filter((t: any) => t.estado === 'pendiente'))
     setHistorial(trans.filter((t: any) => t.estado !== 'pendiente'))
   }
@@ -593,13 +608,13 @@ function TabTransacciones({ perfiles, notify }: { perfiles: Record<string, any>;
 
 Se aprobaron ${monto} créditos para ${usuarioNombre}.
 Transacción procesada correctamente.`
-      try { await fetch('/api/notify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mensaje }) }) } catch {}
+      try { await fetch('/api/notify', { method: 'POST', headers: { 'Content-Type': 'application/json', ...(await getSupabaseAuthHeaders()) }, body: JSON.stringify({ mensaje }) }) } catch {}
       // EMAIL: Notificar al usuario que se le agregaron créditos
       if (userId) {
         try {
           fetch('/api/email-creditos', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', ...(await getSupabaseAuthHeaders()) },
             body: JSON.stringify({ userId, cantidad: monto }),
           }).catch(() => {})
         } catch {}
@@ -607,7 +622,7 @@ Transacción procesada correctamente.`
         try {
           fetch('/api/push/send', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', ...(await getSupabaseAuthHeaders()) },
             body: JSON.stringify({
               targetUserId: userId,
               titulo: '💰 Créditos recibidos',
@@ -663,8 +678,8 @@ Transacción procesada correctamente.`
                         <p>💳 Método: <strong>{t.metodo_pago}</strong></p>
                         <p>📅 {new Intl.DateTimeFormat('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(t.creado_en))}</p>
                       </div>
-                      {t.comprobante_url && (
-                        <a href={t.comprobante_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm text-brand-primary hover:underline">
+                      {t.comprobante_url && comprobanteUrls[t.id] && (
+                        <a href={comprobanteUrls[t.id]} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm text-brand-primary hover:underline">
                           <Eye size={14} /> Ver comprobante <ExternalLink size={12} />
                         </a>
                       )}
@@ -940,7 +955,7 @@ function ModeracionTab({ notify, adminEmail }: { notify: (msg: string) => void; 
     const [{ data: denies }, { data: pends }] = await Promise.all([
       supabase
         .from('denuncias')
-        .select(`id, producto_id, reportante_id, motivo, estado, creada_en, producto:vw_propiedades_publicas(titulo, user_id, precio_usd, imagen_url), reportante:perfiles(nombre)`)
+        .select('id, producto_id, reportante_id, motivo, estado, creada_en, reportante:perfiles(nombre)')
         .eq('estado', 'activa')
         .order('creada_en', { ascending: false }),
       supabase
@@ -949,7 +964,16 @@ function ModeracionTab({ notify, adminEmail }: { notify: (msg: string) => void; 
         .eq('estado_moderacion', 'pendiente')
         .order('creado_en', { ascending: false }),
     ])
-    setDenuncias(denies || [])
+    const denunciaRows = denies || []
+    const productIds = Array.from(new Set(denunciaRows.map((denuncia: any) => denuncia.producto_id).filter(Boolean)))
+    const { data: reportedProperties } = productIds.length
+      ? await supabase.from('vw_propiedades_publicas').select('id, titulo, user_id, precio_usd, imagen_url').in('id', productIds)
+      : { data: [] }
+    const propertyById = new Map((reportedProperties || []).map((property: any) => [property.id, property]))
+    setDenuncias(denunciaRows.map((denuncia: any) => ({
+      ...denuncia,
+      producto: propertyById.get(denuncia.producto_id) || null,
+    })))
     setProductosPendientes(pends || [])
     setCargando(false)
   }
@@ -963,8 +987,8 @@ function ModeracionTab({ notify, adminEmail }: { notify: (msg: string) => void; 
   async function aprobarDenuncia(id: string, productoId: string) {
     await supabase.from('denuncias').update({ estado: 'resuelta' }).eq('id', id)
     const res = await fetch('/api/admin/moderar-producto', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ productId: productoId, action: 'rechazar', adminEmail }),
+      method: 'POST', headers: { 'Content-Type': 'application/json', ...(await getSupabaseAuthHeaders()) },
+      body: JSON.stringify({ productId: productoId, action: 'rechazar' }),
     })
     const json = await res.json()
     if (!res.ok) notify('Error: ' + (json.error || 'desconocido'))
@@ -973,8 +997,8 @@ function ModeracionTab({ notify, adminEmail }: { notify: (msg: string) => void; 
 
   async function aprobarProducto(id: string) {
     const res = await fetch('/api/admin/moderar-producto', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ productId: id, action: 'aprobar', adminEmail }),
+      method: 'POST', headers: { 'Content-Type': 'application/json', ...(await getSupabaseAuthHeaders()) },
+      body: JSON.stringify({ productId: id, action: 'aprobar' }),
     })
     const json = await res.json()
     if (!res.ok) notify('Error: ' + (json.error || 'desconocido'))
@@ -983,8 +1007,8 @@ function ModeracionTab({ notify, adminEmail }: { notify: (msg: string) => void; 
 
   async function rechazarProducto(id: string) {
     const res = await fetch('/api/admin/moderar-producto', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ productId: id, action: 'rechazar', adminEmail }),
+      method: 'POST', headers: { 'Content-Type': 'application/json', ...(await getSupabaseAuthHeaders()) },
+      body: JSON.stringify({ productId: id, action: 'rechazar' }),
     })
     const json = await res.json()
     if (!res.ok) notify('Error: ' + (json.error || 'desconocido'))

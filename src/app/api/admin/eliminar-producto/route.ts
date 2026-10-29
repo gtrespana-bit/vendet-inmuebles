@@ -1,121 +1,67 @@
-/**
- * API Route: Eliminar producto definitivamente (owner y admin)
- * 
- * POST /api/admin/eliminar-producto
- * Body: { productId: string, userId?: string }
- * 
- * - Si userId coincide con el owner → borrado por propietario
- * - Si viene de un admin (verificado) → borrado por admin
- * - Borra también las imágenes de R2
- */
-
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
 import { S3Client, DeleteObjectCommand } from '@aws-sdk/client-s3'
+import { requireAuthenticatedUser, isAdminUser } from '@/lib/api-auth'
 import { requireUUIDs } from '@/lib/validation'
-
-const ADMIN_EMAILS = ['gtrespana@gmail.com']
-
-async function isAdmin(userId: string): Promise<boolean> {
-  const supabaseAdmin = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
-  const { data: perfil } = await supabaseAdmin
-    .from('perfiles')
-    .select('email')
-    .eq('id', userId)
-    .single()
-  return ADMIN_EMAILS.includes(perfil?.email || '')
-}
 
 export async function POST(req: NextRequest) {
   try {
+    const auth = await requireAuthenticatedUser(req)
+    if (!auth.ok) return auth.response
+
     const body = await req.json()
-    const { productId, userId } = body
-
-    // Validar UUIDs
     const uuidCheck = requireUUIDs(body, ['productId'])
-    if (!uuidCheck.valid) {
-      return NextResponse.json({ error: uuidCheck.error }, { status: 400 })
-    }
-    
-    // userId es opcional pero si existe debe ser válido
-    if (userId && !requireUUIDs({ userId }, ['userId']).valid) {
-      return NextResponse.json({ error: 'userId inválido' }, { status: 400 })
-    }
+    if (!uuidCheck.valid) return NextResponse.json({ error: uuidCheck.error }, { status: 400 })
 
-    if (!productId) {
-      return NextResponse.json({ error: 'Missing productId' }, { status: 400 })
-    }
+    const { data: inmueble, error: inmuebleError } = await auth.supabaseAdmin
+      .from('inmuebles')
+      .select('id, usuario_id, titulo, imagen_url')
+      .eq('id', body.productId)
+      .maybeSingle()
+    if (inmuebleError) return NextResponse.json({ error: inmuebleError.message }, { status: 500 })
+    if (!inmueble) return NextResponse.json({ error: 'Inmueble no encontrado' }, { status: 404 })
 
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    )
-
-    // Get the product
-    const { data: producto, error: prodError } = await supabaseAdmin
-      .from('vw_propiedades_publicas')
-      .select('id, titulo, precio_usd, estado, categoria_id, subcategoria, marca, ubicacion_ciudad, activo, visitas, creado_en, user_id, imagen_url, imagenes, destacado, destacado_hasta, boosteado_en')
-      .eq('id', productId)
-      .single()
-
-    if (prodError || !producto) {
-      return NextResponse.json({ error: 'Producto no encontrado' }, { status: 404 })
+    if (inmueble.usuario_id !== auth.user.id && !isAdminUser(auth.user)) {
+      return NextResponse.json({ error: 'No tienes permisos para eliminar esta publicación' }, { status: 403 })
     }
 
-    // Only owner or admin can delete
-    if (userId && producto.user_id !== userId && !(await isAdmin(userId))) {
-      return NextResponse.json({ error: 'No tienes permisos' }, { status: 403 })
-    }
+    const { data: images } = await auth.supabaseAdmin
+      .from('inmueble_imagenes')
+      .select('url_imagen')
+      .eq('inmueble_id', inmueble.id)
 
-    // Also delete images from R2
-    const R2_BUCKET = process.env.R2_BUCKET || 'vendetinmuebles'
-    const R2_PUBLIC_URL = process.env.R2_PUBLIC_URL || ''
-    const r2Client = new S3Client({
-      region: 'auto',
+    const r2PublicUrl = (process.env.R2_PUBLIC_URL || '').replace(/\/$/, '')
+    const r2Bucket = process.env.R2_BUCKET || 'vendetinmuebles'
+    const r2Config = {
       endpoint: process.env.R2_ENDPOINT,
-      credentials: {
-        accessKeyId: process.env.R2_ACCESS_KEY_ID!,
-        secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
-      },
-    })
-
-    const imagenesUrl = (producto.imagenes as string[]) || []
-    const imagenUrl = producto.imagen_url
-    const allUrls = [imagenUrl, ...imagenesUrl].filter(Boolean) as string[]
-
-    const deletePromises = allUrls.map(async (url) => {
-      if (!url.includes(R2_PUBLIC_URL)) return
-      const key = url.replace(R2_PUBLIC_URL + '/', '')
-      if (!key) return
-      try {
-        await r2Client.send(new DeleteObjectCommand({
-          Bucket: R2_BUCKET,
-          Key: key,
-        }))
-      } catch (e) {
-        console.error('Error deleting R2 image:', key, e)
-      }
-    })
-
-    await Promise.all(deletePromises)
-
-    // Delete from database
-    const { error } = await supabaseAdmin
-      .from('vw_propiedades_publicas')
-      .delete()
-      .eq('id', productId)
-
-    if (error) {
-      console.error('Database delete error:', error)
-      return NextResponse.json({ error: 'Error al eliminar: ' + error.message }, { status: 500 })
+      accessKeyId: process.env.R2_ACCESS_KEY_ID,
+      secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
     }
+
+    if (r2PublicUrl && r2Config.endpoint && r2Config.accessKeyId && r2Config.secretAccessKey) {
+      const r2 = new S3Client({
+        region: 'auto',
+        endpoint: r2Config.endpoint,
+        credentials: { accessKeyId: r2Config.accessKeyId, secretAccessKey: r2Config.secretAccessKey },
+      })
+      const urls = [inmueble.imagen_url, ...(images || []).map((image: any) => image.url_imagen)]
+      const keys = new Set<string>()
+      for (const url of urls) {
+        if (typeof url !== 'string' || !url.startsWith(`${r2PublicUrl}/`)) continue
+        const key = decodeURIComponent(url.slice(r2PublicUrl.length + 1))
+        if (key && !key.includes('..')) keys.add(key)
+      }
+      await Promise.allSettled(Array.from(keys, key => r2.send(new DeleteObjectCommand({ Bucket: r2Bucket, Key: key }))))
+      r2.destroy()
+    }
+
+    const { error: deleteError } = await auth.supabaseAdmin
+      .from('inmuebles')
+      .delete()
+      .eq('id', inmueble.id)
+    if (deleteError) return NextResponse.json({ error: deleteError.message }, { status: 500 })
 
     return NextResponse.json({ ok: true })
-  } catch (error) {
-    console.error('Delete product error:', error)
-    return NextResponse.json({ error: 'Error interno' }, { status: 500 })
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message || 'Error interno' }, { status: 500 })
   }
 }

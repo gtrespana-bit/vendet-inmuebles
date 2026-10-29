@@ -3,6 +3,7 @@
 import { useEffect, useState, lazy, Suspense } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useAuth } from '@/components/AuthProvider'
+import { getSupabaseAuthHeaders } from '@/lib/supabase-auth-headers'
 import dynamic from 'next/dynamic'
 import { getTasaBCVClient, actualizarTasaClient } from '@/lib/tasaBCV'
 import { useTranslations } from 'next-intl'
@@ -131,6 +132,7 @@ export default function DashboardPage() {
 
     const res = await fetch('/api/foto-perfil', {
       method: 'POST',
+      headers: await getSupabaseAuthHeaders(),
       body: formData,
     })
     const json = await res.json()

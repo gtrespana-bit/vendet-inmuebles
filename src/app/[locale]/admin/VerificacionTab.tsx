@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Loader2, ShieldCheck } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { getSupabaseAuthHeaders } from '@/lib/supabase-auth-headers'
 import Image from 'next/image'
 
 // ============================ VERIFICACIÓN TAB ============================
@@ -20,7 +21,7 @@ export default function VerificacionTab({ notify }: { notify: (msg: string) => v
     // 1. Obtener solicitudes
     let query = supabase
       .from('solicitudes_verificacion')
-      .select('id, user_id, pago_movil_telefono, pago_movil_cedula, pago_movil_banco, mensaje, estado, creada_en, revisada_en, rechazo_motivo, cedula_foto_frente_url')
+      .select('id, user_id, pago_movil_telefono, pago_movil_cedula, pago_movil_banco, mensaje, estado, creada_en, revisada_en, rechazo_motivo, cedula_foto_frente_url, cedula_foto_dorso_url')
       .order('creada_en', { ascending: false })
 
     if (filtro !== 'todas') {
@@ -34,14 +35,32 @@ export default function VerificacionTab({ notify }: { notify: (msg: string) => v
       return
     }
 
+    // Las fotos de identidad viven en un bucket privado. Firmamos URLs temporales
+    // usando el permiso de lectura exclusivo para administradores.
+    const solicitudesConFotos = await Promise.all((sols || []).map(async (sol: any) => {
+      const [frente, dorso] = await Promise.all([
+        sol.cedula_foto_frente_url
+          ? supabase.storage.from('cedulas').createSignedUrl(sol.cedula_foto_frente_url, 600)
+          : Promise.resolve({ data: null }),
+        sol.cedula_foto_dorso_url
+          ? supabase.storage.from('cedulas').createSignedUrl(sol.cedula_foto_dorso_url, 600)
+          : Promise.resolve({ data: null }),
+      ])
+      return {
+        ...sol,
+        cedula_foto_frente_signed_url: frente.data?.signedUrl || null,
+        cedula_foto_dorso_signed_url: dorso.data?.signedUrl || null,
+      }
+    }))
+
     // 2. Obtener perfiles de esos users
-    const userIds = (sols || []).map((s: any) => s.user_id).filter(Boolean)
+    const userIds = solicitudesConFotos.map((s: any) => s.user_id).filter(Boolean)
     let perfilesMap: Record<string, any> = {}
     if (userIds.length > 0) {
       // Server-side fetch (RLS) para tener datos completos de todos los perfiles
       const res = await fetch('/api/admin/perfiles-ids', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(await getSupabaseAuthHeaders()) },
         body: JSON.stringify({ userIds }),
       })
       const result = await res.json()
@@ -51,7 +70,7 @@ export default function VerificacionTab({ notify }: { notify: (msg: string) => v
     }
 
     // 3. Combinar
-    const combinado = (sols || []).map((s: any) => ({
+    const combinado = solicitudesConFotos.map((s: any) => ({
       ...s,
       perfil: perfilesMap[s.user_id] || {},
     }))
@@ -80,7 +99,7 @@ export default function VerificacionTab({ notify }: { notify: (msg: string) => v
     // 2. Perfil verificado via server-side endpoint (bypass RLS)
     const res = await fetch('/api/admin/verificar-venta', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...(await getSupabaseAuthHeaders()) },
       body: JSON.stringify({
         userId,
         cedula_numero: sol.pago_movil_cedula || '',
@@ -98,11 +117,13 @@ export default function VerificacionTab({ notify }: { notify: (msg: string) => v
     notify('Vendedor verificado correctamente')
     // EMAIL: Notificar al usuario que fue verificado
     try {
-      fetch('/api/email-verificacion', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId }),
-      }).catch(() => {})
+      getSupabaseAuthHeaders()
+        .then(authHeaders => fetch('/api/email-verificacion', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...authHeaders },
+          body: JSON.stringify({ userId }),
+        }))
+        .catch(() => {})
     } catch {}
     cargar()
   }
@@ -210,17 +231,32 @@ export default function VerificacionTab({ notify }: { notify: (msg: string) => v
                   </div>
 
                   {/* Foto de cedula */}
-                  {sol.cedula_foto_frente_url && (
-                    <div className="hidden sm:block">
-                      <p className="text-xs text-gray-500 mb-1">Cédula:</p>
-                      <Image
-                        src={supabase.storage.from('cedulas').getPublicUrl(sol.cedula_foto_frente_url).data.publicUrl}
-                        alt="Cédula frente"
-                        className="w-32 h-20 object-cover rounded-lg border cursor-pointer hover:opacity-80 transition"
-                        width={128}
-                        height={80}
-                        onClick={() => window.open(supabase.storage.from('cedulas').getPublicUrl(sol.cedula_foto_frente_url).data.publicUrl, '_blank')}
-                      />
+                  {sol.cedula_foto_frente_signed_url && (
+                    <div className="hidden sm:flex gap-2">
+                      <div>
+                        <p className="text-xs text-gray-500 mb-1">Cédula frente:</p>
+                        <Image
+                          src={sol.cedula_foto_frente_signed_url}
+                          alt="Cédula frente"
+                          className="w-32 h-20 object-cover rounded-lg border cursor-pointer hover:opacity-80 transition"
+                          width={128}
+                          height={80}
+                          onClick={() => window.open(sol.cedula_foto_frente_signed_url, '_blank', 'noopener,noreferrer')}
+                        />
+                      </div>
+                      {sol.cedula_foto_dorso_signed_url && (
+                        <div>
+                          <p className="text-xs text-gray-500 mb-1">Cédula dorso:</p>
+                          <Image
+                            src={sol.cedula_foto_dorso_signed_url}
+                            alt="Cédula dorso"
+                            className="w-32 h-20 object-cover rounded-lg border cursor-pointer hover:opacity-80 transition"
+                            width={128}
+                            height={80}
+                            onClick={() => window.open(sol.cedula_foto_dorso_signed_url, '_blank', 'noopener,noreferrer')}
+                          />
+                        </div>
+                      )}
                     </div>
                   )}
 

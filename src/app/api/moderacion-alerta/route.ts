@@ -1,75 +1,74 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verificarContenido, formatearAlertaModeracion } from '@/lib/moderacion'
-import { createClient } from '@supabase/supabase-js'
 import { notifyUser } from '@/lib/push-notify'
+import { requireAuthenticatedUser } from '@/lib/api-auth'
+import { ADMIN_EMAILS } from '@/lib/admin-config'
+import { isValidUUID, sanitizeString } from '@/lib/validation'
+import { checkRateLimit } from '@/lib/rate-limit'
 
-/**
- * POST /api/moderacion-alerta
- * Envía notificación a Telegram cuando se detecta contenido sospechoso/prohibido
- */
 export async function POST(req: NextRequest) {
-  const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
-  const CHAT_ID = process.env.TELEGRAM_CHAT_ID
-
-  if (!BOT_TOKEN || !CHAT_ID) {
-    return NextResponse.json({ ok: false, error: 'Config missing' }, { status: 500 })
+  const botToken = process.env.TELEGRAM_BOT_TOKEN
+  const chatId = process.env.TELEGRAM_CHAT_ID
+  if (!botToken || !chatId) {
+    return NextResponse.json({ ok: false, error: 'Config missing' }, { status: 503 })
   }
 
-  let body
-  try {
-    body = await req.json()
-  } catch {
-    return NextResponse.json({ ok: false, error: 'Bad request' }, { status: 400 })
-  }
-
-  const { nivel, titulo, palabras, userId, userName } = body
-
-  if (!nivel || !titulo || !palabras || !userId) {
-    return NextResponse.json({ ok: false, error: 'Missing fields' }, { status: 400 })
-  }
-
-  const texto = formatearAlertaModeracion(nivel, titulo, palabras, userId, userName)
-
-  const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`
-  const payload = {
-    chat_id: CHAT_ID,
-    text: texto,
-    parse_mode: 'HTML',
-  }
-
-  // Push notification to admin user
-  const sb = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  )
-
-  const { data: adminProfile } = await sb
-    .from('perfiles')
-    .select('id')
-    .eq('rol', 'admin')
-    .single()
-
-  if (adminProfile) {
-    try {
-      await notifyUser(sb, adminProfile.id, {
-        title: '🚨 Alerta de moderación',
-        body: `${nivel.toUpperCase()}: ${titulo} — ${userName || 'Anónimo'}`,
-        tag: `mod-${nivel}`,
-        icon: '/icon-192.png',
-        click_url: '/admin',
-      })
-    } catch {}
-  }
+  const auth = await requireAuthenticatedUser(req)
+  if (!auth.ok) return auth.response
 
   try {
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    })
-    const data = await res.json()
-    return NextResponse.json({ ok: data.ok === true, telegram: data })
-  } catch (err: any) {
-    return NextResponse.json({ ok: false, error: err.message }, { status: 500 })
+    const body = await req.json()
+    if (!isValidUUID(body.userId) || body.userId !== auth.user.id) {
+      return NextResponse.json({ ok: false, error: 'No autorizado' }, { status: 403 })
+    }
+
+    const titulo = sanitizeString(body.titulo, 160)
+    const descripcion = sanitizeString(body.descripcion || '', 5000)
+    if (!titulo) return NextResponse.json({ ok: false, error: 'Título requerido' }, { status: 400 })
+
+    const moderacion = verificarContenido(`${titulo} ${descripcion}`)
+    if (moderacion.nivel === 'limpio') {
+      return NextResponse.json({ ok: false, error: 'No se detectó contenido que requiera revisión' }, { status: 400 })
+    }
+
+    const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown'
+    const rateLimit = await checkRateLimit('moderacion:alerta', auth.user.id, { ip })
+    if (!rateLimit.ok) return NextResponse.json({ ok: false, error: 'Demasiadas alertas de moderación' }, { status: 429 })
+
+    const text = formatearAlertaModeracion(
+      moderacion.nivel,
+      titulo,
+      moderacion.palabras,
+      auth.user.id,
+      auth.user.email || 'Usuario',
+    )
+    const [telegramResponse] = await Promise.all([
+      fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'HTML' }),
+      }),
+      (async () => {
+        const { data: adminProfile } = await auth.supabaseAdmin
+          .from('perfiles')
+          .select('id')
+          .eq('email', ADMIN_EMAILS[0])
+          .maybeSingle()
+        if (adminProfile) {
+          await notifyUser(auth.supabaseAdmin, adminProfile.id, {
+            title: '🚨 Alerta de moderación',
+            body: `${moderacion.nivel.toUpperCase()}: ${titulo} — ${auth.user.email || 'Usuario'}`,
+            tag: `mod-${moderacion.nivel}`,
+            icon: '/icon-192.png',
+            click_url: '/admin',
+          })
+        }
+      })(),
+    ])
+
+    const telegram = await telegramResponse.json()
+    return NextResponse.json({ ok: telegram.ok === true, telegram })
+  } catch (error: any) {
+    return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
   }
 }

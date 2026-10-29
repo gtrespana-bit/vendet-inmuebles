@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { getSupabaseAuthHeaders } from '@/lib/supabase-auth-headers'
 import { useAuth } from '@/components/AuthProvider'
 import { Check, X, Loader2, RefreshCw, Shield } from 'lucide-react'
 import LocalLink from '@/components/LocalLink'
@@ -13,6 +14,7 @@ export default function AprobacionPage() {
   const { user, session } = useAuth()
   const router = useRouter()
   const [pendientes, setPendientes] = useState<any[]>([])
+  const [comprobanteUrls, setComprobanteUrls] = useState<Record<string, string>>({})
   const [procesando, setProcesando] = useState<string | null>(null)
   const [cargando, setCargando] = useState(true)
 
@@ -39,7 +41,16 @@ export default function AprobacionPage() {
     if (error) {
       console.error('Error:', error)
     } else {
-      setPendientes(data || [])
+      const rows = data || []
+      const signed = await Promise.all(rows.map(async (tx: any) => {
+        if (!tx.comprobante_url) return [tx.id, ''] as const
+        const { data: signedData, error: signedError } = await supabase.storage
+          .from('comprobantes')
+          .createSignedUrl(tx.comprobante_url, 600)
+        return [tx.id, signedError ? '' : signedData?.signedUrl || ''] as const
+      }))
+      setComprobanteUrls(Object.fromEntries(signed))
+      setPendientes(rows)
     }
     setCargando(false)
   }
@@ -58,7 +69,7 @@ export default function AprobacionPage() {
       try {
         fetch('/api/email-creditos', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...(await getSupabaseAuthHeaders()) },
           body: JSON.stringify({ userId, cantidad: monto }),
         }).catch(() => {})
       } catch {}
@@ -137,10 +148,10 @@ export default function AprobacionPage() {
                   <p className="text-xs text-gray-400">{new Intl.DateTimeFormat('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(t.creado_en))} {new Intl.DateTimeFormat('en-US', { hour: '2-digit', minute: '2-digit' }).format(new Date(t.creado_en))}</p>
 
                   {/* Comprobante */}
-                  {t.comprobante_url && (
+                  {comprobanteUrls[t.id] && (
                     <div className="mt-3">
                       <a
-                        href={t.comprobante_url}
+                        href={comprobanteUrls[t.id]}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-blue-100 transition border border-blue-200"

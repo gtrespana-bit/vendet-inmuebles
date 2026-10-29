@@ -27,8 +27,8 @@ export default function VendedorPage() {
   useEffect(() => {
     async function loadVendedor() {
       const { data: perfil } = await supabase
-        .from('perfiles')
-        .select('id, nombre, telefono, estado, ciudad, credito_balance, verificado, nivel_confianza, creado_en, foto_perfil_url, badges_automaticos')
+        .from('vw_perfiles_publicos')
+        .select('id, nombre, telefono, estado, ciudad, verificado, nivel_confianza, creado_en, foto_perfil_url, badges_automaticos, whatsapp_disponible, telefono_disponible, email_disponible, email_publico, total_vendidas, antiguedad_dias, ultima_actividad')
         .eq('id', vendedorId)
         .single()
 

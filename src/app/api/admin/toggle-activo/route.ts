@@ -1,36 +1,29 @@
-import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 import { revalidatePath } from 'next/cache'
+import { requireAdmin } from '@/lib/api-auth'
 import { requireUUIDs } from '@/lib/validation'
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireAdmin(request)
+    if (!auth.ok) return auth.response
+
     const body = await request.json()
     const uuidCheck = requireUUIDs(body, ['productId'])
     if (!uuidCheck.valid) return NextResponse.json({ error: uuidCheck.error }, { status: 400 })
-    const { productId, activo } = body
-    if (activo === undefined || typeof activo !== 'boolean') {
+    if (typeof body.activo !== 'boolean') {
       return NextResponse.json({ error: 'activo debe ser boolean' }, { status: 400 })
     }
 
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    )
+    const { error } = await auth.supabaseAdmin
+      .from('inmuebles')
+      .update({ activo: body.activo })
+      .eq('id', body.productId)
 
-    const { error } = await supabaseAdmin
-      .from('vw_propiedades_publicas')
-      .update({ activo })
-      .eq('id', productId)
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
-
-    // Invalidate ISR cache when toggling active/inactive
     revalidatePath('/')
     revalidatePath('/catalogo')
-
     return NextResponse.json({ ok: true })
   } catch (err: any) {
     return NextResponse.json({ error: err.message || 'Error desconocido' }, { status: 500 })

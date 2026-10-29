@@ -4,6 +4,7 @@ import { useState } from 'react'
 import LocalLink from '@/components/LocalLink'
 import { Package, X, Pause, Play, Edit, Zap, Star, CheckCircle2, ChevronDown, ArrowLeft, Send } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { getSupabaseAuthHeaders } from '@/lib/supabase-auth-headers'
 import Image from 'next/image'
 
 export default function TabProductos({
@@ -45,7 +46,9 @@ export default function TabProductos({
     if (!userId) return
     setCargandoVendidos(true)
     try {
-      const res = await fetch(`/api/admin/marcar-vendido?productoId=${productoId}&userId=${userId}`)
+      const res = await fetch(`/api/admin/marcar-vendido?productoId=${productoId}&userId=${userId}`, {
+        headers: await getSupabaseAuthHeaders(),
+      })
       const data = await res.json()
       if (data.ok && data.interesados) setInteresados(data.interesados)
     } catch {
@@ -66,7 +69,7 @@ export default function TabProductos({
   const marcarVendidoSimple = async (productoId: string, vendidoEn: string) => {
     const res = await fetch('/api/admin/marcar-vendido', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...(await getSupabaseAuthHeaders()) },
       body: JSON.stringify({ productoId, userId, vendidoEn }),
     })
     if (!res.ok) {
@@ -90,7 +93,7 @@ export default function TabProductos({
 
     const res = await fetch('/api/admin/marcar-vendido', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...(await getSupabaseAuthHeaders()) },
       body: JSON.stringify({
         productoId: vendidoModal,
         userId,
@@ -120,7 +123,7 @@ export default function TabProductos({
     // Primero marcar como vendido con comprador
     const res1 = await fetch('/api/admin/marcar-vendido', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...(await getSupabaseAuthHeaders()) },
       body: JSON.stringify({
         productoId: vendidoModal,
         userId,
@@ -139,7 +142,7 @@ export default function TabProductos({
     // Ahora enviar la reseña
     const res2 = await fetch('/api/admin/enviar-resena', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...(await getSupabaseAuthHeaders()) },
       body: JSON.stringify({
         producto_id: vendidoModal,
         evaluador_id: userId,
@@ -212,7 +215,7 @@ export default function TabProductos({
     if (!confirm('¿Eliminar esta publicación permanentemente? Esta acción no se puede deshacer y se borrarán también las fotos.')) return
     const res = await fetch('/api/admin/eliminar-producto', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...(await getSupabaseAuthHeaders()) },
       body: JSON.stringify({ productId: id }),
     })
     const result = await res.json()

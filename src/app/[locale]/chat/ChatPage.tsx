@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { getSupabaseAuthHeaders } from '@/lib/supabase-auth-headers'
 import { useAuth } from '@/components/AuthProvider'
 import Avatar from '@/components/Avatar'
 import { Send, ArrowLeft, Search, User, Trash2, ExternalLink, Star } from 'lucide-react'
@@ -129,11 +130,12 @@ export default function ChatPageClient() {
     setPuedeResenar(false)
     setYaDejoResena(false)
 
-    fetch('/api/chat/review-status', {
+    getSupabaseAuthHeaders()
+    .then(authHeaders => fetch('/api/chat/review-status', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders },
       body: JSON.stringify({ convId, userId: user.id }),
-    })
+    }))
     .then(async r => {
       const data = await r.json()
       setProductoOwnerId(data.productoOwnerId)
@@ -167,7 +169,9 @@ export default function ChatPageClient() {
     let perfilMap = new Map<string, { nombre: string; foto: string | null; email: string | null }>()
     if (otroIds.length) {
       try {
-        const resp = await fetch(`/api/user-bulk?ids=${encodeURIComponent(otroIds.join(','))}`)
+        const resp = await fetch(`/api/user-bulk?ids=${encodeURIComponent(otroIds.join(','))}`, {
+          headers: await getSupabaseAuthHeaders(),
+        })
         const json = await resp.json()
         json.profiles?.forEach((p: { id: string; nombre: string; foto_perfil_url: string | null }) => {
           perfilMap.set(p.id, { nombre: p.nombre || 'Usuario', foto: p.foto_perfil_url || null, email: null })
@@ -327,7 +331,7 @@ export default function ChatPageClient() {
     try {
       const resp = await fetch('/api/mensajes-leidos', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(await getSupabaseAuthHeaders()) },
         body: JSON.stringify({ conversacion_id: id, destinatario_id: user!.id })
       })
       if (resp.ok) {
@@ -366,7 +370,7 @@ export default function ChatPageClient() {
     try {
       const resp = await fetch('/api/admin/enviar-resena', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(await getSupabaseAuthHeaders()) },
         body: JSON.stringify({
           evaluador_id: user.id,
           evaluado_id: productoOwnerId,
@@ -428,7 +432,7 @@ export default function ChatPageClient() {
     try {
       await fetch('/api/push/send', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(await getSupabaseAuthHeaders()) },
         body: JSON.stringify({
           targetUserId: destinatarioId,
           titulo: `💬 ${conv.otro_nombre || 'Alguien'} te escribió`,

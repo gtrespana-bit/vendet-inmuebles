@@ -1,56 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { requireAuthenticatedUser } from '@/lib/api-auth'
 
 export async function POST(req: NextRequest) {
   try {
+    const auth = await requireAuthenticatedUser(req)
+    if (!auth.ok) return auth.response
+
     const body = await req.json()
-    const { subscription } = body
-    console.log('[push-subscribe] Received subscription:', JSON.stringify(subscription?.endpoint, null, 2))
-    if (!subscription?.endpoint) {
-      return NextResponse.json({ error: 'Subscription required' }, { status: 400 })
+    const subscription = body.subscription
+    const endpoint = subscription?.endpoint
+    const p256dh = subscription?.keys?.p256dh
+    const authKey = subscription?.keys?.auth
+
+    if (
+      typeof endpoint !== 'string' || !endpoint.startsWith('https://') || endpoint.length > 2048 ||
+      typeof p256dh !== 'string' || p256dh.length > 500 ||
+      typeof authKey !== 'string' || authKey.length > 500
+    ) {
+      return NextResponse.json({ error: 'Suscripción inválida' }, { status: 400 })
     }
 
-    // Auth: need to be logged in
-    const authHeader = req.headers.get('authorization')
-    console.log('[push-subscribe] Auth header present:', !!authHeader)
-    if (!authHeader) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    )
-
-    // Get user from session token
-    const { data: { user }, error: authError } = await supabase.auth.getUser(
-      authHeader.replace('Bearer ', '')
-    )
-    console.log('[push-subscribe] Auth result - user:', user?.id, 'error:', authError?.message)
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Invalid session' }, { status: 401 })
-    }
-
-    // Save subscription
-    console.log('[push-subscribe] Upserting for user:', user.id, 'endpoint:', subscription.endpoint)
-    const { error } = await supabase
+    const { error } = await auth.supabaseAdmin
       .from('push_subscriptions')
       .upsert({
-        user_id: user.id,
-        endpoint: subscription.endpoint,
-        p256dh: subscription.keys?.p256dh,
-        auth_key: subscription.keys?.auth,
-      }, { onConflict: 'user_id,endpoint' })
-    console.log('[push-subscribe] Upsert result - error:', error?.message)
+        user_id: auth.user.id,
+        endpoint,
+        p256dh,
+        auth_key: authKey,
+      }, { onConflict: 'endpoint' })
 
-    if (error) {
-      console.error('Error saving push subscription:', error)
-      return NextResponse.json({ error: 'Could not save subscription' }, { status: 500 })
-    }
-
+    if (error) return NextResponse.json({ error: 'No se pudo guardar la suscripción' }, { status: 500 })
     return NextResponse.json({ success: true })
-  } catch (e: any) {
-    console.error('[push-subscribe] Internal error:', e?.message, e?.stack)
-    return NextResponse.json({ error: 'Internal error: ' + (e?.message || 'unknown') }, { status: 500 })
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message || 'Internal error' }, { status: 500 })
   }
 }
