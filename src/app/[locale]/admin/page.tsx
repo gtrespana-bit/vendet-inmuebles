@@ -955,7 +955,7 @@ function ModeracionTab({ notify, adminEmail }: { notify: (msg: string) => void; 
     const [{ data: denies }, { data: pends }] = await Promise.all([
       supabase
         .from('denuncias')
-        .select('id, producto_id, reportante_id, motivo, estado, creada_en, reportante:perfiles(nombre)')
+        .select('id, producto_id, reportante_id, motivo, descripcion, estado, creada_en, reportante:perfiles(nombre)')
         .eq('estado', 'activa')
         .order('creada_en', { ascending: false }),
       supabase
