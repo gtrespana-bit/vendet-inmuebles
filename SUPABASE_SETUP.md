@@ -29,12 +29,12 @@ Auth está configurado con el alias estable de Vercel como `Site URL`, además d
 
 ## Migraciones SQL
 
-Aplicar en este orden al proyecto vacío:
+Migraciones aplicadas al proyecto nuevo el 2026-10-29, en este orden:
 
-1. `supabase/migrations/001_schema_inicial.sql`
-2. `supabase/migrations/002_crear_vista_propiedades.sql`
+1. `schema_inicial` (versión remota `20261029224823`), equivalente a `supabase/migrations/001_schema_inicial.sql`.
+2. `crear_vista_propiedades` (versión remota `20261029224838`), equivalente a `supabase/migrations/002_crear_vista_propiedades.sql`.
 
-La primera crea tablas, políticas RLS, funciones, catálogos y buckets de Storage. La segunda crea las vistas de propiedades y perfiles públicos. La sintaxis local se validó con `pglast`; `npx tsc --noEmit` y `npm run build` también pasan localmente con variables de Supabase configuradas. **Las migraciones aún no se han aplicado a Supabase.** No marques los buckets privados `cedulas` y `comprobantes` como públicos.
+La primera crea 25 tablas con RLS, funciones, catálogos y tres buckets de Storage; la segunda crea las vistas de propiedades y perfiles públicos. Verificación remota: 24 estados, 316 ciudades, 2 operaciones, 10 tipos de inmueble, 9 categorías, 10 características; 52 políticas en `public`, 11 en `storage.objects`. Ambas vistas tienen lectura concedida a `anon`, `authenticated` y `service_role`; el rol `authenticated` y `service_role` pueden ejecutar `slugify`. La sintaxis local se validó con `pglast`; `npx tsc --noEmit` y `npm run build` también pasan localmente con variables de Supabase configuradas. No marques los buckets privados `cedulas` y `comprobantes` como públicos.
 
 ## Integraciones que requieren configuración adicional
 
