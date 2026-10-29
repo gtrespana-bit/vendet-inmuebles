@@ -1,59 +1,46 @@
-import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 import { revalidatePath } from 'next/cache'
 import { notifyUser } from '@/lib/push-notify'
+import { requireAdmin } from '@/lib/api-auth'
 import { requireUUIDs } from '@/lib/validation'
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireAdmin(request)
+    if (!auth.ok) return auth.response
+
     const body = await request.json()
     const { productId, destacado } = body
-
-    // Validar UUID
     const uuidCheck = requireUUIDs(body, ['productId'])
-    if (!uuidCheck.valid) {
-      return NextResponse.json({ error: uuidCheck.error }, { status: 400 })
-    }
-    if (destacado === undefined || typeof destacado !== 'boolean') {
+    if (!uuidCheck.valid) return NextResponse.json({ error: uuidCheck.error }, { status: 400 })
+    if (typeof destacado !== 'boolean') {
       return NextResponse.json({ error: 'destacado debe ser boolean' }, { status: 400 })
     }
 
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    )
-
-    // Get product owner before updating
-    const { data: product } = await supabaseAdmin
-      .from('vw_propiedades_publicas')
-      .select('user_id, titulo')
+    const { data: product, error: productError } = await auth.supabaseAdmin
+      .from('inmuebles')
+      .select('usuario_id, titulo')
       .eq('id', productId)
-      .single()
+      .maybeSingle()
+    if (productError) return NextResponse.json({ error: productError.message }, { status: 500 })
+    if (!product) return NextResponse.json({ error: 'Publicación no encontrada' }, { status: 404 })
 
-    const update: any = { destacado }
-    if (destacado) {
-      update.destacado_hasta = new Date(Date.now() + 48 * 3600000).toISOString()
-    } else {
-      update.destacado_hasta = null
+    const update = {
+      destacado,
+      destacado_hasta: destacado ? new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString() : null,
     }
-
-    const { error } = await supabaseAdmin
-      .from('vw_propiedades_publicas')
+    const { error } = await auth.supabaseAdmin
+      .from('inmuebles')
       .update(update)
       .eq('id', productId)
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
-
-    // Revalidate ISR cache to show/hide destacado immediately
     revalidatePath('/')
     revalidatePath('/catalogo')
 
-    // Push notification to product owner
-    if (product?.user_id && destacado) {
-      await notifyUser(supabaseAdmin, product.user_id, {
-        title: '⭐ Producto destacado',
+    if (destacado) {
+      await notifyUser(auth.supabaseAdmin, product.usuario_id, {
+        title: '⭐ Inmueble destacado',
         body: `"${product.titulo}" ahora está destacado y llegará a más compradores.`,
         tag: 'destacado',
         icon: '/icon-192.png',

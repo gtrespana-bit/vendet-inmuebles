@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import Avatar from '@/components/Avatar'
 import BadgeVerificado from '@/components/BadgeVerificado'
@@ -49,7 +49,7 @@ export default function DashboardHeader({
   async function handleGuardar() {
     if (!nombre.trim() || !user) return
     setGuardando(true)
-    const { error } = await supabase.from('perfiles').upsert({ id: user.id, nombre, telefono, estado, ciudad }).eq('id', user.id)
+    const { error } = await supabase.from('perfiles').update({ nombre, telefono, estado, ciudad }).eq('id', user.id)
     if (error) {
       setToast(t('saveError') + error.message)
     } else {

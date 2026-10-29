@@ -1,106 +1,60 @@
-# 🇻🇪 Todo Anuncios — Marketplace para Venezuela
+# VendeT Inmuebles
 
-El marketplace venezolano. Compra y vende de todo: carros, tecnología, moda, hogar y más. Publica gratis, contacta directo.
+Portal inmobiliario para publicar y descubrir inmuebles en Venezuela. La aplicación está construida con Next.js 14, React 18, Supabase y Cloudflare R2 (opcional para imágenes de publicaciones).
 
-## 🚀 Quick Start
+## Configuración de Supabase
 
-### 1. Configurar Supabase
+El proyecto de Supabase asociado a este repositorio es `quxbqmqwiacfwbpqioev`. El esquema se mantiene en estas migraciones y debe aplicarse en orden:
 
-1. Crea un proyecto en [Supabase](https://supabase.com) (gratis)
-2. Ve al SQL Editor y ejecuta el archivo `supabase/migrations/001_schema_inicial.sql`
-3. Copia tu **Project URL** y **anon/key** desde Settings → API
+1. `supabase/migrations/001_schema_inicial.sql` — tablas, catálogos y datos de ubicación, funciones, RLS, permisos y buckets de Storage.
+2. `supabase/migrations/002_crear_vista_propiedades.sql` — vistas de lectura pública de propiedades y perfiles.
 
-### 2. Variables de entorno
+El proyecto nuevo parte vacío. No ejecutes archivos SQL heredados del proyecto anterior ni marques como públicos los buckets privados `cedulas` y `comprobantes`. Consulta `SUPABASE_SETUP.md` para las comprobaciones y ajustes de Auth.
+
+## Variables de entorno
 
 ```bash
 cp .env.local.example .env.local
 ```
 
-Edita `.env.local`:
+En `.env.local`, configura como mínimo:
 
 ```env
-NEXT_PUBLIC_SUPABASE_URL=https://tu-proyecto.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=tu_clave_anon
+NEXT_PUBLIC_SUPABASE_URL=https://quxbqmqwiacfwbpqioev.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=tu_clave_anon_o_publishable
+SUPABASE_SERVICE_ROLE_KEY=tu_clave_de_servidor
 ```
 
-### 3. Instalar y correr
+`SUPABASE_SERVICE_ROLE_KEY` es sólo para el servidor. Nunca la uses en código de navegador, no le agregues el prefijo `NEXT_PUBLIC_` y no la subas al repositorio. Las integraciones opcionales de R2, Telegram, correo y notificaciones push también están documentadas en `.env.local.example`.
+
+## Desarrollo local
 
 ```bash
 npm install
 npm run dev
 ```
 
-Abre [http://localhost:3000](http://localhost:3000)
+La aplicación se abrirá en `http://localhost:3000`.
 
-## 🛠️ Stack
-
-| Capa | herramienta |
-|---|---|
-| Frontend | Next.js 14 + React 18 |
-| Estilos | Tailwind CSS |
-| Backend | Supabase (DB + Auth + Storage + Realtime) |
-| Hosting | Vercel |
-
-## 📁 Estructura
-
-```
-src/
-├── app/
-│   ├── page.tsx                    # Home
-│   ├── catalogo/page.tsx           # Catálogo con filtros
-│   ├── producto/[slug]/page.tsx    # Detalle producto
-│   ├── publicar/page.tsx           # Publicar producto (4 pasos)
-│   ├── buscar/page.tsx             # Buscador
-│   ├── chat/page.tsx               # Chat interno
-│   ├── creditos/page.tsx           # Compra de créditos
-│   ├── dashboard/page.tsx          # Panel del vendedor
-│   ├── (auth)/
-│   │   ├── login/page.tsx
-│   │   └── register/page.tsx
-│   ├── mi-perfil/page.tsx
-│   ├── como-funciona/page.tsx
-│   ├── faq/page.tsx
-│   ├── contacto/page.tsx
-│   └── sobre-nosotros/page.tsx
-├── components/
-│   ├── Header.tsx
-│   ├── Footer.tsx
-│   └── AuthProvider.tsx
-├── lib/
-│   └── supabase.ts
-supabase/
-└── migrations/
-    └── 001_schema_inicial.sql
-```
-
-## 🎨 Diseño
-
-- **Primario:** Amarillo bandera `#C9A84C`
-- **Secundario:** Azul bandera `#7B2D3B`
-- **Acento:** Rojo bandera `#CF142B`
-
-## 🚀 Deploy a Vercel
+Antes de desplegar, ejecuta:
 
 ```bash
-vercel
+npx tsc --noEmit
+npm run build
 ```
 
-O desde GitHub → conecta tu repo en vercel.com → auto-deploy en cada push.
+## Arquitectura
 
-## 📋 Features
+- **Frontend:** Next.js 14, React 18, Tailwind CSS y `next-intl`.
+- **Backend y datos:** Supabase Auth, PostgreSQL, RLS, Realtime y Storage.
+- **Imágenes de publicaciones:** Cloudflare R2 opcional; cédulas y comprobantes permanecen en buckets privados de Supabase.
+- **Hosting previsto:** Vercel.
 
-- ✅ Registro/Login con Supabase Auth
-- ✅ Publicar productos gratis (formulario guiado 4 pasos)
-- ✅ Catálogo con filtros (categoría, marca, modelo, estado, ubicación, precio)
-- ✅ Detalle de producto con galería
-- ✅ Chat interno (Supabase Realtime)
-- ✅ Sistema de créditos para destacar publicaciones
-- ✅ Perfiles con opciones de contacto (chat, WhatsApp, teléfono, email)
-- ✅ SEO optimizado (meta tags, Open Graph, URLs amigables)
-- ✅ Responsive (mobile-first)
-- ✅ Optimizado para conexiones lentas
-- ✅ Precios en USD con equivalente en Bs.
+## Estructura relevante
 
-## 📝 Licencia
-
-MIT
+```text
+src/app/[locale]/       páginas localizadas de la aplicación
+src/app/api/            rutas de servidor
+src/lib/                clientes, autenticación y lógica compartida
+supabase/migrations/    esquema versionado de Supabase
+```

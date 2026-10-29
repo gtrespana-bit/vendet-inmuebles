@@ -1,7 +1,17 @@
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 
+// La consulta depende de datos de la base; no debe ejecutarse ni cachearse al compilar.
+export const dynamic = 'force-dynamic'
+
 export async function GET() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  if (!supabaseUrl || !supabaseKey) {
+    return NextResponse.json({ error: 'Supabase no está configurado' }, { status: 503 })
+  }
+
+  const supabase = createClient(supabaseUrl, supabaseKey)
   // Get the verified admin profile which has the payment data
   const { data: admin } = await supabase
     .from('perfiles')

@@ -1,29 +1,36 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { requireAuthenticatedUser } from '@/lib/api-auth'
+import { isValidUUID } from '@/lib/validation'
 
-// Devuelve perfiles por user_id usando el client de supabase server-side con anon key
-// (Supabase client-side con session del usuario autenticado respeta RLS)
-export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url)
-  const ids = searchParams.get('ids')?.split(',') || []
+export async function GET(req: NextRequest) {
+  const auth = await requireAuthenticatedUser(req)
+  if (!auth.ok) return auth.response
+
+  const requestedIds = Array.from(new Set((req.nextUrl.searchParams.get('ids') || '')
+    .split(',')
+    .filter(isValidUUID)))
+    .slice(0, 100)
+  if (requestedIds.length === 0) return NextResponse.json({ profiles: [] })
+
+  const { data: conversations, error: conversationError } = await auth.supabaseAdmin
+    .from('conversaciones')
+    .select('user1_id, user2_id')
+    .or(`user1_id.eq.${auth.user.id},user2_id.eq.${auth.user.id}`)
+  if (conversationError) return NextResponse.json({ error: conversationError.message }, { status: 500 })
+
+  const allowed = new Set<string>()
+  for (const conversation of conversations || []) {
+    if (conversation.user1_id === auth.user.id) allowed.add(conversation.user2_id)
+    if (conversation.user2_id === auth.user.id) allowed.add(conversation.user1_id)
+  }
+  const ids = requestedIds.filter(id => allowed.has(id))
   if (ids.length === 0) return NextResponse.json({ profiles: [] })
 
-  // Usar el servicio de Supabase que crea el cliente de supabase con la key de service role
-  const { createClient } = await import('@supabase/supabase-js')
-  const supabaseAdmin = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false } }
-  )
-
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await auth.supabaseAdmin
     .from('perfiles')
     .select('id, nombre, foto_perfil_url')
     .in('id', ids)
-
-  if (error) {
-    console.error('[user-bulk] Error:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
-  }
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   return NextResponse.json({ profiles: data || [] })
 }

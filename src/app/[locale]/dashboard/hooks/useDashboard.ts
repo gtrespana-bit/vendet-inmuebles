@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
+import { getSupabaseAuthHeaders } from '@/lib/supabase-auth-headers'
 import { useAuth } from '@/components/AuthProvider'
 
 export interface DashboardData {
@@ -55,9 +56,18 @@ export function useDashboard() {
       supabase.from('vw_propiedades_publicas').select('id, titulo, precio, estado, ciudad, activo, visitas, creado_en, main_image_url, operacion_nombre, destacado, destacado_hasta').eq('usuario_id', user.id).order('creado_en', { ascending: false }).then(({ data }: { data: any[] | null }) => setProductos(data || [])),
 
       supabase.from('vw_propiedades_publicas').select('visitas').eq('usuario_id', user.id).then(({ data }: { data: any[] | null }) => setVisitasTotales(data?.reduce((sum: number, p: { visitas: number | null }) => sum + (p.visitas || 0), 0) || 0)),
-      supabase.from('favoritos').select('producto_id, creado_en, vw_propiedades_publicas!inner(id, titulo, price, main_image_url, activo, user_id, ciudad, state_name)').eq('user_id', user.id).order('creado_en', { ascending: false }).then(({ data }: { data: any[] | null }) => {
-        setFavoritos(data || [])
-        setFavoritosCount(data?.length || 0)
+      supabase.from('favoritos').select('producto_id, creado_en').eq('user_id', user.id).order('creado_en', { ascending: false }).then(async ({ data }: { data: any[] | null }) => {
+        const favoriteRows = data || []
+        const propertyIds = favoriteRows.map((favorite: any) => favorite.producto_id)
+        const { data: properties } = propertyIds.length
+          ? await supabase.from('vw_propiedades_publicas').select('id, titulo, price, main_image_url, activo, user_id, ciudad, state_name').in('id', propertyIds)
+          : { data: [] }
+        const propertyById = new Map((properties || []).map((property: any) => [property.id, property]))
+        const visibleFavorites = favoriteRows
+          .map((favorite: any) => ({ ...favorite, productos: propertyById.get(favorite.producto_id) || null }))
+          .filter((favorite: any) => favorite.productos)
+        setFavoritos(visibleFavorites)
+        setFavoritosCount(visibleFavorites.length)
       }),
       supabase.from('perfiles').select('credito_balance, nombre, telefono, estado, ciudad, foto_perfil_url, verificado, nivel_confianza, badges_automaticos, ultima_actividad, creado_en').eq('id', user.id).single().then(({ data }: { data: any | null }) => {
         setCreditos(data?.credito_balance ?? 0)
@@ -75,16 +85,23 @@ export function useDashboard() {
         }
       }),
       supabase.from('vw_propiedades_publicas').select('*', { count: 'exact' }).eq('user_id', user.id).eq('activo', true).then(({ count }: { count: number | null }) => setPubCount(count || 0)),
-      supabase.from('resenas').select('id, puntuacion, comentario, producto_id, creado_en, vw_propiedades_publicas(titulo)').eq('vendedor_id', user.id).order('creado_en', { ascending: false }).then(({ data }: { data: any[] | null }) => {
-        // Flatten the joined data for backwards compatibility
-        const flattenedResenas = (data || []).map((r: any) => ({
-          ...r,
-          producto_titulo: r.vw_propiedades_publicas?.titulo || 'Producto eliminado',
+      supabase.from('resenas').select('id, puntuacion, comentario, producto_id, producto_titulo, creado_en').eq('vendedor_id', user.id).order('creado_en', { ascending: false }).then(async ({ data }: { data: any[] | null }) => {
+        const reviews = data || []
+        const propertyIds = Array.from(new Set(reviews.map((review: any) => review.producto_id).filter(Boolean)))
+        const { data: properties } = propertyIds.length
+          ? await supabase.from('vw_propiedades_publicas').select('id, titulo').in('id', propertyIds)
+          : { data: [] }
+        const titleById = new Map((properties || []).map((property: any) => [property.id, property.titulo]))
+        const flattenedResenas = reviews.map((review: any) => ({
+          ...review,
+          producto_titulo: review.producto_titulo || titleById.get(review.producto_id) || 'Producto eliminado',
         }))
         setResenas(flattenedResenas)
-        if (data && data.length > 0) {
-          const avg = data.reduce((sum: number, r: { puntuacion: number }) => sum + r.puntuacion, 0) / data.length
+        if (reviews.length > 0) {
+          const avg = reviews.reduce((sum: number, review: { puntuacion: number }) => sum + review.puntuacion, 0) / reviews.length
           setPromedioResenas(Math.round(avg * 10) / 10)
+        } else {
+          setPromedioResenas(0)
         }
       }),
     ]).finally(() => setLoading(false))
@@ -117,11 +134,11 @@ export function useDashboard() {
             setTimeout(() => setToast(null), 6000)
             // EMAIL: Trigger level-up email
             try {
-              fetch('/api/email-verificacion', {
+              getSupabaseAuthHeaders().then(authHeaders => fetch('/api/email-verificacion', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...authHeaders },
                 body: JSON.stringify({ userId: user.id, nuevoNivel: nivelNuevo, nivelAnterior }),
-              }).catch(() => {})
+              })).catch(() => {})
             } catch {}
           } else if (typeof newLevel === 'number') {
             setNivelConfianza(newLevel)

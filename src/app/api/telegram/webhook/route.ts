@@ -1,64 +1,105 @@
+import { timingSafeEqual } from 'node:crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { checkRateLimit } from '@/lib/rate-limit'
+import { isValidUUID } from '@/lib/validation'
 
-// Webhook: recibe clicks de botones inline en Telegram (APROBAR/RECHAZAR)
-export async function POST(req: NextRequest) {
-  const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
+export const runtime = 'nodejs'
+
+function matchesSecret(expected: string, provided: string | null): boolean {
+  if (!provided) return false
+  const expectedBytes = Buffer.from(expected)
+  const providedBytes = Buffer.from(provided)
+  return expectedBytes.length === providedBytes.length && timingSafeEqual(expectedBytes, providedBytes)
+}
+
+function escapeHtml(value: unknown): string {
+  return String(value ?? '').replace(/[&<>"']/g, (character) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  })[character] || character)
+}
+
+export async function POST(request: NextRequest) {
+  const botToken = process.env.TELEGRAM_BOT_TOKEN
+  const webhookSecret = process.env.TELEGRAM_WEBHOOK_SECRET
+  const telegramChatId = process.env.TELEGRAM_CHAT_ID
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-  if (!BOT_TOKEN || !supabaseUrl || !supabaseKey) {
-    return NextResponse.json({ ok: false, error: 'Config missing' }, { status: 500 })
+  if (!botToken || !webhookSecret || !telegramChatId || !supabaseUrl || !serviceRoleKey) {
+    return NextResponse.json({ ok: false, error: 'Webhook no configurado' }, { status: 503 })
+  }
+
+  if (!matchesSecret(webhookSecret, request.headers.get('x-telegram-bot-api-secret-token'))) {
+    return NextResponse.json({ ok: false }, { status: 401 })
+  }
+
+  const ip = request.headers.get('x-real-ip')
+    || request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+    || 'unknown'
+  const limit = await checkRateLimit('telegram:webhook', ip, { ip })
+  if (!limit.ok) {
+    return NextResponse.json({ ok: false, error: 'Límite de solicitudes alcanzado' }, { status: 429 })
   }
 
   try {
-    const body = await req.json()
-    const callback = body.callback_query
+    const body = await request.json()
+    const callback = body?.callback_query
     if (!callback) return NextResponse.json({ ok: true })
 
-    const data = callback.data as string
-    const chatId = callback.message.chat.id as number
-    const messageId = callback.message.message_id as number
-    const callbackQueryId = callback.id as string
+    const callbackId = typeof callback.id === 'string' ? callback.id : ''
+    const chatId = callback.message?.chat?.id
+    const messageId = callback.message?.message_id
+    const data = typeof callback.data === 'string' ? callback.data : ''
 
-    // Formato: aprobar:<tx_id> o rechazar:<tx_id>
-    const [accion, txId] = data.split(':')
+    if (!callbackId || !Number.isSafeInteger(messageId) || !Number.isFinite(Number(chatId))) {
+      return NextResponse.json({ ok: true })
+    }
 
-    // Verificar que viene del chat correcto
-    if (chatId.toString() !== process.env.TELEGRAM_CHAT_ID) {
-      await tgFetch(BOT_TOKEN, '/answerCallbackQuery', { callback_query_id: callbackQueryId, text: 'No autorizado', show_alert: true })
+    const answer = (text: string, showAlert = true) => tgFetch(botToken, '/answerCallbackQuery', {
+      callback_query_id: callbackId,
+      text,
+      show_alert: showAlert,
+    })
+
+    if (String(chatId) !== telegramChatId) {
+      await answer('No autorizado')
       return NextResponse.json({ ok: false })
     }
 
-    if (accion === 'aprobar' && txId) {
-      const result = await procesarAprobacion(txId, supabaseUrl, supabaseKey)
-      await tgFetch(BOT_TOKEN, '/answerCallbackQuery', { callback_query_id: callbackQueryId, text: result.alert, show_alert: false })
-      await tgFetch(BOT_TOKEN, '/editMessageText', {
-        chat_id: chatId, message_id: messageId, text: result.text, parse_mode: 'HTML',
-      })
-    } else if (accion === 'rechazar' && txId) {
-      const result = await procesarRechazo(txId, supabaseUrl, supabaseKey)
-      await tgFetch(BOT_TOKEN, '/answerCallbackQuery', { callback_query_id: callbackQueryId, text: result.alert, show_alert: false })
-      await tgFetch(BOT_TOKEN, '/editMessageText', {
-        chat_id: chatId, message_id: messageId, text: result.text, parse_mode: 'HTML',
-      })
+    const match = /^(aprobar|rechazar):(.+)$/i.exec(data)
+    const accion = match?.[1]?.toLowerCase()
+    const txId = match?.[2]
+    if (!accion || !txId || !isValidUUID(txId)) {
+      await answer('Solicitud inválida')
+      return NextResponse.json({ ok: true })
     }
 
+    const supabase = createClient(supabaseUrl, serviceRoleKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    })
+    const result = accion === 'aprobar'
+      ? await procesarAprobacion(supabase, txId)
+      : await procesarRechazo(supabase, txId)
+
+    await answer(result.alert, false)
+    await tgFetch(botToken, '/editMessageText', {
+      chat_id: chatId,
+      message_id: messageId,
+      text: result.text,
+      parse_mode: 'HTML',
+    })
+
     return NextResponse.json({ ok: true })
-  } catch (e: any) {
-    return NextResponse.json({ ok: false, error: e.message }, { status: 500 })
+  } catch (error) {
+    console.error('Telegram webhook error:', error)
+    return NextResponse.json({ ok: false, error: 'Error procesando webhook' }, { status: 500 })
   }
 }
-
-// GET: info del webhook
-export async function GET() {
-  const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
-  if (!BOT_TOKEN) return NextResponse.json({ ok: false, error: 'No token' }, { status: 500 })
-  const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getWebhookInfo`)
-  return NextResponse.json(await res.json())
-}
-
-// ---- Helpers ----
 
 function tgFetch(token: string, method: string, body: object) {
   return fetch(`https://api.telegram.org/bot${token}${method}`, {
@@ -68,35 +109,56 @@ function tgFetch(token: string, method: string, body: object) {
   })
 }
 
-async function procesarAprobacion(txId: string, url: string, key: string) {
-  const sb = createClient(url, key)
+async function procesarAprobacion(supabase: any, txId: string) {
+  const { data: tx, error: readError } = await supabase
+    .from('transacciones_creditos')
+    .select('id, user_id, tipo, monto, metodo_pago, estado')
+    .eq('id', txId)
+    .maybeSingle()
 
-  // Obtener transacción
-  const { data: tx, error } = await sb.from('transacciones_creditos').select('id, user_id, tipo, monto, metodo_pago, estado, creado_en, precio_usd, comprobante_url').eq('id', txId).single()
-  if (error || !tx) return { alert: '❌ No encontrada', text: '❌ Transacción no encontrada' }
+  if (readError || !tx) {
+    return { alert: 'Transacción no encontrada', text: '❌ Transacción no encontrada' }
+  }
+  if (tx.estado !== 'pendiente') {
+    return { alert: 'La transacción ya fue procesada', text: '⚠️ La transacción ya fue procesada' }
+  }
 
-  // Actualizar crédito del usuario
-  const { data: perfil } = await sb.from('perfiles').select('credito_balance').eq('id', tx.user_id).single()
-  const nuevoBalance = (perfil?.credito_balance || 0) + tx.monto
-
-  const { error: updErr } = await sb.from('perfiles').update({ credito_balance: nuevoBalance }).eq('id', tx.user_id)
-  const { error: txErr } = await sb.from('transacciones_creditos').update({ estado: 'aprobado' }).eq('id', txId)
-
-  if (updErr || txErr) {
-    return { alert: '❌ Error', text: `❌ Error al aprobar: ${updErr?.message || txErr?.message}` }
+  // El RPC bloquea la fila y actualiza saldo + transacción dentro de una sola operación.
+  const { error } = await supabase.rpc('aprobar_transaccion', {
+    p_transaccion_id: txId,
+    p_admin_id: null,
+  })
+  if (error) {
+    const alreadyProcessed = /ya fue procesada/i.test(error.message || '')
+    return alreadyProcessed
+      ? { alert: 'La transacción ya fue procesada', text: '⚠️ La transacción ya fue procesada' }
+      : { alert: 'No se pudo aprobar', text: '❌ No se pudo aprobar la transacción' }
   }
 
   return {
     alert: `✅ +${tx.monto} créditos aprobados`,
-    text: `✅ <b>APROBADO</b>\n+${tx.monto} créditos\nUsuario: ${tx.user_id}\nMétodo: ${tx.metodo_pago || 'N/A'}\n\n<i>Procesado desde Telegram</i>`,
+    text: `✅ <b>APROBADO</b>\n+${tx.monto} créditos\nUsuario: ${escapeHtml(tx.user_id)}\nMétodo: ${escapeHtml(tx.metodo_pago || 'N/A')}\n\n<i>Procesado desde Telegram</i>`,
   }
 }
 
-async function procesarRechazo(txId: string, url: string, key: string) {
-  const sb = createClient(url, key)
-  await sb.from('transacciones_creditos').update({ estado: 'rechazado' }).eq('id', txId)
+async function procesarRechazo(supabase: any, txId: string) {
+  const { data, error } = await supabase
+    .from('transacciones_creditos')
+    .update({ estado: 'rechazado', actualizado_en: new Date().toISOString() })
+    .eq('id', txId)
+    .eq('estado', 'pendiente')
+    .select('id')
+    .maybeSingle()
+
+  if (error) {
+    return { alert: 'No se pudo rechazar', text: '❌ No se pudo rechazar la transacción' }
+  }
+  if (!data) {
+    return { alert: 'La transacción ya fue procesada', text: '⚠️ La transacción ya fue procesada' }
+  }
+
   return {
-    alert: '❌ Rechazada',
-    text: `❌ <b>RECHAZADA</b>\nTransacción: ${txId}\nCréditos NO añadidos\n\n<i>Procesado desde Telegram</i>`,
+    alert: '❌ Transacción rechazada',
+    text: `❌ <b>RECHAZADA</b>\nTransacción: ${escapeHtml(txId)}\nCréditos no añadidos\n\n<i>Procesado desde Telegram</i>`,
   }
 }

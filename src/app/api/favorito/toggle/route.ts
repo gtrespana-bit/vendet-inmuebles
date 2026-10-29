@@ -1,16 +1,12 @@
-/**
- * POST /api/favorito/toggle
- * - Add/remove favorito en Supabase
- * - Si es un nuevo favorito, envía push notification al dueño del producto
- */
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
 import webpush from 'web-push'
+import { requireAuthenticatedUser } from '@/lib/api-auth'
+import { isValidUUID } from '@/lib/validation'
+import { checkRateLimit } from '@/lib/rate-limit'
 
-// VAPID setup
 if (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
   webpush.setVapidDetails(
-    `mailto:noreply@vendet.online`,
+    'mailto:noreply@vendet.online',
     process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
     process.env.VAPID_PRIVATE_KEY,
   )
@@ -18,103 +14,78 @@ if (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { productId, isFavorited, productoTitle } = await req.json()
+    const auth = await requireAuthenticatedUser(req)
+    if (!auth.ok) return auth.response
 
-    if (!productId) {
-      return NextResponse.json({ error: 'productId requerido' }, { status: 400 })
+    const body = await req.json()
+    const { productId, isFavorited } = body
+    if (!isValidUUID(productId) || typeof isFavorited !== 'boolean') {
+      return NextResponse.json({ error: 'Datos inválidos' }, { status: 400 })
     }
 
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    )
+    const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown'
+    const rateLimit = await checkRateLimit('favorito:toggle', auth.user.id, { ip })
+    if (!rateLimit.ok) return NextResponse.json({ error: 'Demasiadas solicitudes' }, { status: 429 })
 
-    // Get current user
-    const authHeader = req.headers.get('authorization')
-    if (!authHeader) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-    const { data: { user }, error: authError } = await supabase.auth.getUser(
-      authHeader.replace('Bearer ', '')
-    )
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Invalid session' }, { status: 401 })
-    }
-
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    )
+    const { data: product, error: productError } = await auth.supabaseAdmin
+      .from('inmuebles')
+      .select('usuario_id, titulo, activo, vendido, estado_moderacion')
+      .eq('id', productId)
+      .maybeSingle()
+    if (productError) return NextResponse.json({ error: productError.message }, { status: 500 })
+    if (!product) return NextResponse.json({ error: 'Inmueble no encontrado' }, { status: 404 })
 
     if (isFavorited) {
-      // Remove favorito
-      await supabaseAdmin
-        .from('favoritos')
-        .delete()
-        .eq('user_id', user.id)
-        .eq('producto_id', productId)
-
+      const { error } = await auth.supabaseAdmin.from('favoritos')
+        .delete().eq('user_id', auth.user.id).eq('producto_id', productId)
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 })
       return NextResponse.json({ ok: true, action: 'removed' })
     }
 
-    // Add favorito
-    const { error: insertError } = await supabaseAdmin
-      .from('favoritos')
-      .insert({ user_id: user.id, producto_id: productId })
-
-    if (insertError) {
-      return NextResponse.json({ error: insertError.message }, { status: 500 })
+    if (product.usuario_id === auth.user.id) {
+      return NextResponse.json({ error: 'No puedes guardar tu propio inmueble' }, { status: 400 })
+    }
+    if (!product.activo || product.vendido || product.estado_moderacion !== 'aprobado') {
+      return NextResponse.json({ error: 'Inmueble no disponible' }, { status: 404 })
     }
 
-    // --- Push notification al dueño del producto ---
-    // Get product owner
-    const { data: product } = await supabaseAdmin
-      .from('vw_propiedades_publicas')
-      .select('user_id, titulo')
-      .eq('id', productId)
-      .single()
+    const { error: insertError } = await auth.supabaseAdmin.from('favoritos').insert({
+      user_id: auth.user.id,
+      producto_id: productId,
+    })
+    if (insertError?.code === '23505') return NextResponse.json({ ok: true, action: 'added' })
+    if (insertError) return NextResponse.json({ error: insertError.message }, { status: 500 })
 
-    if (product?.user_id) {
-      // Get push subscriptions del dueño
-      const { data: subs } = await supabaseAdmin
-        .from('push_subscriptions')
-        .select('endpoint, p256dh, auth_key')
-        .eq('user_id', product.user_id)
+    const { data: subscriptions } = await auth.supabaseAdmin
+      .from('push_subscriptions')
+      .select('endpoint, p256dh, auth_key')
+      .eq('user_id', product.usuario_id)
 
-      if (subs?.length) {
-        const payload = JSON.stringify({
-          title: '❤️ Producto guardado',
-          body: `A alguien le gustó "${productoTitle || product.titulo}"`,
-          tag: `fav-${productId.slice(0, 8)}`,
-          icon: '/icon-192.png',
-          click_url: `/inmueble/${productId}`,
-        })
-
-        const deadSubs: string[] = []
-        await Promise.all(subs.map(async (sub: any) => {
-          try {
-            await webpush.sendNotification(
-              { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth_key } },
-              payload,
-            )
-          } catch (e: any) {
-            if (e.statusCode === 410) deadSubs.push(sub.endpoint)
-          }
-        }))
-
-        // Limpiar dead subs
-        if (deadSubs.length > 0) {
-          await supabaseAdmin
-            .from('push_subscriptions')
-            .delete()
-            .in('endpoint', deadSubs)
-        }
+    const deadEndpoints: string[] = []
+    await Promise.all((subscriptions || []).map(async (subscription: any) => {
+      try {
+        await webpush.sendNotification(
+          { endpoint: subscription.endpoint, keys: { p256dh: subscription.p256dh, auth: subscription.auth_key } },
+          JSON.stringify({
+            title: '❤️ Inmueble guardado',
+            body: `A alguien le gustó "${product.titulo}"`,
+            tag: `fav-${productId.slice(0, 8)}`,
+            icon: '/icon-192.png',
+            click_url: `/inmueble/${productId}`,
+          }),
+        )
+      } catch (error: any) {
+        if (error.statusCode === 410) deadEndpoints.push(subscription.endpoint)
       }
+    }))
+
+    if (deadEndpoints.length > 0) {
+      await auth.supabaseAdmin.from('push_subscriptions').delete().in('endpoint', deadEndpoints)
     }
 
     return NextResponse.json({ ok: true, action: 'added' })
-  } catch (e: any) {
-    console.error('[favorito/toggle] Error:', e.message)
-    return NextResponse.json({ error: 'Internal error: ' + e.message }, { status: 500 })
+  } catch (error: any) {
+    console.error('[favorito/toggle] Error:', error.message)
+    return NextResponse.json({ error: 'Internal error' }, { status: 500 })
   }
 }

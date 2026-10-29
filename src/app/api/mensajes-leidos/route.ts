@@ -1,37 +1,46 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { requireAuthenticatedUser } from '@/lib/api-auth'
+import { isValidUUID } from '@/lib/validation'
 
 export async function POST(req: NextRequest) {
-  const { conversacion_id, destinatario_id } = await req.json()
-  if (!conversacion_id || !destinatario_id) {
-    return NextResponse.json({ error: 'missing params' }, { status: 400 })
-  }
+  try {
+    const auth = await requireAuthenticatedUser(req)
+    if (!auth.ok) return auth.response
 
-  const sb = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false } }
-  )
+    const body = await req.json()
+    const { conversacion_id, destinatario_id } = body
+    if (!isValidUUID(conversacion_id) || destinatario_id !== auth.user.id) {
+      return NextResponse.json({ error: 'Datos inválidos o no autorizados' }, { status: 400 })
+    }
 
-  // Contar primero
-  const { count } = await sb
-    .from('mensajes')
-    .select('id', { count: 'exact', head: true })
-    .eq('conversacion_id', conversacion_id)
-    .eq('destinatario_id', destinatario_id)
-    .eq('leido', false)
+    const { data: conversation, error: conversationError } = await auth.supabaseAdmin
+      .from('conversaciones')
+      .select('user1_id, user2_id')
+      .eq('id', conversacion_id)
+      .maybeSingle()
+    if (conversationError) return NextResponse.json({ error: conversationError.message }, { status: 500 })
+    if (!conversation || ![conversation.user1_id, conversation.user2_id].includes(auth.user.id)) {
+      return NextResponse.json({ error: 'Conversación no encontrada' }, { status: 404 })
+    }
 
-  // Marcar como leidos
-  const { error } = await sb
-    .from('mensajes')
-    .update({ leido: true })
-    .eq('conversacion_id', conversacion_id)
-    .eq('destinatario_id', destinatario_id)
-    .eq('leido', false)
+    const { count, error: countError } = await auth.supabaseAdmin
+      .from('mensajes')
+      .select('id', { count: 'exact', head: true })
+      .eq('conversacion_id', conversacion_id)
+      .eq('destinatario_id', auth.user.id)
+      .eq('leido', false)
+    if (countError) return NextResponse.json({ error: countError.message }, { status: 500 })
 
-  if (error) {
+    const { error } = await auth.supabaseAdmin
+      .from('mensajes')
+      .update({ leido: true })
+      .eq('conversacion_id', conversacion_id)
+      .eq('destinatario_id', auth.user.id)
+      .eq('leido', false)
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+    return NextResponse.json({ affected: count || 0 })
+  } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
-
-  return NextResponse.json({ affected: count })
 }

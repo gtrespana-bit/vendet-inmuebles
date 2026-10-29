@@ -1,80 +1,67 @@
-import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-import { cookies } from 'next/headers'
-import { validateConversationData } from '@/lib/validation'
+import { NextRequest, NextResponse } from 'next/server'
+import { requireAuthenticatedUser } from '@/lib/api-auth'
+import { isValidUUID } from '@/lib/validation'
+import { checkRateLimit } from '@/lib/rate-limit'
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
-    // Verify user is authenticated via cookie
-    const cookieStore = await cookies()
-    const authCookie = cookieStore.getAll().find(c => c.name.includes('auth-token'))
-    if (!authCookie?.value) {
-      return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-    }
-
-    let parsed: any
-    try {
-      parsed = JSON.parse(authCookie.value)
-    } catch {
-      return NextResponse.json({ error: 'Token inválido' }, { status: 401 })
-    }
-
-    const uid = parsed.user?.id
-    if (!uid) {
-      return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 401 })
-    }
+    const auth = await requireAuthenticatedUser(req)
+    if (!auth.ok) return auth.response
 
     const body = await req.json()
     const { vendedorId, productoId } = body
-
-    // Validar datos de la conversación
-    const validation = validateConversationData({ vendedorId, productoId })
-    if (!validation.valid) {
-      return NextResponse.json({ error: validation.error }, { status: 400 })
+    if (!isValidUUID(vendedorId) || !isValidUUID(productoId)) {
+      return NextResponse.json({ error: 'Vendedor o inmueble inválido' }, { status: 400 })
+    }
+    if (vendedorId === auth.user.id) {
+      return NextResponse.json({ error: 'No puedes iniciar una conversación contigo mismo' }, { status: 400 })
     }
 
-    // No permitir conversaciones consigo mismo
-    if (vendedorId === uid) {
-      return NextResponse.json({ error: 'No puedes iniciar conversación contigo mismo' }, { status: 400 })
+    const rateLimit = await checkRateLimit('conversacion:create', auth.user.id, {
+      ip: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown',
+    })
+    if (!rateLimit.ok) return NextResponse.json({ error: 'Demasiadas conversaciones nuevas' }, { status: 429 })
+
+    const { data: property, error: propertyError } = await auth.supabaseAdmin
+      .from('inmuebles')
+      .select('id, usuario_id, activo, vendido, estado_moderacion')
+      .eq('id', productoId)
+      .maybeSingle()
+    if (propertyError) return NextResponse.json({ error: propertyError.message }, { status: 500 })
+    if (!property || property.usuario_id !== vendedorId || !property.activo || property.vendido || property.estado_moderacion !== 'aprobado') {
+      return NextResponse.json({ error: 'Inmueble no disponible' }, { status: 404 })
     }
 
-    // Create admin client inside function (avoids build-time env errors)
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      { auth: { autoRefreshToken: false, persistSession: false } }
-    )
-
-    // Check if conversation already exists
-    const { data: existing } = await supabaseAdmin
+    const user1Id = auth.user.id < vendedorId ? auth.user.id : vendedorId
+    const user2Id = auth.user.id < vendedorId ? vendedorId : auth.user.id
+    const { data: existing, error: existingError } = await auth.supabaseAdmin
       .from('conversaciones')
-      .select('id')
-      .or(`and(user1_id.eq.${uid},user2_id.eq.${vendedorId}),and(user1_id.eq.${vendedorId},user2_id.eq.${uid})`)
+      .select('id, user1_id, user2_id, producto_id')
+      .eq('user1_id', user1Id)
+      .eq('user2_id', user2Id)
       .eq('producto_id', productoId)
-      .single()
+      .maybeSingle()
+    if (existingError) return NextResponse.json({ error: existingError.message }, { status: 500 })
+    if (existing) return NextResponse.json(existing)
 
-    if (existing) {
-      return NextResponse.json({ id: existing.id })
-    }
-
-    // Create conversation (bypass RLS with service_role key)
-    const u1 = uid < vendedorId ? uid : vendedorId
-    const u2 = uid < vendedorId ? vendedorId : uid
-
-    const { data: newConv, error } = await supabaseAdmin
+    const { data: conversation, error } = await auth.supabaseAdmin
       .from('conversaciones')
-      .insert({ user1_id: u1, user2_id: u2, producto_id: productoId })
-      .select()
+      .insert({ user1_id: user1Id, user2_id: user2Id, producto_id: productoId })
+      .select('id, user1_id, user2_id, producto_id')
       .single()
-
-    if (error) {
-      console.error('Error creando conversación:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error?.code === '23505') {
+      const { data: duplicate } = await auth.supabaseAdmin
+        .from('conversaciones')
+        .select('id, user1_id, user2_id, producto_id')
+        .eq('user1_id', user1Id)
+        .eq('user2_id', user2Id)
+        .eq('producto_id', productoId)
+        .maybeSingle()
+      if (duplicate) return NextResponse.json(duplicate)
     }
-
-    return NextResponse.json(newConv)
-  } catch (e: any) {
-    console.error('Error en crear-conversacion:', e)
-    return NextResponse.json({ error: e.message }, { status: 500 })
+    if (error || !conversation) return NextResponse.json({ error: error?.message || 'No se pudo crear la conversación' }, { status: 500 })
+    return NextResponse.json(conversation, { status: 201 })
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }

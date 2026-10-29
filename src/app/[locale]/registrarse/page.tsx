@@ -34,7 +34,7 @@ export default function RegisterPage() {
       const supabase = getSupabaseAuthClient();
       
       // Crear usuario en Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      const { error: authError } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -46,28 +46,7 @@ export default function RegisterPage() {
 
       if (authError) throw new Error(authError.message);
 
-      // Si se creó el usuario, crear perfil en la tabla profiles
-      if (authData.user) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert({
-            id: authData.user.id,
-            nombre: nombre,
-            email: email,
-            telefono: null,
-            estado: null,
-            ciudad: null,
-            credito_balance: 0,
-            verificado: false,
-            nivel_confianza: 0,
-            foto_perfil_url: null,
-          } as any);
-
-        if (profileError) {
-          console.error('Error creando perfil:', profileError);
-          // No lanzamos error porque el usuario ya fue creado en auth
-        }
-      }
+      // El perfil se crea automáticamente mediante un trigger de Supabase Auth.
 
       alert('Registro exitoso. Por favor verifica tu email e inicia sesión.');
       router.push('/iniciar-sesion');

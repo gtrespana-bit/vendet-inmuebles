@@ -61,28 +61,30 @@ function ModalPago({ paquete, tasa, onClose }: { paquete: any; tasa: number; onC
 
     setEnviando(true)
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { router.push(`/login?redirect=/creditos`); return }
+      const { data: { session } } = await supabase.auth.getSession()
+      const user = session?.user
+      if (!user || !session) { router.push(`/login?redirect=/creditos`); return }
 
       const fileExt = comprobanteFile.name.split('.').pop()
-      const fileName = `comprobante_${user.id}_${Date.now()}.${fileExt}`
+      const fileName = `${user.id}/comprobante_${Date.now()}.${fileExt}`
 
       const { error: uploadError } = await supabase.storage
         .from('comprobantes')
         .upload(fileName, comprobanteFile, { contentType: comprobanteFile.type })
       if (uploadError) { alert('Error subiendo: ' + uploadError.message); setEnviando(false); return }
 
-      const { data: { publicUrl } } = supabase.storage.from('comprobantes').getPublicUrl(fileName)
-
       const res = await fetch('/api/comprar-creditos', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify({
           userId: user.id,
           creditos: paquete.creditos,
           precioUsd: paquete.precio,
           metodoPago: selectedMetodo?.nombre || metodo,
-          comprobanteUrl: publicUrl,
+          comprobanteUrl: fileName,
         }),
       })
 

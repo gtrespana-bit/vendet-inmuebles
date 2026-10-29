@@ -1,48 +1,33 @@
-import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 import { notifyUser } from '@/lib/push-notify'
+import { requireAdmin } from '@/lib/api-auth'
 import { requireUUIDs } from '@/lib/validation'
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireAdmin(request)
+    if (!auth.ok) return auth.response
+
     const body = await request.json()
-    const { userId, verificado, verificado_desde } = body
-
-    // Validar UUID
+    const { userId, verificado } = body
     const uuidCheck = requireUUIDs(body, ['userId'])
-    if (!uuidCheck.valid) {
-      return NextResponse.json({ error: uuidCheck.error }, { status: 400 })
-    }
-
-    if (verificado === undefined || typeof verificado !== 'boolean') {
+    if (!uuidCheck.valid) return NextResponse.json({ error: uuidCheck.error }, { status: 400 })
+    if (typeof verificado !== 'boolean') {
       return NextResponse.json({ error: 'verificado debe ser boolean' }, { status: 400 })
     }
 
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    )
-
-    const updateData: Record<string, any> = { verificado: verificado === true }
-    if (verificado === true) {
-      updateData.verificado_desde = verificado_desde || new Date().toISOString()
-    }
-
-    const { error } = await supabaseAdmin
+    const { error } = await auth.supabaseAdmin
       .from('perfiles')
-      .update(updateData)
+      .update({
+        verificado,
+        verificado_desde: verificado ? new Date().toISOString() : null,
+      })
       .eq('id', userId)
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
-
-    // Push notification
-    await notifyUser(supabaseAdmin, userId, {
+    await notifyUser(auth.supabaseAdmin, userId, {
       title: verificado ? '✅ Perfil verificado' : '❌ Verificación revocada',
-      body: verificado
-        ? 'Tu perfil ya está verificado en VendeT.'
-        : 'Tu perfil ya no está verificado en VendeT.',
+      body: verificado ? 'Tu perfil ya está verificado en VendeT.' : 'Tu perfil ya no está verificado en VendeT.',
       tag: verificado ? 'verified' : 'verified-revoked',
       icon: '/icon-192.png',
       click_url: '/dashboard',

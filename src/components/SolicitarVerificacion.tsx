@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { supabase, isSupabaseConfigured } from '@/lib/supabase'
+import { getSupabaseAuthHeaders } from '@/lib/supabase-auth-headers'
 import { useAuth } from '@/components/AuthProvider'
 import { BadgeCheck, Upload, X, Shield, Camera, AlertCircle, CheckCircle2, Clock } from 'lucide-react'
 import Image from 'next/image'
@@ -147,8 +148,11 @@ export default function SolicitarVerificacion() {
 
       if (dbError) throw dbError
 
-      // Alert Telegram
-      fetch("'/api/verificacion-alerta'", { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nombre: user?.email || user?.id, cedula: pagoMovilCedula, telefono: pagoMovilTelefono, banco: pagoMovilBanco }) }).catch(() => {})
+      // Alertar al equipo de verificación; el servidor lee los datos desde la solicitud recién creada.
+      getSupabaseAuthHeaders().then(authHeaders => fetch('/api/verificacion-alerta', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders },
+      })).catch(() => {})
 
       setExito(true)
       setEstado('pendiente')

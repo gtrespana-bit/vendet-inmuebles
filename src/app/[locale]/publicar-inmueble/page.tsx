@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/AuthProvider';
+import { supabase } from '@/lib/supabase';
 import { ESTADOS, MUNICIPIOS_POR_ESTADO } from '@/lib/ubicaciones';
 
 interface ImagePreview {
@@ -60,16 +61,28 @@ export default function PublicarInmueblePage() {
       if (imagenes.length === 0) {
         throw new Error('Debes subir al menos una imagen');
       }
+      if (!user) {
+        throw new Error('Debes iniciar sesión para publicar un inmueble');
+      }
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session || session.user.id !== user.id) {
+        throw new Error('Tu sesión ha caducado. Inicia sesión de nuevo para publicar.');
+      }
 
       // Subir imágenes a Cloudflare R2
       const imageUrls: string[] = [];
       for (const img of imagenes) {
-        const fileName = `inmuebles/${Date.now()}-${img.file.name}`;
+        const safeFileName = img.file.name.normalize('NFKD').replace(/[^a-zA-Z0-9._-]+/g, '_').slice(0, 100);
+        const fileName = `${user.id}/inmuebles/${Date.now()}-${safeFileName}`;
         
         // Obtener presigned URL desde API
         const presignedRes = await fetch('/api/r2-upload', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.access_token}`,
+          },
           body: JSON.stringify({ 
             key: fileName, 
             contentType: img.file.type || 'image/jpeg'
@@ -99,13 +112,12 @@ export default function PublicarInmueblePage() {
       }
 
       // Crear propiedad en Supabase
-      if (!user) {
-        throw new Error('Debes iniciar sesión para publicar un inmueble');
-      }
-
       const res = await fetch('/api/properties', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify({
           userId: user.id,
           titulo,
@@ -116,6 +128,7 @@ export default function PublicarInmueblePage() {
           ciudad,
           habitaciones,
           banos,
+          area: area ? parseFloat(area) : null,
           imagenes: imageUrls,
         }),
       });

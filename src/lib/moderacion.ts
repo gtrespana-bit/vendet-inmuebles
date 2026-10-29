@@ -117,12 +117,18 @@ export function formatearAlertaModeracion(
 ): string {
   const icono = nivel === 'prohibido' ? '🚫' : '⚠️'
   const nivelTexto = nivel === 'prohibido' ? 'PROHIBIDO' : 'SOSPECHOSO'
+  const escapeHtml = (value: string) => value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
 
   return `${icono} <b>ALERTA MODERACIÓN — ${nivelTexto}</b>
 
-📝 <b>Título:</b> ${titulo}
-👤 <b>Usuario:</b> ${userName}
-🔍 <b>Palabras detectadas:</b> ${palabras.join(', ')}
+📝 <b>Título:</b> ${escapeHtml(titulo)}
+👤 <b>Usuario:</b> ${escapeHtml(userName)}
+🔍 <b>Palabras detectadas:</b> ${palabras.map(escapeHtml).join(', ')}
 
 Revisa en el Admin Panel → Moderación`
 }

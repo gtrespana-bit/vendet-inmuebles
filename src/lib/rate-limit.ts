@@ -27,6 +27,14 @@ const LIMITS: Record<string, { max: number; windowMs: number }> = {
   'conversacion:create': { max: 20, windowMs: 60 * 60 * 1000 },
   // Favoritos: 100 por hora por usuario
   'favorito:toggle': { max: 100, windowMs: 60 * 60 * 1000 },
+  // Notificaciones push a terceros: 60 por hora por usuario
+  'push:send': { max: 60, windowMs: 60 * 60 * 1000 },
+  // Alertas de moderación: 10 por hora por usuario
+  'moderacion:alerta': { max: 10, windowMs: 60 * 60 * 1000 },
+  // Avisos de verificación: 3 por hora por usuario
+  'verificacion:alerta': { max: 3, windowMs: 60 * 60 * 1000 },
+  // Correo de subida de nivel: 1 por hora por usuario
+  'email:level-up': { max: 1, windowMs: 60 * 60 * 1000 },
   // Foto perfil: 10 por hora por usuario
   'foto-perfil:update': { max: 10, windowMs: 60 * 60 * 1000 },
   // Subida R2: 50 por hora por usuario
