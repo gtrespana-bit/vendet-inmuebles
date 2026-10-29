@@ -2,7 +2,7 @@
 
 import nodemailer from 'nodemailer'
 
-const FROM = '"VendeT-Venezuela" <noreply@vendet.online>'
+const FROM = process.env.SMTP_FROM || '"VendeT-Venezuela" <noreply@vendet.online>'
 const CONTACT = 'contacto@vendet.online'
 const URL = process.env.NEXT_PUBLIC_URL || 'https://venezuela-inmuebles.online'
 const LOGO = `${URL}/logo-vendet.png`
@@ -10,17 +10,17 @@ const LOGO = `${URL}/logo-vendet.png`
 // ─── Transporter ───────────────────────────────────────────
 
 function getTransporter() {
-  const port = Number(process.env.ZOHO_SMTP_PORT) || 587
+  const port = Number(process.env.SMTP_PORT) || 465
   return nodemailer.createTransport({
-    host: process.env.ZOHO_SMTP_HOST || 'smtp.zoho.com',
+    host: process.env.SMTP_HOST || 'smtp.resend.com',
     port,
     secure: port === 465,
-    auth: { user: process.env.ZOHO_SMTP_USER, pass: process.env.ZOHO_SMTP_PASS },
+    auth: { user: process.env.SMTP_USER || 'resend', pass: process.env.SMTP_PASS },
   })
 }
 
 async function enviar(to: string, subject: string, html: string): Promise<boolean> {
-  if (!process.env.ZOHO_SMTP_USER || !process.env.ZOHO_SMTP_PASS) {
+  if (!process.env.SMTP_PASS) {
     console.warn('⚠️ SMTP no configurado')
     return false
   }

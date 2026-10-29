@@ -30,14 +30,14 @@ export async function POST(req: NextRequest) {
       .eq('inmueble_id', inmueble.id)
 
     const r2PublicUrl = (process.env.R2_PUBLIC_URL || '').replace(/\/$/, '')
-    const r2Bucket = process.env.R2_BUCKET || 'vendetinmuebles'
+    const r2Bucket = process.env.R2_BUCKET || ''
     const r2Config = {
       endpoint: process.env.R2_ENDPOINT,
       accessKeyId: process.env.R2_ACCESS_KEY_ID,
       secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
     }
 
-    if (r2PublicUrl && r2Config.endpoint && r2Config.accessKeyId && r2Config.secretAccessKey) {
+    if (r2PublicUrl && r2Bucket && r2Config.endpoint && r2Config.accessKeyId && r2Config.secretAccessKey) {
       const r2 = new S3Client({
         region: 'auto',
         endpoint: r2Config.endpoint,

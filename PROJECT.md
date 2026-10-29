@@ -226,7 +226,7 @@
 - `NEXT_PUBLIC_URL` y `NEXT_PUBLIC_BASE_URL` (dominio canónico y enlaces)
 - `R2_*` (almacenamiento de imágenes)
 - `TELEGRAM_*` (alertas y webhook)
-- `ZOHO_SMTP_*` (correo transaccional)
+- `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` (correo transaccional; Resend previsto)
 - `NEXT_PUBLIC_VAPID_PUBLIC_KEY` y `VAPID_PRIVATE_KEY` (notificaciones push)
 - `SENTRY_AUTH_TOKEN` (Source Maps, opcional)
 

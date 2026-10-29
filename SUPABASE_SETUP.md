@@ -15,7 +15,7 @@ En Vercel, `NEXT_PUBLIC_URL` y `NEXT_PUBLIC_BASE_URL` están configuradas con `h
 
 Supabase Auth usa `https://venezuela-inmuebles.online` como `Site URL`. La lista de redirecciones permitidas conserva localhost y los patrones de previews de Vercel, y admite también el dominio raíz y `www`.
 
-El código fuente y los metadatos SEO se están alineando en la rama de trabajo actual. La versión de producción con esos cambios de canonicals, sitemap, robots, datos estructurados y enlaces debe generarse después de integrar los cambios en `main`.
+El código fuente y los metadatos SEO se alinearon en la rama de trabajo actual; el PR #4 está abierto. La versión de producción con esos cambios de canonicals, sitemap, robots, datos estructurados y enlaces debe generarse después de integrar el PR en `main`.
 
 ## Variables de entorno de Supabase
 
@@ -38,13 +38,13 @@ Migraciones aplicadas al proyecto nuevo el 2026-10-29, en este orden:
 
 La primera crea 25 tablas con RLS, funciones, catálogos y tres buckets de Storage; la segunda crea las vistas públicas de propiedades y perfiles. Verificación remota: 24 estados, 316 ciudades, 2 operaciones, 10 tipos de inmueble, 9 categorías y 10 características; 52 políticas en `public`, 11 en `storage.objects`. Las vistas tienen lectura concedida a `anon`, `authenticated` y `service_role`. Los buckets `cedulas` y `comprobantes` deben mantenerse privados; `foto_perfil` es público.
 
-## Integraciones externas pendientes
+## Integraciones: estado actual
 
-R2, Telegram y Zoho SMTP están preparados en el código, pero siguen pendientes de las credenciales de sus cuentas. Push/VAPID ya está configurado. Los valores sensibles se deben añadir en Vercel, no al repositorio ni al chat:
+Los secretos se deben guardar directamente como variables de entorno en Vercel, no en el repositorio ni en el chat.
 
-- **Cloudflare R2:** `R2_ENDPOINT`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` y `R2_PUBLIC_URL` (y confirmar `R2_BUCKET`; el valor predeterminado del código es `vendetinmuebles`). Se requieren el endpoint del bucket, claves de API y una URL pública de lectura.
-- **Telegram:** `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` y `TELEGRAM_WEBHOOK_SECRET`. El secreto debe ser el mismo al registrar el webhook con Telegram. El código del webhook valida el token del encabezado y el chat.
-- **Zoho SMTP:** `ZOHO_SMTP_HOST`, `ZOHO_SMTP_PORT`, `ZOHO_SMTP_USER` y `ZOHO_SMTP_PASS`. El valor predeterminado es `smtp.zoho.com:587` con STARTTLS (el puerto 465 usa TLS implícito); el usuario y la contraseña de aplicación son necesarios para enviar correos. Se conservan las direcciones existentes `@vendet.online`.
-- **Push/VAPID:** ya se generó un par nuevo para esta instalación. `NEXT_PUBLIC_VAPID_PUBLIC_KEY` está configurada en Vercel como variable pública y `VAPID_PRIVATE_KEY` como sensible, ambas para Production, Preview y Development. Los valores se aplicarán en el siguiente deployment.
+- **Resend SMTP (por configurar por el usuario):** `SMTP_HOST=smtp.resend.com`, `SMTP_PORT=465`, `SMTP_USER=resend`, `SMTP_PASS` (API key de Resend, sensible) y, si hace falta, `SMTP_FROM`. La dirección remitente debe pertenecer a un dominio verificado en Resend. Se conserva el remitente existente `noreply@vendet.online` como fallback; cámbialo en `SMTP_FROM` sólo por una dirección que Resend haya verificado.
+- **Cloudflare R2:** se pueden reutilizar `R2_ENDPOINT`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_PUBLIC_URL` y `R2_BUCKET` anteriores si siguen activos. `R2_BUCKET` debe indicarse explícitamente; el código ya no elige un bucket por defecto, para evitar apuntar accidentalmente al anterior. No tenemos acceso automatizado a Cloudflare desde esta sesión para comprobar las claves ni el contenido. Para mantener el proyecto limpio, conviene usar un bucket nuevo/vacío; si se reutiliza el anterior, revisar primero que no exponga fotos de publicaciones de prueba. No se moverán ni importarán datos de la base anterior.
+- **Telegram y Zoho:** quedan pospuestos, como se acordó; no son necesarios ahora.
+- **Push/VAPID:** ya se generó un par nuevo para esta instalación. `NEXT_PUBLIC_VAPID_PUBLIC_KEY` está configurada en Vercel como variable pública y `VAPID_PRIVATE_KEY` como sensible, para Production, Preview y Development. Se aplicará en el siguiente deployment.
 
-Los conectores de Cloudflare y Telegram no están disponibles en esta sesión y todavía hacen falta las credenciales de R2, Telegram y Zoho SMTP. Añádelas directamente en Vercel con la visibilidad adecuada; no las guardes en el repositorio ni las compartas por chat. Las pruebas de aceptación quedan para el final, una vez cerradas las integraciones y desplegados los cambios de dominio.
+Las variables de R2 y Resend se pueden añadir desde la configuración de Vercel. Los conectores de Cloudflare, Telegram y Resend no están disponibles en esta sesión. Las pruebas de aceptación del flujo actual se realizarán al terminar la configuración de R2 y Resend; Telegram y Zoho se probarán cuando se retomen.

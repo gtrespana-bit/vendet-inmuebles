@@ -2,26 +2,26 @@
 import nodemailer from 'nodemailer'
 
 function getTransporter() {
-  const port = Number(process.env.ZOHO_SMTP_PORT) || 587
+  const port = Number(process.env.SMTP_PORT) || 465
   return nodemailer.createTransport({
-    host: process.env.ZOHO_SMTP_HOST || 'smtp.zoho.com',
+    host: process.env.SMTP_HOST || 'smtp.resend.com',
     port,
     secure: port === 465,
     auth: {
-      user: process.env.ZOHO_SMTP_USER,
-      pass: process.env.ZOHO_SMTP_PASS,
+      user: process.env.SMTP_USER || 'resend',
+      pass: process.env.SMTP_PASS,
     },
   })
 }
 
 async function enviar(fromName: string, email: string, subject: string, html: string) {
-  if (!process.env.ZOHO_SMTP_USER || !process.env.ZOHO_SMTP_PASS) {
+  if (!process.env.SMTP_PASS) {
     console.warn('⚠️ SMTP no configurado')
     return false
   }
   try {
     await getTransporter().sendMail({
-      from: `"${fromName}" <noreply@vendet.online>`,
+      from: process.env.SMTP_FROM || `"${fromName}" <noreply@vendet.online>`,
       to: email,
       subject,
       html,
