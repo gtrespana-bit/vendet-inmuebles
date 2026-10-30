@@ -197,3 +197,10 @@
     width: min(264px, calc(100vw - 24px));
   }
 }
+
+/* Installed-PWA bottom tab bar would otherwise cover the control */
+@media (display-mode: standalone) {
+  .root {
+    bottom: 84px;
+  }
+}
