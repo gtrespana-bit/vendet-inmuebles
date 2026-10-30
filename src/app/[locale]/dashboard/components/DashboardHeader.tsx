@@ -2,21 +2,12 @@
 
 import Avatar from '@/components/Avatar'
 import BadgeVerificado from '@/components/BadgeVerificado'
+import NivelBadge from '@/components/NivelBadge'
 import { getMunicipiosNombres, ESTADOS } from '@/lib/ubicaciones'
 import { supabase } from '@/lib/supabase'
 import { Camera, Edit, Key, LogOut, X, Save, Phone, MapPin, Mail } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useTranslations } from 'next-intl'
-
-const ICONOS: Record<number, string> = { 0: '🥉', 1: '🥈', 2: '🥇', 3: '💎', 4: '💠', 5: '👑' }
-const NIVELES: Record<number, { nombreKey: string; bg: string; text: string; border: string }> = {
-  0: { nombreKey: 'levelBronze', bg: 'bg-orange-50', text: 'text-orange-800', border: 'border-orange-200' },
-  1: { nombreKey: 'levelSilver', bg: 'bg-gray-100', text: 'text-gray-700', border: 'border-gray-300' },
-  2: { nombreKey: 'levelGold', bg: 'bg-yellow-50', text: 'text-yellow-800', border: 'border-yellow-300' },
-  3: { nombreKey: 'levelPlatinum', bg: 'bg-sky-50', text: 'text-sky-800', border: 'border-sky-200' },
-  4: { nombreKey: 'levelDiamond', bg: 'bg-purple-50', text: 'text-purple-800', border: 'border-purple-200' },
-  5: { nombreKey: 'levelMaster', bg: 'bg-gradient-to-r from-yellow-50 to-purple-50', text: 'text-purple-900', border: 'border-purple-300' },
-}
 
 export default function DashboardHeader({
   user,
@@ -59,9 +50,6 @@ export default function DashboardHeader({
     setGuardando(false)
     setTimeout(() => setToast(null), 4000)
   }
-
-  const n = Math.min(nivelConfianza, 5)
-  const cfg = NIVELES[n]
 
   return (
     <div className="dashboard-profile-card">
@@ -122,15 +110,10 @@ export default function DashboardHeader({
                 {/* Badges */}
                 <div className="mt-2 flex flex-wrap items-center gap-2">
                   {verificado && <BadgeVerificado size="sm" />}
-                  <div className="inline-flex items-center gap-1.5 text-xs">
-                    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border ${cfg.bg} ${cfg.border}`}>
-                      <span className="text-sm leading-none">{ICONOS[n]}</span>
-                      <span className={`font-semibold ${cfg.text}`}>{t(cfg.nombreKey)}</span>
-                    </span>
-                    {resenasCount > 0 && (
-                      <span className="text-gray-500">{t('reviewsSummary', { rating: promedioResenas.toFixed(1), count: resenasCount })}</span>
-                    )}
-                  </div>
+                  <NivelBadge nivel={nivelConfianza} />
+                  {resenasCount > 0 && (
+                    <span className="text-xs text-gray-500">{t('reviewsSummary', { rating: promedioResenas.toFixed(1), count: resenasCount })}</span>
+                  )}
                 </div>
               </div>
               <div className="flex gap-2 w-full sm:w-auto">

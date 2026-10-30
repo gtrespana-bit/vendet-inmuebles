@@ -53,7 +53,7 @@ export function useDashboard() {
 
     // Supabase client automatically handles auth tokens via persistSession + autoRefreshToken
     Promise.all([
-      supabase.from('vw_propiedades_publicas').select('id, titulo, precio, estado, ciudad, activo, visitas, creado_en, main_image_url, operacion_nombre, destacado, destacado_hasta').eq('usuario_id', user.id).order('creado_en', { ascending: false }).then(({ data }: { data: any[] | null }) => setProductos(data || [])),
+      supabase.from('vw_propiedades_publicas').select('id, titulo, precio, estado, ciudad, activo, visitas, creado_en, main_image_url, operacion_nombre, destacado, destacado_hasta, boosteado_en, estado_moderacion, vendido').eq('usuario_id', user.id).order('creado_en', { ascending: false }).then(({ data }: { data: any[] | null }) => setProductos(data || [])),
 
       supabase.from('vw_propiedades_publicas').select('visitas').eq('usuario_id', user.id).then(({ data }: { data: any[] | null }) => setVisitasTotales(data?.reduce((sum: number, p: { visitas: number | null }) => sum + (p.visitas || 0), 0) || 0)),
       supabase.from('favoritos').select('producto_id, creado_en').eq('user_id', user.id).order('creado_en', { ascending: false }).then(async ({ data }: { data: any[] | null }) => {
