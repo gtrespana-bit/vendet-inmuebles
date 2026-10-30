@@ -952,7 +952,19 @@
     "filterSold": "Sold",
     "filterPending": "Under review",
     "filterAria": "Filter listings by status",
-    "filterEmpty": "No listings in this category."
+    "filterEmpty": "No listings in this category.",
+    "yourPlan": "Your plan",
+    "planFree": "Free plan",
+    "planProfessional": "Professional plan",
+    "planAgency": "Agency plan",
+    "planTrialBadge": "TRIAL",
+    "planSeePlans": "View plans",
+    "planManage": "View / upgrade plan",
+    "planUpgrade": "Upgrade",
+    "planUsage": "Active listings: {active} of {max}",
+    "planTrialUntil": "Trial until {date}",
+    "planRenews": "Renews on {date}",
+    "planCreditsIncluded": "Includes {count} credits per month"
   },
   "contact": {
     "title": "Contact Us",

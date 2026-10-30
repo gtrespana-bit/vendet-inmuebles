@@ -950,7 +950,19 @@
     "filterSold": "Vendidos",
     "filterPending": "En revisión",
     "filterAria": "Filtrar anuncios por estado",
-    "filterEmpty": "No hay anuncios en esta categoría."
+    "filterEmpty": "No hay anuncios en esta categoría.",
+    "yourPlan": "Tu plan",
+    "planFree": "Plan Gratuito",
+    "planProfessional": "Plan Profesional",
+    "planAgency": "Plan Agencia",
+    "planTrialBadge": "PRUEBA",
+    "planSeePlans": "Ver planes",
+    "planManage": "Ver / mejorar plan",
+    "planUpgrade": "Mejorar",
+    "planUsage": "Anuncios activos: {active} de {max}",
+    "planTrialUntil": "Prueba hasta {date}",
+    "planRenews": "Renueva el {date}",
+    "planCreditsIncluded": "Incluye {count} créditos al mes"
   },
   "contact": {
     "title": "Contáctanos",

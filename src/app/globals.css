@@ -1461,6 +1461,29 @@ body {
 .dashboard-hero__credits:hover { background: #f1e7cd; }
 .dashboard-hero__credits-value { font-family: Georgia, Cambria, serif; font-size: 18px; font-weight: 700; line-height: 1; }
 .dashboard-hero__credits-label { text-transform: uppercase; letter-spacing: .08em; }
+.dashboard-hero__badges { display: flex; flex-wrap: wrap; gap: 8px; }
+.dashboard-hero__plan { display: inline-flex; align-items: center; gap: 7px; min-height: 40px; padding: 0 14px; color: #675a4c; background: #faf7f1; border: 1px solid #e2dbd0; font-size: 10px; font-weight: 750; text-decoration: none; cursor: pointer; transition: border-color 150ms ease, background 150ms ease; }
+.dashboard-hero__plan:hover { border-color: #c8b89b; background: #f4efe7; }
+.dashboard-hero__plan--active { color: #6d4c0f; background: #f8f1de; border-color: #e3d0a0; }
+.dashboard-hero__plan--active:hover { background: #f3e9cf; }
+.dashboard-hero__plan-sub { font-weight: 500; color: #8d8271; }
+.dashboard-hero__plan-cta { margin-left: 4px; padding: 2px 7px; color: white; background: var(--burgundy); border-radius: 9px; font-size: 8px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+
+.dashboard-plan-card { margin-bottom: 18px; padding: 16px; background: #faf7f1; border: 1px solid #e7e0d6; }
+.dashboard-plan-card--active { background: linear-gradient(135deg, #fbf6e9, #f7f1e2); border-color: #e5d5ac; }
+.dashboard-plan-card__head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.dashboard-plan-card__icon { display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 36px; height: 36px; color: #8b7046; background: #f1e7cd; }
+.dashboard-plan-card--active .dashboard-plan-card__icon { color: #6d4c0f; background: #ecdcb2; }
+.dashboard-plan-card__label { margin: 0; color: #9a855b; font-size: 8px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.dashboard-plan-card__name { margin: 2px 0 0; color: #1A2620; font-family: Georgia, Cambria, serif; font-size: 17px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.dashboard-plan-card__trial { display: inline-block; padding: 1px 7px; color: #1d4ed8; background: #dbeafe; border-radius: 9px; font-family: inherit; font-size: 8px; font-weight: 800; letter-spacing: .08em; }
+.dashboard-plan-card__cta { margin-left: auto; display: inline-flex; align-items: center; min-height: 34px; padding: 0 13px; color: white; background: var(--burgundy); font-size: 9px; font-weight: 750; text-decoration: none; }
+.dashboard-plan-card__cta:hover { background: var(--burgundy-dark); }
+.dashboard-plan-card__usage { margin-top: 13px; }
+.dashboard-plan-card__usage-row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px; margin-bottom: 7px; color: #6d6459; font-size: 11px; font-weight: 600; }
+.dashboard-plan-card__track { height: 5px; overflow: hidden; background: #e9e1cf; }
+.dashboard-plan-card__track span { display: block; height: 100%; background: linear-gradient(90deg, var(--burgundy), #b08c4a); }
+.dashboard-plan-card__credits { margin: 8px 0 0; color: #8b7046; font-size: 10px; font-weight: 600; }
 
 .dashboard-quick-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; margin-bottom: 18px; }
 .dashboard-quick-actions__card { display: flex; align-items: center; gap: 12px; padding: 15px; background: #faf7f1; border: 1px solid #e7e0d6; text-decoration: none; cursor: pointer; transition: border-color 150ms ease, transform 150ms ease; }
@@ -1542,6 +1565,8 @@ body {
   .dashboard-hero__identity { gap: 13px; }
   .dashboard-hero__actions { width: 100%; }
   .dashboard-hero__btn { flex: 1; min-height: 38px; padding: 0 9px; font-size: 9px; }
+  .dashboard-hero__badges { width: 100%; }
+  .dashboard-hero__plan { flex: 1; justify-content: center; min-height: 38px; }
   .dashboard-hero__credits { width: 100%; justify-content: center; }
   .dashboard-mini-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 9px; padding: 11px 0; }
   .dashboard-mini-stats__item { border-left: 0; padding: 2px 11px; }

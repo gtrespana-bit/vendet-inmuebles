@@ -280,6 +280,7 @@ export default function DashboardPage() {
           resenasCount={data.resenas.length}
           promedioResenas={data.promedioResenas}
           creditos={data.creditos}
+          planInfo={data.planInfo}
           onGoToTab={setActiveTab}
           onFotoChange={handleFoto}
         />
@@ -331,6 +332,7 @@ export default function DashboardPage() {
               userId={user!.id}
               productos={data.productos}
               verificado={data.verificado}
+              planInfo={data.planInfo}
               onGoToTab={setActiveTab}
             />
           )}

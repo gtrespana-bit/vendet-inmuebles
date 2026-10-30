@@ -6,9 +6,10 @@ import LocalLink from '@/components/LocalLink'
 import Image from 'next/image'
 import {
   PlusCircle, MessageSquare, Coins, ShieldCheck,
-  AlertCircle, ArrowRight, Eye,
+  AlertCircle, ArrowRight, Eye, Sparkles,
 } from 'lucide-react'
 import { supabase, isSupabaseConfigured } from '@/lib/supabase'
+import type { PlanInfo } from '../hooks/useDashboard'
 
 /**
  * Tab «Inicio»: accesos rápidos + pendientes que requieren atención.
@@ -18,11 +19,13 @@ export default function TabResumen({
   userId,
   productos,
   verificado,
+  planInfo,
   onGoToTab,
 }: {
   userId: string
   productos: any[]
   verificado: boolean
+  planInfo: PlanInfo | null
   onGoToTab: (tab: string) => void
 }) {
   const t = useTranslations('dashboard')
@@ -112,6 +115,45 @@ export default function TabResumen({
         })}
       </div>
 
+      {/* Tu plan */}
+      {planInfo && (
+        <div className={`dashboard-plan-card${planInfo.plan !== 'gratuita' ? ' dashboard-plan-card--active' : ''}`}>
+          <div className="dashboard-plan-card__head">
+            <span className="dashboard-plan-card__icon"><Sparkles size={16} aria-hidden="true" /></span>
+            <div>
+              <p className="dashboard-plan-card__label">{t('yourPlan')}</p>
+              <p className="dashboard-plan-card__name">
+                {planInfo.plan === 'gratuita' ? t('planFree') : t(planKey(planInfo.plan))}
+                {planInfo.estado === 'trial' && <span className="dashboard-plan-card__trial">{t('planTrialBadge')}</span>}
+              </p>
+            </div>
+            <LocalLink href="/planes" className="dashboard-plan-card__cta" prefetch={false}>
+              {planInfo.plan === 'gratuita' ? t('planSeePlans') : t('planManage')}
+            </LocalLink>
+          </div>
+
+          <div className="dashboard-plan-card__usage">
+            <div className="dashboard-plan-card__usage-row">
+              <span>{t('planUsage', { active: planInfo.activeCount, max: planInfo.limits.maxAnuncios >= 999999 ? '∞' : String(planInfo.limits.maxAnuncios) })}</span>
+              {planInfo.estado === 'trial' && planInfo.trialEndsAt && (
+                <span>{t('planTrialUntil', { date: formatDate(planInfo.trialEndsAt, locale) })}</span>
+              )}
+              {planInfo.estado === 'activa' && planInfo.fin && (
+                <span>{t('planRenews', { date: formatDate(planInfo.fin, locale) })}</span>
+              )}
+            </div>
+            {planInfo.limits.maxAnuncios < 999999 && (
+              <div className="dashboard-plan-card__track" aria-hidden="true">
+                <span style={{ width: `${Math.min((planInfo.activeCount / planInfo.limits.maxAnuncios) * 100, 100)}%` }} />
+              </div>
+            )}
+            {planInfo.creditosIncluidos > 0 && (
+              <p className="dashboard-plan-card__credits">{t('planCreditsIncluded', { count: planInfo.creditosIncluidos })}</p>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Pendientes de atención */}
       {atencionItems.length > 0 && (
         <div className="dashboard-attention" role="status">
@@ -175,6 +217,20 @@ export default function TabResumen({
       )}
     </section>
   )
+}
+
+function planKey(plan: string): string {
+  if (plan === 'profesional') return 'planProfessional'
+  if (plan === 'agencia') return 'planAgency'
+  return 'planFree'
+}
+
+function formatDate(iso: string, locale: string): string {
+  try {
+    return new Intl.DateTimeFormat(locale === 'en' ? 'en-US' : 'es-VE', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(iso))
+  } catch {
+    return iso
+  }
 }
 
 function numberFormatFallback(value: unknown, locale: string): string {
