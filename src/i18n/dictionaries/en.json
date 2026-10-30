@@ -1495,7 +1495,10 @@
     "moveEarlier": "Move earlier",
     "moveLater": "Move later",
     "reorderHint": "Drag the photos or use the arrows to reorder them. The first one is the cover.",
-    "mapPinSet": "📍 Exact location set on the map"
+    "mapPinSet": "📍 Exact location set on the map",
+    "uploadTooLarge": "One of the images is too large. We compressed it anyway; if it keeps failing, try another photo (max 8 MB).",
+    "aiError": "The AI did not respond. Try again in a few seconds.",
+    "aiTooShort": "Write at least a few words of the draft before asking the AI to improve it."
   },
   "pushBanner": {
     "title": "Stay up to date",

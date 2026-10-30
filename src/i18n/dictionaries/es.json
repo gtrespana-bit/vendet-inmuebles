@@ -1493,7 +1493,10 @@
     "moveEarlier": "Mover antes",
     "moveLater": "Mover después",
     "reorderHint": "Arrastra las fotos o usa las flechas para ordenarlas. La primera es la portada.",
-    "mapPinSet": "📍 Ubicación exacta fijada en el mapa"
+    "mapPinSet": "📍 Ubicación exacta fijada en el mapa",
+    "uploadTooLarge": "Una de las imágenes pesa demasiado. La comprimimos igual, pero si persiste, prueba con otra foto (máx. 8 MB).",
+    "aiError": "La IA no respondió. Inténtalo de nuevo en unos segundos.",
+    "aiTooShort": "Escribe al menos unas palabras del borrador antes de pedir la mejora con IA."
   },
   "pushBanner": {
     "title": "Mantente al día",

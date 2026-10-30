@@ -10,6 +10,7 @@ import LocalLink from '@/components/LocalLink'
 import LocationPicker from '@/components/map/LocationPicker'
 import { ESTADOS, getMunicipiosNombres } from '@/lib/ubicaciones'
 import { resolveListingGeo } from '@/lib/geo/venezuela'
+import { compressImage } from '@/lib/image-compress'
 
 /** Misma lista de amenidades que el formulario de publicación */
 const AMENIDADES = [
@@ -224,16 +225,21 @@ export default function EditarInmueblePage({ params }: { params: { locale: strin
 
       try {
         const key = `${user?.id}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${file.name.split('.').pop() || 'jpg'}`
+        // Comprimir en cliente: Vercel rechaza con 413 los bodies > 4.5 MB
+        const fileToUpload = await compressImage(file)
         const formData = new FormData()
         formData.append('key', key)
-        formData.append('file', file)
+        formData.append('file', fileToUpload)
 
         const res = await fetch('/api/r2-upload', {
           method: 'POST',
           headers: await getSupabaseAuthHeaders(),
           body: formData,
         })
-        if (!res.ok) throw new Error('upload failed')
+        if (!res.ok) {
+          const detail = await res.json().catch(() => null)
+          throw new Error(res.status === 413 ? 'too-large' : (detail?.error || 'upload failed'))
+        }
         const { publicUrl } = await res.json()
 
         setImagenes((prev) => prev.map((img) =>
