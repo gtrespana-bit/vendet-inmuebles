@@ -1,67 +1,67 @@
 'use client'
 
-import LocalLink from '@/components/LocalLink'
 import Image from 'next/image'
+import { ArrowUpRight } from 'lucide-react'
+import LocalLink from '@/components/LocalLink'
 import { useLocalizedMessages } from '@/hooks/useLocalizedMessages'
 
 export function Footer() {
   const { t } = useLocalizedMessages()
+  const year = new Date().getFullYear()
+
+  const categoryLinks = [
+    { label: t('header.categories.casas'), href: '/catalogo?categoria=casas' },
+    { label: t('header.categories.apartamentos'), href: '/catalogo?categoria=apartamentos' },
+    { label: t('header.categories.terrenos'), href: '/catalogo?categoria=terrenos' },
+    { label: t('header.categories.locales'), href: '/catalogo?categoria=locales' },
+    { label: t('header.categories.oficinas'), href: '/catalogo?categoria=oficinas' },
+  ]
+
+  const informationLinks = [
+    { label: t('footer.howItWorks'), href: '/como-funciona' },
+    { label: t('footer.aboutUs'), href: '/sobre-nosotros' },
+    { label: t('header.blog'), href: '/blog' },
+    { label: t('nav.contact'), href: '/contacto' },
+  ]
 
   return (
-    <footer className="bg-brand-dark text-gray-400 mt-auto">
-      <div className="hidden md:block">
-        <div className="max-w-7xl mx-auto px-4 py-12">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div>
-              <LocalLink href="/" className="inline-flex items-center gap-2 mb-3">
-                <Image src="/logo-vendet.webp" alt="VendeT" width={28} height={28} className="h-7 w-7 object-contain rounded-lg drop-shadow-[0_0_4px_rgba(255,255,255,0.4)] bg-white/80 p-0.5" />
-                <span className="font-black text-lg"><span className="text-yellow-400">Vende</span><span className="text-white">T</span></span>
-              </LocalLink>
-              <p className="text-sm leading-relaxed">{t('footer.description')}</p>
-            </div>
-            <div>
-              <h3 className="text-white font-bold mb-3">{t('footer.categories')}</h3>
-              <ul className="space-y-2 text-sm">
-                {[
-                  t('header.categories.casas'),
-                  t('header.categories.apartamentos'),
-                  t('header.categories.terrenos'),
-                  t('header.categories.locales'),
-                  t('header.categories.oficinas'),
-                  t('header.categories.galpones'),
-                ].map(c => (
-                  <li key={c}><LocalLink href="/catalogo" className="hover:text-brand-accent transition">{c}</LocalLink></li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h3 className="text-white font-bold mb-3">{t('footer.information')}</h3>
-              <ul className="space-y-2 text-sm">
-                {[
-                  ['Blog', '/blog'],
-                  [t('footer.howItWorks'), '/como-funciona'],
-                  [t('footer.aboutUs'), '/sobre-nosotros'],
-                  [t('header.credits'), '/creditos'],
-                  ['FAQ', '/faq'],
-                  [t('nav.contact'), '/contacto'],
-                ].map(([l, p]) => (
-                  <li key={p}><LocalLink href={p} className="hover:text-brand-accent transition">{l}</LocalLink></li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h3 className="text-white font-bold mb-3">{t('footer.legal')}</h3>
-              <ul className="space-y-2 text-sm">
-                <li><LocalLink href="/terminos-y-condiciones" className="hover:text-brand-accent transition">{t('footer.terms')}</LocalLink></li>
-                <li><LocalLink href="/politica-de-privacidad" className="hover:text-brand-accent transition">{t('footer.privacy')}</LocalLink></li>
-              </ul>
-              <p className="text-xs text-gray-300 mt-4">{t('footer.madeWithLove')}</p>
-            </div>
-          </div>
-          <div className="border-t border-gray-700 mt-8 pt-6 text-center text-sm">
-            <p>© {new Date().getFullYear()} VendeT-Venezuela. {t('footer.allRightsReserved')}</p>
-          </div>
+    <footer className="site-footer">
+      <div className="site-footer__main">
+        <div className="site-footer__brand-column">
+          <LocalLink href="/" className="site-brand site-brand--footer" aria-label="Venezuela Inmuebles, inicio">
+            <Image src="/brand-mark.svg" alt="" width={40} height={40} />
+            <span className="site-brand__name"><strong>Venezuela</strong><span>Inmuebles</span></span>
+          </LocalLink>
+          <p>{t('footer.description')}</p>
+          <LocalLink href="/publicar-inmueble" className="site-footer__cta">
+            {t('header.publishProperty')} <ArrowUpRight size={16} aria-hidden="true" />
+          </LocalLink>
         </div>
+
+        <nav className="site-footer__links" aria-label={t('footer.categories')}>
+          <h2>{t('footer.categories')}</h2>
+          <LocalLink href="/catalogo?operacion=Venta">{t('header.buy')}</LocalLink>
+          <LocalLink href="/catalogo?operacion=Alquiler">{t('header.rent')}</LocalLink>
+          {categoryLinks.map((link) => <LocalLink key={link.href} href={link.href}>{link.label}</LocalLink>)}
+        </nav>
+
+        <nav className="site-footer__links" aria-label={t('footer.information')}>
+          <h2>{t('footer.information')}</h2>
+          {informationLinks.map((link) => <LocalLink key={link.href} href={link.href}>{link.label}</LocalLink>)}
+          <LocalLink href="/faq">FAQ</LocalLink>
+          <LocalLink href="/creditos">{t('header.credits')}</LocalLink>
+        </nav>
+
+        <nav className="site-footer__links" aria-label={t('footer.legal')}>
+          <h2>{t('footer.legal')}</h2>
+          <LocalLink href="/terminos-y-condiciones">{t('footer.terms')}</LocalLink>
+          <LocalLink href="/politica-de-privacidad">{t('footer.privacy')}</LocalLink>
+        </nav>
+      </div>
+
+      <div className="site-footer__bottom">
+        <p>© {year} Venezuela Inmuebles. {t('footer.allRightsReserved')}</p>
+        <LocalLink href="/catalogo" className="site-footer__back-to-search">{t('header.explore')} <ArrowUpRight size={14} aria-hidden="true" /></LocalLink>
       </div>
     </footer>
   )

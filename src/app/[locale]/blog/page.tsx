@@ -51,16 +51,16 @@ function getPosts(): Post[] {
 }
 
 export const metadata: Metadata = {
-  title: 'Blog — VendeT Venezuela | Consejos de compra, venta y emprendimiento',
+  title: 'Blog — Venezuela Inmuebles | Consejos de compra, venta y emprendimiento',
   description: 'Guías, precios del mercado venezolano y consejos para comprar y vender sin estafas. Todo sobre emprendimiento y comercio electrónico en Venezuela.',
   alternates: {
     canonical: 'https://venezuela-inmuebles.online/blog',
   },
   openGraph: {
-    title: 'Blog VendeT Venezuela — Compra, Venta y Emprendimiento',
+    title: 'Blog Venezuela Inmuebles — Compra, Venta y Emprendimiento',
     description: 'Guías del mercado venezolano, consejos para emprendedores y mucho más.',
     url: 'https://venezuela-inmuebles.online/blog',
-    siteName: 'VendeT-Venezuela',
+    siteName: 'Venezuela Inmuebles',
     type: 'website',
     locale: 'es_VE',
   },
@@ -86,7 +86,7 @@ export default async function BlogPage() {
       <section className="bg-gradient-to-br from-brand-primary to-brand-dark py-12 md:py-16">
         <div className="max-w-4xl mx-auto px-4 text-center">
           <h1 className="text-3xl md:text-5xl font-black text-white mb-4">
-            {t('title')} <span className="text-brand-accent">VendeT</span>
+            {t('title')} <span className="text-brand-accent">Venezuela Inmuebles</span>
           </h1>
           <p className="text-lg text-blue-200 max-w-2xl mx-auto">
             {t('subtitle')}

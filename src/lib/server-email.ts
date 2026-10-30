@@ -2,10 +2,10 @@
 
 import nodemailer from 'nodemailer'
 
-const FROM = process.env.SMTP_FROM || '"VendeT-Venezuela" <noreply@vendet.online>'
-const CONTACT = 'contacto@vendet.online'
+const FROM = process.env.SMTP_FROM || '"Venezuela Inmuebles" <noreply@venezuela-inmuebles.online>'
+const CONTACT = 'contacto@venezuela-inmuebles.online'
 const URL = process.env.NEXT_PUBLIC_URL || 'https://venezuela-inmuebles.online'
-const LOGO = `${URL}/logo-vendet.png`
+const LOGO = `${URL}/logo-venezuela-inmuebles.png`
 
 // ─── Transporter ───────────────────────────────────────────
 
@@ -82,7 +82,7 @@ function emailLayout(title: string, body: string, ctaText?: string, ctaUrl?: str
                 <tr>
                   <td align="center" style="padding-bottom:8px">
                     <a href="${URL}" style="text-decoration:none">
-                      <img src="${LOGO}" alt="VendeT-Venezuela" width="160" style="display:block;max-width:160px;height:auto;border:0">
+                      <img src="${LOGO}" alt="Venezuela Inmuebles" width="160" style="display:block;max-width:160px;height:auto;border:0">
                     </a>
                   </td>
                 </tr>
@@ -132,7 +132,7 @@ function emailLayout(title: string, body: string, ctaText?: string, ctaUrl?: str
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td align="center" style="font-family:'Inter','Segoe UI',Arial,sans-serif;font-size:12px;color:${COLORS.gray};line-height:1.65">
-                    <p style="margin:0 0 6px;font-weight:600;color:${COLORS.dark}">VendeT-Venezuela</p>
+                    <p style="margin:0 0 6px;font-weight:600;color:${COLORS.dark}">Venezuela Inmuebles</p>
                     <p style="margin:0 0 6px">El marketplace venezolano</p>
                     <p style="margin:0"><a href="mailto:${CONTACT}" style="color:${COLORS.primary};text-decoration:none">${CONTACT}</a></p>
                     <p style="margin:6px 0 0"><a href="${URL}" style="color:${COLORS.primary};text-decoration:none">${URL}</a></p>
@@ -171,7 +171,7 @@ export async function emailProductoPublicado(
   return enviar(email, '✅ Tu anuncio fue publicado', emailLayout(
     'Anuncio publicado',
     `<p style="margin:0 0 16px">Hola <strong>${nombre}</strong>,</p>
-     <p style="margin:0 0 20px">Tu anuncio ya está visible en VendeT Inmuebles para quienes buscan en Venezuela.</p>
+     <p style="margin:0 0 20px">Tu anuncio ya está visible en Venezuela Inmuebles para quienes buscan en Venezuela.</p>
      ${card(`
        <p style="margin:0 0 8px;font-weight:600;font-size:16px;color:${COLORS.dark}">${titulo}</p>
        <p style="margin:0;font-size:22px;font-weight:700;color:${COLORS.primary}">$${precio} USD</p>

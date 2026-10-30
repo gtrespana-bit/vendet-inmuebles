@@ -1,11 +1,11 @@
-# VendeT Inmuebles — Proyecto
+# Venezuela Inmuebles — Proyecto
 
 ## General
-- **Repo:** `gtrespana-bit/vendet-inmuebles` (GitHub)
+- **Repositorio:** GitHub, conectado a Vercel.
 - **Branch principal:** `main`
 - **Dominio canónico:** `https://venezuela-inmuebles.online`
-- **Deploy:** Vercel (`vendet-inmuebles`)
-- **Supabase:** `VendeT Inmuebles` (`quxbqmqwiacfwbpqioev`, `us-east-1`)
+- **Deploy:** Vercel (`venezuela-inmuebles`)
+- **Supabase:** `Venezuela Inmuebles` (`quxbqmqwiacfwbpqioev`, `us-east-1`)
 - **Estado inicial:** esquema y catálogos configurados; sin usuarios ni publicaciones importados.
 - **Stack:** Next.js (App Router, TS), Supabase (Postgres + Auth + Storage + Realtime), PWA
 - **Node:** v24.14.0
@@ -166,8 +166,8 @@
 - Auto-update con skipWaiting
 
 ## PWA (public/manifest.json)
-- `name:` VendeT-Venezuela
-- `short_name:` VendeT
+- `name:` Venezuela Inmuebles
+- `short_name:` Venezuela
 - `scope:` `/`
 - `orientation:` `any`
 - `display:` standalone

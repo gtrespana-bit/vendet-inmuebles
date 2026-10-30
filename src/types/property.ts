@@ -89,3 +89,41 @@ export interface PropertyAmenity {
   icon: string | null;
   category: 'general' | 'security' | 'services' | 'recreation' | 'comfort';
 }
+
+export interface CatalogPropertyRecord {
+  id: string
+  slug?: string | null
+  titulo?: string | null
+  title?: string | null
+  precio_usd?: number | string | null
+  precio?: number | string | null
+  price?: number | string | null
+  moneda?: string | null
+  currency?: string | null
+  main_image_url?: string | null
+  imagen_portada?: string | null
+  ciudad?: string | null
+  city?: string | null
+  estado?: string | null
+  state?: string | null
+  creado_en?: string | null
+  subcategoria?: string | null
+  tipo_nombre?: string | null
+  tipo_slug?: string | null
+  property_type?: string | null
+  operacion_nombre?: string | null
+  operacion_slug?: string | null
+  operation_type?: string | null
+  destacado?: boolean | null
+  destacado_hasta?: string | null
+  boosteado_en?: string | null
+  vendedor_verificado?: boolean | null
+  propietario_verificado?: boolean | null
+  habitaciones?: number | null
+  bedrooms?: number | null
+  banos?: number | null
+  bathrooms?: number | null
+  area_total?: number | null
+  area_size?: number | null
+  _isFeatured?: boolean
+}

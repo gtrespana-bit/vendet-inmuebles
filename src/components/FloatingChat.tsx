@@ -1,48 +1,59 @@
 'use client'
 
 import { useState } from 'react'
-import { X, Send, MessageCircle } from 'lucide-react'
+import { ArrowRight, MessageCircle, X } from 'lucide-react'
+import { useTranslations } from 'next-intl'
+import LocalLink from '@/components/LocalLink'
 
 export function FloatingChat() {
   const [open, setOpen] = useState(false)
+  const t = useTranslations('floatingChat')
 
   return (
     <div className="floating-chat">
       {open && (
-        <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 w-80 mb-4 overflow-hidden animate-fadeIn">
-          <div className="bg-brand-primary text-white p-4 flex items-center justify-between">
+        <section
+          className="floating-chat__panel bg-white border border-[#e5ddd2] shadow-2xl mb-4 overflow-hidden"
+          aria-label={t('title')}
+        >
+          <div className="bg-[#612e35] text-white p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center font-bold">TA</div>
+              <span className="w-10 h-10 bg-white/10 flex items-center justify-center" aria-hidden="true">
+                <MessageCircle size={19} />
+              </span>
               <div>
-                <p className="font-bold text-sm">VendeT-Venezuela Ayuda</p>
-                <p className="text-xs text-blue-200 flex items-center gap-1">
-                  <span className="w-2 h-2 bg-green-400 rounded-full inline-block"></span>
-                  En línea
-                </p>
+                <p className="font-bold text-sm">{t('title')}</p>
+                <p className="text-xs text-[#e7d6ba]">{t('status')}</p>
               </div>
             </div>
-            <button onClick={() => setOpen(false)} className="p-1 hover:bg-white/20 rounded-lg transition"><X size={18} /></button>
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="p-2 hover:bg-white/10 transition"
+              aria-label={t('close')}
+            >
+              <X size={18} aria-hidden="true" />
+            </button>
           </div>
-          <div className="p-4 h-52 overflow-y-auto bg-gray-50">
-            <p className="bg-white text-gray-700 text-sm p-3 rounded-2xl rounded-tl-sm shadow-sm max-w-xs">
-              ¡Hola! 👋 ¿Cómo podemos ayudarte? Puedes preguntar sobre cómo publicar, créditos o cualquier duda.
-            </p>
+          <div className="p-4 bg-[#faf8f4]">
+            <p className="text-[#5e554c] text-sm leading-relaxed">{t('greeting')}</p>
+            <LocalLink
+              href="/contacto"
+              className="inline-flex items-center gap-2 mt-4 min-h-10 px-4 bg-[#612e35] text-white text-sm font-semibold no-underline hover:bg-[#4c252b] transition"
+            >
+              {t('contact')} <ArrowRight size={15} aria-hidden="true" />
+            </LocalLink>
           </div>
-          <div className="p-3 border-t">
-            <form className="flex gap-2">
-              <input type="text" placeholder="Escribe un mensaje..." className="flex-1 border rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-accent" />
-              <button type="submit" className="bg-brand-primary text-white w-10 h-10 rounded-full hover:bg-brand-dark transition flex items-center justify-center">
-                <Send size={16} />
-              </button>
-            </form>
-          </div>
-        </div>
+        </section>
       )}
       <button
+        type="button"
         onClick={() => setOpen(!open)}
-        className="w-14 h-14 bg-brand-primary text-white rounded-full shadow-lg hover:bg-brand-dark transition flex items-center justify-center"
+        className="w-14 h-14 bg-[#612e35] text-white shadow-lg hover:bg-[#4c252b] transition flex items-center justify-center"
+        aria-expanded={open}
+        aria-label={open ? t('close') : t('open')}
       >
-        {open ? <X size={24} /> : <MessageCircle size={24} />}
+        {open ? <X size={24} aria-hidden="true" /> : <MessageCircle size={24} aria-hidden="true" />}
       </button>
     </div>
   )

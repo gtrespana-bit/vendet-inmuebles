@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from 'react'
+import { useLocale, useTranslations } from 'next-intl'
 import LocalLink from '@/components/LocalLink'
 import { Package, X, Pause, Play, Edit, Zap, Star, CheckCircle2, ChevronDown, ArrowLeft, Send } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
@@ -18,6 +19,8 @@ export default function TabProductos({
   onDestacar: (m: { productId: string; titulo: string }) => void
   userId: string
 }) {
+  const t = useTranslations('dashboard')
+  const locale = useLocale()
   const [vendidoModal, setVendidoModal] = useState<string | null>(null)
   const [vendidoPaso, setVendidoPaso] = useState<'tipo' | 'comprador' | 'reseña' | 'confirmado'>('tipo')
   const [interesados, setInteresados] = useState<any[]>([])
@@ -60,8 +63,9 @@ export default function TabProductos({
   // Reactivar vendido
   const reactivarVendido = async (productoId: string) => {
     cerrarMenus()
-    if (!confirm('¿Reactivar esta publicacion como no vendida?')) return
-    await supabase.from('inmuebles').update({ activo: true }).eq('id', productoId)
+    if (!confirm(t('reactivationConfirm'))) return
+    const { error } = await supabase.from('inmuebles').update({ activo: true }).eq('id', productoId)
+    if (error) { window.alert(t('propertyUpdateError')); return }
     window.location.reload()
   }
 
@@ -74,7 +78,7 @@ export default function TabProductos({
     })
     if (!res.ok) {
       const d = await res.json()
-      alert('Error: ' + d.error)
+      alert(`${t('saleUpdateError')} ${d.error || ''}`)
       return
     }
     setVendidoPaso('confirmado')
@@ -104,11 +108,11 @@ export default function TabProductos({
 
     if (!res.ok) {
       const d = await res.json()
-      alert('Error: ' + d.error)
+      alert(`${t('saleUpdateError')} ${d.error || ''}`)
       return
     }
 
-    // Enviar mensaje de chat al comprador notificando y invitando a reseñar
+    // Enviar mensaje de chat al comprador notificando e invitando a reseñar
     await enviarMensajeComprador(compradorInfo.id)
 
     setVendidoPaso('confirmado')
@@ -135,7 +139,7 @@ export default function TabProductos({
     if (!res1.ok) {
       const d = await res1.json()
       setEnviandoResena(false)
-      alert('Error al marcar vendido: ' + d.error)
+      alert(`${t('reviewSaleUpdateError')} ${d.error || ''}`)
       return
     }
 
@@ -212,7 +216,7 @@ export default function TabProductos({
 
   const eliminarProducto = async (id: string) => {
     cerrarMenus()
-    if (!confirm('¿Eliminar esta publicación permanentemente? Esta acción no se puede deshacer y se borrarán también las fotos.')) return
+    if (!confirm(t('deletePropertyConfirm'))) return
     const res = await fetch('/api/admin/eliminar-producto', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...(await getSupabaseAuthHeaders()) },
@@ -220,7 +224,7 @@ export default function TabProductos({
     })
     const result = await res.json()
     if (!res.ok) {
-      alert('Error: ' + (result.error || 'no se pudo eliminar'))
+      alert(`${t('propertyDeleteError')} ${result.error || ''}`)
       return
     }
     // Recargar la página
@@ -229,61 +233,64 @@ export default function TabProductos({
 
   if (productos.length === 0) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
-        <Package size={48} className="text-gray-300 mx-auto mb-4" />
-        <h3 className="text-xl font-bold text-gray-800 mb-2">Aún no tienes publicaciones</h3>
-        <p className="text-gray-500 mb-6">Publica tu primer producto en segundos. ¡Es gratis!</p>
-        <LocalLink href="/publicar" className="inline-block bg-brand-accent text-brand-primary px-8 py-3 rounded-lg font-bold hover:bg-accent/90 transition">Publicar ahora</LocalLink>
-      </div>
+      <section className="dashboard-empty-state" aria-labelledby="dashboard-properties-empty-title">
+        <Package size={36} className="mx-auto mb-4 text-[#9b8053]" aria-hidden="true" />
+        <p className="dashboard-page__eyebrow">{t('tabListings')}</p>
+        <h2 id="dashboard-properties-empty-title">{t('emptyPropertiesTitle')}</h2>
+        <p>{t('emptyPropertiesDescription')}</p>
+        <LocalLink href="/publicar-inmueble">{t('publishPropertyAction')}</LocalLink>
+      </section>
     )
   }
 
   const now = new Date().toISOString()
+  const dateLocale = locale === 'en' ? 'en-US' : 'es-VE'
+  const numberFormat = (value: number) => new Intl.NumberFormat(dateLocale).format(value)
 
   return (
-    <div className="space-y-4">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-        <h3 className="font-bold text-lg mb-4">Mis publicaciones</h3>
+    <section className="dashboard-panel" aria-labelledby="dashboard-properties-title">
+      <div className="mb-4 flex items-end justify-between gap-4">
+        <div>
+          <p className="dashboard-page__eyebrow">{t('tabListings')}</p>
+          <h2 id="dashboard-properties-title" className="m-0 font-heading text-2xl font-normal text-[#302925]">{t('propertiesTitle')}</h2>
+        </div>
+        <LocalLink href="/publicar-inmueble" className="text-xs font-bold text-[#612e35] no-underline">
+          + {t('publishPropertyAction')}
+        </LocalLink>
       </div>
-      <div className="space-y-3">
+      <div className="dashboard-property-list">
         {productos.map((p) => {
           const isBoosted = p.boosteado_en != null
           const isFeatured = p.destacado && p.destacado_hasta && p.destacado_hasta > now
           const isVendido = p.vendido === true
           const gestionAbierto = menuGestion === p.id
           const promoAbierto = menuPromocionar === p.id
+          const amount = Number(p.precio ?? p.price ?? 0)
+          const currency = typeof p.moneda === 'string' && /^[A-Z]{3}$/i.test(p.moneda) ? p.moneda.toUpperCase() : 'USD'
+          const formattedPrice = amount > 0
+            ? new Intl.NumberFormat(dateLocale, { style: 'currency', currency, maximumFractionDigits: 0 }).format(amount)
+            : t('priceOnRequest')
+          const propertyLocation = [p.ciudad, p.estado].filter(Boolean).join(', ')
+
           return (
-            <div key={p.id} className={`group flex items-start gap-4 p-3 rounded-lg border border-gray-100 transition ${isVendido ? 'bg-green-50/50 border-green-200' : 'hover:bg-gray-50'}`}>
-              <LocalLink href={`/inmueble/${p.id}`} className="flex items-center gap-4 flex-1 min-w-0">
-                <div className="w-16 h-16 rounded-lg bg-gray-100 flex-shrink-0 overflow-hidden relative">
-                  {p.main_image_url ? (
-                    <Image src={p.main_image_url} alt={p.titulo} className="w-full h-full object-cover" fill sizes="100px" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">Sin foto</div>
-                  )}
-                  {isVendido && (
-                    <div className="absolute inset-0 bg-green-600/70 flex items-center justify-center">
-                      <span className="text-white font-bold text-sm">VENDIDO</span>
-                    </div>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-medium text-gray-800 truncate group-hover:text-brand-primary transition">
-                    {isBoosted && '⚡ '}{isFeatured && !isBoosted && '⭐ '}{p.titulo}
-                  </h4>
-                  <p className="text-sm text-brand-primary font-bold">${new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(Number(p.price || 0))}</p>
-                  <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
-                    <span>👀 {p.visitas || 0} vistas</span>
-                    {isVendido
-                      ? <span className="text-green-700 font-semibold">✅ Vendido</span>
-                      : p.activo
-                        ? '✅ Activo'
-                        : '⏸️ Pausado'
-                    }
-                    {isFeatured && (
-                      <span className="text-brand-primary">⭐ Hasta {new Date(p.destacado_hasta).toLocaleDateString('es-VE')}</span>
-                    )}
-                  </div>
+            <article key={p.id} className={`dashboard-property-row ${isVendido ? 'border-green-200 bg-green-50/40' : ''}`}>
+              <LocalLink href={`/inmueble/${p.slug || p.id}`} className="dashboard-property-row__media" aria-label={p.titulo}>
+                {p.main_image_url ? (
+                  <Image src={p.main_image_url} alt="" fill sizes="100px" unoptimized />
+                ) : (
+                  <span className="grid h-full place-items-center text-[9px] text-gray-400">{t('noPhoto')}</span>
+                )}
+                {isVendido && <span className="absolute inset-0 grid place-items-center bg-[#54745c]/75 text-[9px] font-bold text-white">{t('propertySold')}</span>}
+              </LocalLink>
+              <LocalLink href={`/inmueble/${p.slug || p.id}`} className="dashboard-property-row__content no-underline">
+                <h3 className="dashboard-property-row__title">{p.titulo}</h3>
+                <p className="dashboard-property-row__price">{formattedPrice}</p>
+                <div className="dashboard-property-row__meta">
+                  {propertyLocation && <span>{propertyLocation}</span>}
+                  {p.operacion_nombre && <span>{p.operacion_nombre}</span>}
+                  <span>{numberFormat(p.visitas || 0)} {t('views')}</span>
+                  <span>{isVendido ? t('propertySold') : p.activo ? t('propertyActive') : t('propertyPaused')}</span>
+                  {isFeatured && <span>{t('featuredUntil')} {new Date(p.destacado_hasta).toLocaleDateString(dateLocale)}</span>}
                 </div>
               </LocalLink>
 
@@ -295,7 +302,7 @@ export default function TabProductos({
                     onClick={() => { cerrarMenus(); setMenuGestion(gestionAbierto ? null : p.id) }}
                     className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium hover:bg-gray-200 flex items-center gap-1"
                   >
-                    Gestionar <ChevronDown size={12} />
+                    {t('manageProperty')} <ChevronDown size={12} />
                   </button>
                   {gestionAbierto && (
                     <div className="absolute right-0 top-full mt-1 bg-white border rounded-lg shadow-lg py-1 w-48 z-20">
@@ -304,14 +311,14 @@ export default function TabProductos({
                         onClick={cerrarMenus}
                         className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50"
                       >
-                        <Edit size={14} /> Editar
+                        <Edit size={14} /> {t('editProperty')}
                       </LocalLink>
                       {!isVendido && p.activo && (
                         <button
                           onClick={() => abrirVendido(p.id)}
                           className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 w-full text-left"
                         >
-                          <CheckCircle2 size={14} className="text-green-600" /> Marcar como vendido
+                          <CheckCircle2 size={14} className="text-green-600" /> {t('markSold')}
                         </button>
                       )}
                       {isVendido && (
@@ -319,7 +326,7 @@ export default function TabProductos({
                           onClick={() => reactivarVendido(p.id)}
                           className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 w-full text-left"
                         >
-                          <Play size={14} className="text-orange-500" /> Reactivar
+                          <Play size={14} className="text-orange-500" /> {t('reactivateProperty')}
                         </button>
                       )}
                       <button
@@ -327,14 +334,14 @@ export default function TabProductos({
                         disabled={isVendido}
                         className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 w-full text-left disabled:opacity-40"
                       >
-                        {p.activo ? <Pause size={14} /> : <Play size={14} />} {p.activo ? 'Pausar' : 'Activar'}
+                        {p.activo ? <Pause size={14} /> : <Play size={14} />} {p.activo ? t('pauseProperty') : t('activateProperty')}
                       </button>
                       {!isVendido && (
                         <button
                           onClick={() => eliminarProducto(p.id)}
                           className="flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 w-full text-left"
                         >
-                          <X size={14} className="text-red-500" /> Eliminar publicación
+                          <X size={14} className="text-red-500" /> {t('deleteProperty')}
                         </button>
                       )}
                     </div>
@@ -348,7 +355,7 @@ export default function TabProductos({
                       onClick={() => { cerrarMenus(); setMenuPromocionar(promoAbierto ? null : p.id) }}
                       className="px-3 py-1.5 bg-brand-accent/20 text-brand-primary rounded-lg text-xs font-bold hover:bg-brand-accent/30 flex items-center gap-1"
                     >
-                      Promocionar <ChevronDown size={12} />
+                      {t('promoteProperty')} <ChevronDown size={12} />
                     </button>
                     {promoAbierto && (
                       <div className="absolute right-0 top-full mt-1 bg-white border rounded-lg shadow-lg py-1 w-52 z-20">
@@ -359,7 +366,7 @@ export default function TabProductos({
                           }}
                           className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 w-full text-left"
                         >
-                          <Zap size={14} className="text-yellow-500" /> Boost (visibilidad extra)
+                          <Zap size={14} className="text-yellow-500" /> {t('boostProperty')}
                         </button>
                         <button
                           onClick={() => {
@@ -368,14 +375,14 @@ export default function TabProductos({
                           }}
                           className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 w-full text-left"
                         >
-                          <Star size={14} className="text-brand-primary" /> Destacar (12h / 24h / 48h)
+                          <Star size={14} className="text-brand-primary" /> {t('featureProperty')}
                         </button>
                       </div>
                     )}
                   </div>
                 )}
               </div>
-            </div>
+            </article>
           )
         })}
       </div>
@@ -383,11 +390,11 @@ export default function TabProductos({
       {/* MODAL MARCAR COMO VENDIDO */}
       {vendidoModal && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 animate-fadeIn">
+          <section className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 animate-fadeIn" role="dialog" aria-modal="true" aria-label={t('saleDialogTitle')}>
             <div className="flex items-center justify-between mb-4">
               {vendidoPaso !== 'tipo' ? (
                 <button onClick={() => setVendidoPaso('tipo')} className="flex items-center gap-1 text-sm text-brand-primary hover:underline">
-                  <ArrowLeft size={16} /> Atrás
+                  <ArrowLeft size={16} /> {t('back')}
                 </button>
               ) : <div />}
               <button onClick={() => setVendidoModal(null)} className="p-1 hover:bg-gray-100 rounded-full">
@@ -398,8 +405,8 @@ export default function TabProductos({
             {/* PASO 1: ¿Cómo se vendió? */}
             {vendidoPaso === 'tipo' && (
               <>
-                <h3 className="text-lg font-bold mb-2">¿Cómo se vendió?</h3>
-                <p className="text-sm text-gray-500 mb-6">Esto marca tu anuncio como vendido y ya no aparecerá activo.</p>
+                <h3 className="text-lg font-bold mb-2">{t('saleMethodTitle')}</h3>
+                <p className="text-sm text-gray-500 mb-6">{t('saleMethodDescription')}</p>
                 <div className="space-y-3">
                   <button
                     onClick={() => {
@@ -411,27 +418,24 @@ export default function TabProductos({
                     }}
                     className="w-full text-left p-4 border-2 border-green-200 bg-green-50 rounded-xl hover:bg-green-100 transition"
                   >
-                    <p className="font-bold text-green-800">🤝 Vendido en esta plataforma</p>
+                    <p className="font-bold text-green-800">🤝 {t('soldThroughPlatform')}</p>
                     <p className="text-xs text-green-600 mt-1">
-                      {interesados.length > 0
-                        ? `${interesados.length} persona(s) te contactaron por este producto`
-                        : 'No hubo mensajes por este producto'
-                      }
+                      {interesados.length > 0 ? t('contactsOnProperty', { count: interesados.length }) : t('noContactsOnProperty')}
                     </p>
                   </button>
                   <button
                     onClick={() => marcarVendidoSimple(vendidoModal, 'otra_pagina')}
                     className="w-full text-left p-4 border-2 border-blue-200 bg-blue-50 rounded-xl hover:bg-blue-100 transition"
                   >
-                    <p className="font-bold text-blue-800">🌐 Vendido en otro lugar</p>
-                    <p className="text-xs text-blue-600 mt-1">Facebook, WhatsApp, en persona, etc.</p>
+                    <p className="font-bold text-blue-800">🌐 {t('soldElsewhere')}</p>
+                    <p className="text-xs text-blue-600 mt-1">{t('soldElsewhereDescription')}</p>
                   </button>
                   <button
                     onClick={() => marcarVendidoSimple(vendidoModal, 'no_especificado')}
                     className="w-full text-left p-4 border-2 border-gray-200 bg-gray-50 rounded-xl hover:bg-gray-100 transition"
                   >
-                    <p className="font-bold text-gray-700">🤫 Prefiero no decir</p>
-                    <p className="text-xs text-gray-500 mt-1">Solo marca el anuncio como vendido</p>
+                    <p className="font-bold text-gray-700">🤫 {t('preferNotToSay')}</p>
+                    <p className="text-xs text-gray-500 mt-1">{t('markPropertyOnly')}</p>
                   </button>
                 </div>
               </>
@@ -440,13 +444,13 @@ export default function TabProductos({
             {/* PASO 2: ¿A quién le vendiste? */}
             {vendidoPaso === 'comprador' && (
               <>
-                <h3 className="text-lg font-bold mb-2">¿A quién le vendiste?</h3>
-                <p className="text-sm text-gray-500 mb-4">Selecciona a la persona que te contactó por este producto.</p>
+                <h3 className="text-lg font-bold mb-2">{t('buyerSelectTitle')}</h3>
+                <p className="text-sm text-gray-500 mb-4">{t('buyerSelectDescription')}</p>
                 <div className="space-y-2 max-h-64 overflow-y-auto">
                   {cargandoVendidos ? (
-                    <p className="text-center text-gray-400 py-8">Cargando...</p>
+                    <p className="text-center text-gray-400 py-8">{t('loading')}</p>
                   ) : interesados.length === 0 ? (
-                    <p className="text-center text-gray-400 py-4">Nadie te contactó por este producto</p>
+                    <p className="text-center text-gray-400 py-4">{t('noContactsOnProperty')}</p>
                   ) : (
                     <>
                       {interesados.map((inter) => (
@@ -462,13 +466,10 @@ export default function TabProductos({
                         </button>
                       ))}
                       <button
-                        onClick={() => {
-                          setCompradorInfo({ id: '', nombre: '' })
-                          setVendidoPaso('reseña')
-                        }}
+                        onClick={() => marcarVendidoSimple(vendidoModal, 'plataforma')}
                         className="w-full text-center p-3 text-sm text-gray-500 hover:text-brand-primary hover:underline"
                       >
-                        Omitir (no fue ninguno de estos)
+                        {t('skipBuyer')}
                       </button>
                     </>
                   )}
@@ -483,26 +484,22 @@ export default function TabProductos({
                   <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
                     <CheckCircle2 size={28} className="text-green-600" />
                   </div>
-                  <h3 className="text-lg font-bold">¡Venta registrada!</h3>
+                  <h3 className="text-lg font-bold">{t('saleRecorded')}</h3>
                 </div>
                 <div className="bg-gray-50 rounded-xl p-4 mb-4">
                   <p className="text-sm font-semibold text-gray-700 mb-3">
-                    ¿Quieres dejarle una reseña a{' '}
-                    <span className="text-brand-primary">
-                      {compradorInfo && compradorInfo.nombre ? compradorInfo.nombre : 'este comprador'}
-                    </span>
-                    ?
+                    {t('reviewBuyerPrompt', { name: compradorInfo?.nombre || t('theBuyer') })}
                   </p>
                   <div className="flex justify-center mb-2">
                     <div className="flex gap-1">
                       {[1, 2, 3, 4, 5].map(i => (
-                        <button key={i} onClick={() => setRating(i)} className="hover:scale-110 transition">
+                        <button key={i} type="button" onClick={() => setRating(i)} className="hover:scale-110 transition" aria-label={t('ratingOf', { count: i })} aria-pressed={i === rating}>
                           <Star size={28} className={i <= rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'} />
                         </button>
                       ))}
                     </div>
                   </div>
-                  <p className="text-center text-xs text-gray-400">{['Muy mala', 'Mala', 'Regular', 'Buena', 'Excelente'][rating - 1]}</p>
+                  <p className="text-center text-xs text-gray-400">{[t('ratingVeryPoor'), t('ratingPoor'), t('ratingOkay'), t('ratingGood'), t('ratingExcellent')][rating - 1]}</p>
                 </div>
                 <textarea
                   value={comentarioResena}
@@ -510,7 +507,7 @@ export default function TabProductos({
                   rows={2}
                   className="w-full border rounded-lg px-3 py-2 text-sm resize-none"
                   maxLength={300}
-                  placeholder="¿Algo que quieras comentar? (opcional)"
+                  placeholder={t('reviewCommentPlaceholder')}
                 />
                 <p className="text-xs text-gray-400 mt-1 text-right">{comentarioResena.length}/300</p>
                 <div className="flex gap-2 mt-3">
@@ -518,14 +515,14 @@ export default function TabProductos({
                     onClick={venderSinResena}
                     className="flex-1 px-4 py-2.5 border rounded-lg text-sm font-medium hover:bg-gray-50"
                   >
-                    Sin reseña
+                    {t('skipReview')}
                   </button>
                   <button
                     onClick={enviarResena}
                     disabled={enviandoResena}
                     className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-brand-primary text-white rounded-lg text-sm font-bold hover:bg-brand-dark transition disabled:opacity-50"
                   >
-                    <Send size={14} /> {enviandoResena ? 'Enviando...' : 'Enviar reseña'}
+                    <Send size={14} /> {enviandoResena ? t('sendingReview') : t('sendReview')}
                   </button>
                 </div>
               </>
@@ -537,19 +534,19 @@ export default function TabProductos({
                 <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <CheckCircle2 size={32} className="text-green-600" />
                 </div>
-                <h3 className="text-xl font-bold text-green-800 mb-2">¡Vendido!</h3>
-                <p className="text-gray-500 mb-6">Tu anuncio ya está marcado como vendido. El comprador recibió un mensaje.</p>
+                <h3 className="text-xl font-bold text-green-800 mb-2">{t('propertyMarkedSold')}</h3>
+                <p className="text-gray-500 mb-6">{t('soldConfirmationDescription')}</p>
                 <button
                   onClick={() => { setVendidoModal(null); window.location.reload() }}
                   className="bg-brand-primary text-white px-8 py-3 rounded-xl font-bold hover:bg-brand-dark transition"
                 >
-                  Cerrar
+                  {t('close')}
                 </button>
               </div>
             )}
-          </div>
+          </section>
         </div>
       )}
-    </div>
+    </section>
   )
 }

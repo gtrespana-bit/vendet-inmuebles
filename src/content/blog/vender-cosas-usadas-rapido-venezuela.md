@@ -34,7 +34,7 @@ El 90% de las personas deciden si les interesa tu producto en 2 segundos, solo v
 
 ### 3. Fija un precio justo
 
-Antes de ponerle precio, busca productos similares en VendeT para ver cuánto piden los demás.
+Antes de ponerle precio, busca productos similares en Venezuela Inmuebles para ver cuánto piden los demás.
 
 ### 4. Describe TODO lo relevante
 
@@ -63,6 +63,6 @@ Acepta:
 - Tarde: 2:00 PM - 4:00 PM
 - Noche: 7:00 PM - 9:00 PM
 
-### Publica gratis en VendeT
+### Publica gratis en Venezuela Inmuebles
 
-Sin comisiones y con chat integrado, VendeT te ayuda a conectar con compradores. [Publicar ahora](/publicar)
+Sin comisiones y con chat integrado, Venezuela Inmuebles te ayuda a conectar con compradores. [Publicar ahora](/publicar)

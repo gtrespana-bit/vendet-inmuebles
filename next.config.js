@@ -160,8 +160,8 @@ const nextConfig = withNextIntl({
 
 // Configuración de Sentry - DESHABILITADO completamente para evitar problemas de Lighthouse
 // module.exports = withSentryConfig(nextConfig, {
-//   org: 'vendet-venezuela',
-//   project: 'vendet-venezuela',
+//   org: process.env.SENTRY_ORG,
+//   project: process.env.SENTRY_PROJECT,
 //   silent: true,
 //   hideSourceMaps: true,
 //   widenClientFileUpload: true,

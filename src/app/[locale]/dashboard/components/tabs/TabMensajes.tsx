@@ -1,15 +1,19 @@
-"use client"
+'use client'
 
 import LocalLink from '@/components/LocalLink'
-import { MessageSquare } from 'lucide-react'
+import { ArrowUpRight, MessageSquare } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
 export default function TabMensajes() {
+  const t = useTranslations('dashboard')
+
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center">
-      <MessageSquare size={48} className="text-gray-300 mx-auto mb-4" />
-      <h3 className="text-xl font-bold text-gray-800 mb-2">Chat en tiempo real</h3>
-      <p className="text-gray-500">Gestiona tus conversaciones con compradores y vendedores.</p>
-      <LocalLink href="/chat" className="inline-block mt-4 bg-brand-primary text-white px-6 py-2.5 rounded-lg font-medium hover:bg-brand-dark transition">Abrir Chat</LocalLink>
-    </div>
+    <section className="dashboard-empty-state" aria-labelledby="dashboard-messages-title">
+      <MessageSquare size={35} className="mx-auto mb-4 text-[#9b8053]" aria-hidden="true" />
+      <p className="dashboard-page__eyebrow">{t('tabMessages')}</p>
+      <h2 id="dashboard-messages-title">{t('messagesPanelTitle')}</h2>
+      <p>{t('messagesPanelDescription')}</p>
+      <LocalLink href="/chat">{t('messagesOpenChat')} <ArrowUpRight size={15} className="ml-2" aria-hidden="true" /></LocalLink>
+    </section>
   )
 }

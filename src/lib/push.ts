@@ -1,5 +1,5 @@
 /**
- * Push notifications helper para la PWA de VendeT.
+ * Push notifications helper para la PWA de Venezuela Inmuebles.
  * Funciones del lado del servidor para enviar push notifications
  * usando web-push + guardar/borrar subscriptions en Supabase.
  */
@@ -21,7 +21,7 @@ export function getVapidPublicKey(): string {
 
 if (VAPID_PUBLIC && VAPID_PRIVATE) {
   webpush.setVapidDetails(
-    `mailto:noreply@vendet.online`,
+    `mailto:noreply@venezuela-inmuebles.online`,
     VAPID_PUBLIC,
     VAPID_PRIVATE,
   )

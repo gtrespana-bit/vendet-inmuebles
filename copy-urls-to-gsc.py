@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-# Script para obtener URLs de VendeT en batches de 10 para copiar a Google Search Console
+# Script para obtener URLs de Venezuela Inmuebles en batches de 10 para copiar a Google Search Console
 
 import sys
 
 def main():
     try:
         # Leer el archivo
-        with open('vendet_urls_completas.txt', 'r', encoding='utf-8') as f:
+        with open('venezuela_inmuebles_urls_completas.txt', 'r', encoding='utf-8') as f:
             urls = [line.strip() for line in f if line.strip()]
         
         print(f"📊 Total de URLs: {len(urls)}")
@@ -44,7 +44,7 @@ Pégales en Google Search Console > Inspección de URL > Enter
         print("   clic en 'Solicitar indexación' para acelerar el proceso.")
         
     except FileNotFoundError:
-        print("❌ Error: No se encontró 'vendet_urls_completas.txt'")
+        print("❌ Error: No se encontró 'venezuela_inmuebles_urls_completas.txt'")
         print("   Asegúrate de ejecutar este script desde la carpeta marketplace-vzla/")
         sys.exit(1)
     except Exception as e:

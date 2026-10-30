@@ -4,7 +4,7 @@
 def main():
     try:
         # Leer URLs
-        with open('vendet_urls_completas.txt', 'r', encoding='utf-8') as f:
+        with open('venezuela_inmuebles_urls_completas.txt', 'r', encoding='utf-8') as f:
             urls = [line.strip() for line in f if line.strip()]
         
         print(f"📊 Total: {len(urls)} URLs")

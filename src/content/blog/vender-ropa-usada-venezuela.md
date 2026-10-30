@@ -31,10 +31,10 @@ El mercado de ropa de segunda mano en Venezuela está creciendo rápido. Si tien
 
 ### Dónde vender
 
-- **VendeT** — 0% comisión, público general, fácil de usar
+- **Venezuela Inmuebles** — 0% comisión, público general, fácil de usar
 - **Instagram** — Visual, pero necesitas seguidores
 - **Grupos de Facebook** — Rápido pero con menos seguridad
 
 ### Publica tu ropa gratis
 
-[Publicar en VendeT](/publicar)
+[Publicar en Venezuela Inmuebles](/publicar)

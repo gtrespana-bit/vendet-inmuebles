@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { usePathname } from 'next/navigation'
+import { routing } from '@/i18n/routing'
 import { useTranslations } from 'next-intl'
 import { CheckCircle, Mail, ExternalLink, ArrowRight, RefreshCw } from 'lucide-react'
 import LocalLink from '@/components/LocalLink'
@@ -10,6 +12,9 @@ import { supabase } from '@/lib/supabase'
 function ConfirmacionContent() {
   const t = useTranslations('auth')
   const router = useRouter()
+  const pathname = usePathname()
+  const locale = pathname === '/en' || pathname.startsWith('/en/') ? 'en' : routing.defaultLocale
+  const loginPath = locale === routing.defaultLocale ? '/login' : `/${locale}/login`
   const [email, setEmail] = useState('')
   const [resending, setResending] = useState(false)
   const [resendStatus, setResendStatus] = useState<'idle' | 'success' | 'error'>('idle')
@@ -20,7 +25,7 @@ function ConfirmacionContent() {
 
   const handleConfirmClick = () => {
     sessionStorage.removeItem('tempEmail')
-    router.push('/login')
+    router.push(loginPath)
   }
 
   const handleResend = async () => {
@@ -52,7 +57,7 @@ function ConfirmacionContent() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-black text-brand-primary">
-            VendeT-Venezuela
+            Venezuela Inmuebles
           </h1>
         </div>
 

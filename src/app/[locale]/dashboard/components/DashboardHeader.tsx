@@ -64,7 +64,7 @@ export default function DashboardHeader({
   const cfg = NIVELES[n]
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border p-5 mb-6">
+    <div className="dashboard-profile-card">
       <div className="flex flex-col sm:flex-row items-start gap-4">
         <label className="relative group cursor-pointer flex-shrink-0">
           <Avatar nombre={nombre} fotoUrl={fotoUrl} size="lg" />

@@ -8,7 +8,7 @@ function setupVapid() {
   const pub = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
   const priv = process.env.VAPID_PRIVATE_KEY
   if (pub && priv) {
-    webpush.setVapidDetails(`mailto:noreply@vendet.online`, pub, priv)
+    webpush.setVapidDetails(`mailto:noreply@venezuela-inmuebles.online`, pub, priv)
   }
 }
 

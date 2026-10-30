@@ -64,17 +64,17 @@ function generateStaticParams(): { slug: string }[] {
 async function generateMetadata(props: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await props.params
   const post = getPostBySlug(slug)
-  if (!post) return { title: 'Post not found — VendeT' }
+  if (!post) return { title: 'Post not found — Venezuela Inmuebles' }
 
   return {
-    title: `${post.title} — Blog VendeT Venezuela`,
+    title: `${post.title} — Blog Venezuela Inmuebles`,
     description: post.excerpt,
     alternates: { canonical: `https://venezuela-inmuebles.online/blog/${post.slug}` },
     openGraph: {
       title: post.title,
       description: post.excerpt,
       url: `https://venezuela-inmuebles.online/blog/${post.slug}`,
-      siteName: 'VendeT-Venezuela',
+      siteName: 'Venezuela Inmuebles',
       type: 'article',
       locale: 'es_VE',
     },
@@ -91,12 +91,12 @@ function generateArticleSchema(post: Post) {
     "dateModified": post.date,
     "author": {
       "@type": "Organization",
-      "name": "VendeT Inmuebles",
+      "name": "Venezuela Inmuebles",
       "url": "https://venezuela-inmuebles.online"
     },
     "publisher": {
       "@type": "Organization",
-      "name": "VendeT Inmuebles",
+      "name": "Venezuela Inmuebles",
       "url": "https://venezuela-inmuebles.online",
       "logo": {
         "@type": "ImageObject",

@@ -1,50 +1,94 @@
-"use client"
+'use client'
 
+import { useState } from 'react'
 import LocalLink from '@/components/LocalLink'
 import { Heart, X } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
+import { useTranslations } from 'next-intl'
+import { getSupabaseAuthHeaders } from '@/lib/supabase-auth-headers'
 import Image from 'next/image'
 
 export default function TabFavoritos({ favoritos }: { favoritos: any[] }) {
+  const t = useTranslations('dashboard')
+  const [removing, setRemoving] = useState<string | null>(null)
+
+  async function removeFavorite(productId: string) {
+    if (removing) return
+    setRemoving(productId)
+    try {
+      const response = await fetch('/api/favorito/toggle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(await getSupabaseAuthHeaders()) },
+        body: JSON.stringify({ productId, isFavorited: true }),
+      })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || t('favoriteRemoveError'))
+      window.location.reload()
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : t('favoriteRemoveError'))
+      setRemoving(null)
+    }
+  }
+
   if (favoritos.length === 0) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center">
-        <Heart size={48} className="text-gray-300 mx-auto mb-4" />
-        <h3 className="text-xl font-bold text-gray-800 mb-2">Tus favoritos</h3>
-        <p className="text-gray-500">Guarda publicaciones que te interesen para verlas después.</p>
-      </div>
+      <section className="dashboard-empty-state" aria-labelledby="dashboard-favorites-title">
+        <Heart size={36} className="mx-auto mb-4 text-[#9b8053]" aria-hidden="true" />
+        <p className="dashboard-page__eyebrow">{t('tabFavorites')}</p>
+        <h2 id="dashboard-favorites-title">{t('favoritesEmptyTitle')}</h2>
+        <p>{t('favoritesEmptyDescription')}</p>
+        <LocalLink href="/catalogo">{t('exploreProperties')}</LocalLink>
+      </section>
     )
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-      <h3 className="font-bold text-lg mb-4">Mis favoritos ({favoritos.length})</h3>
-      <div className="space-y-3">
-        {favoritos.map((fav: any) => {
-          const p = fav.productos
+    <section className="dashboard-panel" aria-labelledby="dashboard-favorites-title">
+      <div className="mb-4 flex items-end justify-between gap-4">
+        <div>
+          <p className="dashboard-page__eyebrow">{t('tabFavorites')}</p>
+          <h2 id="dashboard-favorites-title" className="m-0 font-heading text-2xl font-normal text-[#302925]">{t('favoritesTitle')}</h2>
+        </div>
+        <span className="text-xs text-[#81776d]">{favoritos.length}</span>
+      </div>
+      <div className="dashboard-property-list">
+        {favoritos.map((favorite: any) => {
+          const property = favorite.productos
+          if (!property) return null
+          const price = Number(property.price || property.precio || 0)
+          const formattedPrice = price > 0
+            ? new Intl.NumberFormat('es-VE', { style: 'currency', currency: property.moneda || 'USD', maximumFractionDigits: 0 }).format(price)
+            : t('priceOnRequest')
+
           return (
-            <div key={fav.producto_id} className="flex items-center gap-4 p-3 rounded-lg hover:bg-gray-50 border border-gray-100 transition">
-              <LocalLink href={`/inmueble/${p.id}`} className="flex items-center gap-4 flex-1 min-w-0">
-                <div className="w-16 h-16 rounded-lg bg-gray-100 flex-shrink-0 overflow-hidden">
-                  {p.main_image_url ? (
-                    <Image src={p.main_image_url} alt={p.titulo} className="w-full h-full object-cover" fill sizes="100px" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">Sin foto</div>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-medium text-gray-800 truncate">{p.titulo}</h4>
-                  <p className="text-sm text-brand-primary font-bold">${new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(Number(p.price || 0))}</p>
-                  {p.city_name && <p className="text-xs text-gray-500">{p.city_name}</p>}
+            <article key={favorite.producto_id} className="dashboard-property-row">
+              <LocalLink href={`/inmueble/${property.slug || property.id}`} className="dashboard-property-row__media">
+                {property.main_image_url ? (
+                  <Image src={property.main_image_url} alt="" fill sizes="100px" unoptimized />
+                ) : <span className="grid h-full place-items-center text-[9px] text-gray-400">{t('noPhoto')}</span>}
+              </LocalLink>
+              <LocalLink href={`/inmueble/${property.slug || property.id}`} className="dashboard-property-row__content no-underline">
+                <h3 className="dashboard-property-row__title">{property.titulo}</h3>
+                <p className="dashboard-property-row__price">{formattedPrice}</p>
+                <div className="dashboard-property-row__meta">
+                  {[property.city_name || property.ciudad, property.state_name || property.estado].filter(Boolean).map((part: string) => <span key={part}>{part}</span>)}
                 </div>
               </LocalLink>
-              <button onClick={async () => { await supabase.from('favoritos').delete().eq('producto_id', p.id); window.location.reload() }} className="p-2 hover:bg-red-50 rounded-lg transition text-red-500" title="Quitar de favoritos">
-                <X size={16} />
-              </button>
-            </div>
+              <div className="dashboard-property-row__actions">
+                <LocalLink href={`/inmueble/${property.slug || property.id}`}>{t('viewProperty')}</LocalLink>
+                <button
+                  type="button"
+                  disabled={removing === property.id}
+                  onClick={() => removeFavorite(property.id)}
+                  aria-label={t('removeFavorite')}
+                  title={t('removeFavorite')}
+                >
+                  {removing === property.id ? '…' : <><X size={14} aria-hidden="true" /><span>{t('removeFavorite')}</span></>}
+                </button>
+              </div>
+            </article>
           )
         })}
       </div>
-    </div>
+    </section>
   )
 }

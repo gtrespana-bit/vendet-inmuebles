@@ -2,7 +2,7 @@ import { supabase } from '@/lib/supabase'
 import LocalLink from '@/components/LocalLink'
 import Image from 'next/image'
 import { MapPin, ChevronRight } from 'lucide-react'
-import { getCiudadBySlug } from '@/lib/ubicaciones-seo'
+import { getTranslations } from 'next-intl/server'
 
 interface Props {
   slug: string
@@ -11,61 +11,64 @@ interface Props {
   descripcion: string
 }
 
-async function getProductos(ciudad: string) {
+async function getProperties(city: string) {
   try {
     const { data, count } = await supabase
       .from('vw_propiedades_publicas')
       .select('id, titulo, precio, estado, main_image_url, ciudad, destacado, destacado_hasta', { count: 'exact' })
       .eq('activo', true)
-      .eq('ciudad', ciudad)
+      .eq('ciudad', city)
       .order('creado_en', { ascending: false })
       .limit(24)
-    
-    return { productos: data || [], total: count || 0 }
+
+    return { properties: data || [], total: count || 0 }
   } catch (error) {
-    console.error('Error fetching productos:', error)
-    return { productos: [], total: 0 }
+    console.error('Error fetching properties for city:', error)
+    return { properties: [], total: 0 }
   }
 }
 
-export default async function LandingCiudad({ slug, nombre, estado, descripcion }: Props) {
-  const { productos, total } = await getProductos(nombre)
+export default async function LandingCiudad({ nombre, estado }: Props) {
+  const [t, { properties, total }] = await Promise.all([
+    getTranslations('cityLanding'),
+    getProperties(nombre),
+  ])
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
-      <nav className="flex items-center gap-1.5 text-sm text-gray-500 mb-6">
-        <LocalLink href="/" className="hover:text-brand-primary">Inicio</LocalLink>
-        <ChevronRight size={14} />
+      <nav className="flex items-center gap-1.5 text-sm text-gray-500 mb-6" aria-label={t('breadcrumb')}>
+        <LocalLink href="/" className="hover:text-brand-primary">{t('breadcrumb')}</LocalLink>
+        <ChevronRight size={14} aria-hidden="true" />
         <span className="text-gray-800 font-medium">{nombre}</span>
       </nav>
 
       <h1 className="text-3xl md:text-4xl font-black text-gray-900 mb-2">
-        Clasificados en {nombre}, {estado} - Compra y Venta en Venezuela
+        {t('title', { city: nombre, state: estado })}
       </h1>
       <p className="text-gray-500 mb-8">
-        {descripcion} Explora anuncios disponibles en {nombre} y publica gratis tu propiedad.
+        {t('desc', { city: nombre, state: estado })}
       </p>
 
-      {productos.length > 0 ? (
+      {properties.length > 0 ? (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {productos.map((p: any) => (
-            <LocalLink key={p.id} href={`/inmueble/${p.id}`} className="bg-white rounded-xl overflow-hidden shadow-sm border hover:shadow-lg transition group block">
+          {properties.map((property: any) => (
+            <LocalLink key={property.id} href={`/inmueble/${property.id}`} className="bg-white rounded-xl overflow-hidden shadow-sm border hover:shadow-lg transition group block">
               <div className="aspect-square bg-gray-100 relative overflow-hidden">
-                {p.destacado && new Date(p.destacado_hasta) > new Date() && (
-                  <div className="absolute top-2 left-2 z-10 bg-brand-accent text-brand-primary text-[10px] font-bold px-2 py-0.5 rounded-full">⭐ Destacado</div>
+                {property.destacado && new Date(property.destacado_hasta) > new Date() && (
+                  <div className="absolute top-2 left-2 z-10 bg-brand-accent text-brand-primary text-[10px] font-bold px-2 py-0.5 rounded-full">⭐ {t('featured')}</div>
                 )}
-                {p.main_image_url ? (
-                  <Image src={p.main_image_url} alt={p.titulo} width={300} height={300} className="w-full h-full object-cover group-hover:scale-105 transition-transform" loading="lazy" />
+                {property.main_image_url ? (
+                  <Image src={property.main_image_url} alt={property.titulo} width={300} height={300} className="w-full h-full object-cover group-hover:scale-105 transition-transform" loading="lazy" />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-gray-300 text-4xl"></div>
+                  <div className="w-full h-full flex items-center justify-center text-gray-300 text-4xl" aria-hidden="true" />
                 )}
               </div>
               <div className="p-3">
-                <h3 className="font-semibold text-gray-900 text-sm truncate">{p.titulo}</h3>
-                <p className="text-lg font-black text-brand-primary mt-1">${new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(Number(p.precio || 0))}</p>
-                <p className="text-xs text-gray-500">{p.estado}</p>
-                {p.ciudad && (
-                  <p className="text-xs text-gray-400 flex items-center gap-1"><MapPin size={10} />{p.ciudad}</p>
+                <h2 className="font-semibold text-gray-900 text-sm truncate">{property.titulo}</h2>
+                <p className="text-lg font-black text-brand-primary mt-1">${new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(Number(property.precio || 0))}</p>
+                <p className="text-xs text-gray-500">{property.estado}</p>
+                {property.ciudad && (
+                  <p className="text-xs text-gray-400 flex items-center gap-1"><MapPin size={10} aria-hidden="true" />{property.ciudad}</p>
                 )}
               </div>
             </LocalLink>
@@ -73,15 +76,15 @@ export default async function LandingCiudad({ slug, nombre, estado, descripcion 
         </div>
       ) : (
         <div className="text-center py-16 text-gray-400">
-          <p className="text-xl mb-2">Aún no hay anuncios en {nombre}</p>
-          <p className="mb-4">¡Sé el primero en publicar!</p>
-          <LocalLink href="/publicar" className="inline-block bg-brand-primary text-white px-6 py-3 rounded-lg font-bold">Publicar Gratis</LocalLink>
+          <p className="text-xl mb-2">{t('noAds', { city: nombre })}</p>
+          <p className="mb-4">{t('beFirst')}</p>
+          <LocalLink href="/publicar-inmueble" className="inline-block bg-brand-primary text-white px-6 py-3 rounded-lg font-bold">{t('postFree')}</LocalLink>
         </div>
       )}
 
       <div className="mt-8 flex justify-center">
-        <LocalLink href={`/catalogo?ciudad=${nombre}`} className="inline-block bg-gray-100 text-gray-700 px-6 py-3 rounded-lg font-bold hover:bg-gray-200 transition">
-          Ver todos los anuncios en {nombre} ({total})
+        <LocalLink href={`/catalogo?ciudad=${encodeURIComponent(nombre)}`} className="inline-block bg-gray-100 text-gray-700 px-6 py-3 rounded-lg font-bold hover:bg-gray-200 transition">
+          {t('seeMore', { city: nombre, count: total })}
         </LocalLink>
       </div>
     </div>

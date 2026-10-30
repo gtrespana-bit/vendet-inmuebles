@@ -7,13 +7,13 @@ tags: "fotografía,consejos,vender,productos,celular"
 category: "Consejos"
 ---
 
-## Cómo fotos para tus anuncios en VendeT
+## Cómo fotos para tus anuncios en Venezuela Inmuebles
 
 El 90% de la decisión de comprar se toma con los ojos. Aquí van los tips que de verdad funcionan:
 
 ### 5 reglas de oro para fotos de producto
 
-1. **Limpia el producto antes de la foto** — Parece obvio pero la mitad de las fotos en VendeT tienen productos sucios
+1. **Limpia el producto antes de la foto** — Parece obvio pero la mitad de las fotos en Venezuela Inmuebles tienen productos sucios
 2. **Usa luz natural, nunca flash** — Pon el producto cerca de una ventana, de día
 3. **Fondo neutro** — Una mesa blanca, una pared lisa, una hoja de papel grande. No la cama, no el piso
 4. **Mínimo 3 fotos**: frente, atrás y un detalle importante

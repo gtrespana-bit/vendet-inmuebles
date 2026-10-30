@@ -37,6 +37,6 @@ El mercado de laptops en Venezuela tiene opciones para todos los presupuestos. A
 | Diseño / Video | 16GB+ | Ryzen 7 / i7 | 1TB SSD |
 | Gaming | 16GB+ | Ryzen 7 / i7 + GPU dedicada | 1TB SSD |
 
-### Compra o vende tu laptop en VendeT
+### Compra o vende tu laptop en Venezuela Inmuebles
 
 [Ver laptops](/catalogo?categoria=tecnologia) · [Publicar gratis](/publicar)

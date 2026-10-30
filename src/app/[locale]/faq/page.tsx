@@ -1,9 +1,15 @@
 import type { Metadata } from 'next'
 import { getTranslations } from 'next-intl/server'
 
-export const metadata: Metadata = {
-  title: 'Preguntas Frecuentes — VendeT-Venezuela',
-  description: 'Resuelve tus dudas sobre VendeT: cómo publicar, seguridad, créditos, métodos de pago y más.',
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale } = await params
+  const isEnglish = locale === 'en'
+  return {
+    title: isEnglish ? 'Property FAQ' : 'Preguntas frecuentes',
+    description: isEnglish
+      ? 'Learn how to explore, list and verify properties on Venezuela Inmuebles.'
+      : 'Conoce cómo explorar, anunciar y verificar inmuebles en Venezuela Inmuebles.',
+  }
 }
 
 export default async function FAQPage() {
@@ -54,8 +60,8 @@ export default async function FAQPage() {
         <div className="bg-brand-accent rounded-xl p-6 mt-8 text-center">
           <h3 className="font-bold text-brand-primary text-lg">{t('noAnswer')}</h3>
           <p className="text-brand-primary/80 mt-1">{t('noAnswerDesc')}</p>
-          <a href="mailto:soporte@vendet.online" className="inline-block mt-3 bg-brand-primary text-white px-6 py-2 rounded-lg font-bold hover:bg-brand-dark transition">
-            soporte@vendet.online
+          <a href="mailto:soporte@venezuela-inmuebles.online" className="inline-block mt-3 bg-brand-primary text-white px-6 py-2 rounded-lg font-bold hover:bg-brand-dark transition">
+            soporte@venezuela-inmuebles.online
           </a>
         </div>
       </div>

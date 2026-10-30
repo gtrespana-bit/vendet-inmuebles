@@ -4,8 +4,8 @@ import { ArrowLeft, Smartphone, Share, Download, PlusCircle, ArrowDownToLine, Ch
 import { getTranslations } from 'next-intl/server'
 
 export const metadata: Metadata = {
-  title: 'Instala la App de VendeT — VendeT-Venezuela',
-  description: 'Aprende cómo instalar VendeT-Venezuela como app en tu teléfono. Guía paso a paso para Android e iPhone.',
+  title: 'Instala la app — Venezuela Inmuebles',
+  description: 'Aprende cómo instalar Venezuela Inmuebles como app en tu teléfono. Guía paso a paso para Android e iPhone.',
 }
 
 export default async function ComoInstalarAppPage() {
@@ -73,7 +73,7 @@ export default async function ComoInstalarAppPage() {
               <div>
                 <p className="font-semibold text-gray-900">{t('androidStep3Title')}</p>
                 <p className="text-sm text-gray-500 mt-1">
-                  Dependiendo de tu versión de Chrome, verás una de estas opciones. También puede aparecer un banner en la parte inferior diciendo "Instalar VendeT".
+                  Dependiendo de tu versión de Chrome, verás una de estas opciones. También puede aparecer un banner en la parte inferior diciendo "Instalar Venezuela Inmuebles".
                 </p>
               </div>
             </div>
@@ -86,7 +86,7 @@ export default async function ComoInstalarAppPage() {
               <div>
                 <p className="font-semibold text-gray-900">Confirma la instalación</p>
                 <p className="text-sm text-gray-500 mt-1">
-                  Aparecerá un diálogo de confirmación. Toca <strong>"Instalar"</strong>. ¡Listo! Ahora tienes VendeT como app en tu pantalla de inicio.
+                  Aparecerá un diálogo de confirmación. Toca <strong>"Instalar"</strong>. ¡Listo! Ahora tienes Venezuela Inmuebles como app en tu pantalla de inicio.
                 </p>
               </div>
             </div>

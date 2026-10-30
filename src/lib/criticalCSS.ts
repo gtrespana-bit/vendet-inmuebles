@@ -2,11 +2,11 @@
 export const criticalCSS = `
 /* Reset básico y tipografía */
 *, ::before, ::after { box-sizing: border-box; }
-body { margin: 0; font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; background-color: #f9fafb; }
-html { font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif; }
+body { margin: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; background-color: #faf8f4; }
+html { font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
 
 /* Header crítico */
-header { position: sticky; top: 0; z-index: 50; background: linear-gradient(to right, #006666, #008080, #008080); color: white; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+header { position: sticky; top: 0; z-index: 50; background: #fbfaf7; color: #26211f; border-bottom: 1px solid rgba(38, 33, 31, 0.1); box-shadow: none; }
 .header-container { max-width: 80rem; margin-left: auto; margin-right: auto; padding-left: 1rem; padding-right: 1rem; }
 .header-content { display: flex; align-items: center; justify-content: space-between; height: 3.5rem; }
 .logo-link { display: flex; align-items: center; gap: 0.75rem; flex-shrink: 0; }
@@ -14,9 +14,9 @@ header { position: sticky; top: 0; z-index: 50; background: linear-gradient(to r
 .logo-text { display: none; }
 @media (min-width: 640px) { .logo-text { display: block; } }
 .logo-highlight { font-weight: 900; font-size: 1.25rem; letter-spacing: -0.025em; }
-.logo-yellow { color: #fbbf24; }
+.logo-yellow { color: #c7a765; }
 .logo-white { color: white; }
-.logo-badge { color: #fbbf24; font-weight: 700; font-size: 0.75rem; margin-left: 0.25rem; }
+.logo-badge { color: #c7a765; font-weight: 700; font-size: 0.75rem; margin-left: 0.25rem; }
 
 /* Navegación móvil */
 .mobile-menu-btn { display: flex; padding: 0.25rem; border-radius: 0.5rem; transition: background-color 0.2s; }
@@ -27,7 +27,7 @@ header { position: sticky; top: 0; z-index: 50; background: linear-gradient(to r
 @media (min-width: 768px) { 
   .search-form { display: flex; flex: 1; max-width: 32rem; margin-left: 2rem; margin-right: 2rem; position: relative; }
   .search-input { width: 100%; padding: 0.5rem 1rem; padding-right: 3rem; border-radius: 0.5rem; color: #1f2937; background-color: white; outline: 2px solid transparent; outline-offset: 2px; }
-  .search-button { position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%); background-color: #ffd700; padding: 0.375rem; border-radius: 9999px; transition: background-color 0.2s; }
+  .search-button { position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%); background-color: #c7a765; padding: 0.375rem; border-radius: 9999px; transition: background-color 0.2s; }
 }
 
 /* Acciones del header */
@@ -46,11 +46,11 @@ header { position: sticky; top: 0; z-index: 50; background: linear-gradient(to r
 .product-image { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s; }
 .product-content { padding: 1rem; }
 .product-title { font-weight: 600; color: #111827; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.product-price { font-size: 1.25rem; font-weight: 900; color: #008080; margin-top: 0.25rem; }
+.product-price { font-size: 1.25rem; font-weight: 900; color: #612e35; margin-top: 0.25rem; }
 .product-location { font-size: 0.75rem; color: #6b7280; margin-top: 0.25rem; }
 
 /* Footer crítico */
-.footer { background-color: white; border-top: 1px solid #e5e7eb; }
+.footer { background-color: #282322; border-top: 1px solid rgba(255,255,255,0.12); color: #dfd8d0; }
 .footer-container { max-width: 80rem; margin-left: auto; margin-right: auto; padding: 2rem 1rem; }
 .footer-content { display: grid; gap: 2rem; }
 @media (min-width: 1024px) { .footer-content { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
@@ -103,13 +103,13 @@ header { position: sticky; top: 0; z-index: 50; background: linear-gradient(to r
 .text-gray-500 { color: #6b7280; }
 .text-gray-800 { color: #1f2937; }
 .text-gray-900 { color: #111827; }
-.text-brand-primary { color: #008080; }
-.text-yellow-400 { color: #fbbf24; }
+.text-brand-primary { color: #612e35; }
+.text-yellow-400 { color: #c7a765; }
 .bg-white { background-color: #ffffff; }
-.bg-gray-50 { background-color: #f9fafb; }
+.bg-gray-50 { background-color: #faf8f4; }
 .bg-gray-100 { background-color: #f3f4f6; }
-.bg-brand-primary { background-color: #008080; }
-.bg-yellow-400 { background-color: #fbbf24; }
+.bg-brand-primary { background-color: #612e35; }
+.bg-yellow-400 { background-color: #c7a765; }
 .rounded-lg { border-radius: 0.5rem; }
 .rounded-xl { border-radius: 0.75rem; }
 .border { border-width: 1px; }

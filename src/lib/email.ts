@@ -25,7 +25,7 @@ export async function enviarEmail(params: EmailParams) {
 
   try {
     await transporter.sendMail({
-      from: process.env.SMTP_FROM || '"VendeT-Venezuela" <noreply@vendet.online>',
+      from: process.env.SMTP_FROM || '"Venezuela Inmuebles" <noreply@venezuela-inmuebles.online>',
       to: params.to,
       subject: params.subject,
       html: params.html,

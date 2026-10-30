@@ -1,28 +1,35 @@
 import type { Metadata } from 'next'
 import LocalLink from '@/components/LocalLink'
-import { getTranslations } from 'next-intl/server'
+import { getLocale, getTranslations } from 'next-intl/server'
 
-export const metadata: Metadata = {
-  title: 'Sobre Nosotros — VendeT-Venezuela',
-  description: 'Conoce VendeT: el marketplace gratuito para comprar y vender en Venezuela. Sin comisiones, sin intermediarios, contacto directo entre compradores y vendedores.',
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale } = await params
+  const isEnglish = locale === 'en'
+  return {
+    title: isEnglish ? 'About the portal' : 'Sobre el portal',
+    description: isEnglish
+      ? 'Learn about Venezuela Inmuebles, a portal for exploring and listing properties for sale or rent.'
+      : 'Conoce Venezuela Inmuebles, un portal para explorar y anunciar propiedades en venta o alquiler.',
+  }
 }
 
 export default async function SobreNosotrosPage() {
-  const t = await getTranslations('about')
+  const [t, locale] = await Promise.all([getTranslations('about'), getLocale()])
+  const isEnglish = locale === 'en'
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'AboutPage',
     name: t('title'),
     description: t('subtitle'),
-    url: 'https://venezuela-inmuebles.online/sobre-nosotros',
+    url: `https://venezuela-inmuebles.online${isEnglish ? '/en' : ''}/sobre-nosotros`,
     mainEntity: {
       '@type': 'Organization',
-      name: 'VendeT-Venezuela',
+      name: 'Venezuela Inmuebles',
       url: 'https://venezuela-inmuebles.online',
       description: t('subtitle'),
       foundingDate: '2024',
       areaServed: { '@type': 'Country', name: 'Venezuela' },
-      serviceType: 'Marketplace',
+      serviceType: isEnglish ? 'Real estate listings portal' : 'Portal de anuncios inmobiliarios',
     },
   }
 
@@ -54,10 +61,10 @@ export default async function SobreNosotrosPage() {
             <h2 className="text-2xl font-black text-gray-900 mb-4">{t('whyTitle')}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {[
-                { titulo: t('why1_title'), desc: t('why1_desc'), icon: '💰' },
-                { titulo: t('why2_title'), desc: t('why2_desc'), icon: '💬' },
-                { titulo: t('why3_title'), desc: t('why3_desc'), icon: '🌎' },
-                { titulo: t('why4_title'), desc: t('why4_desc'), icon: '🆓' },
+                { titulo: t('why1_title'), desc: t('why1_desc'), icon: '⌖' },
+                { titulo: t('why2_title'), desc: t('why2_desc'), icon: '⌂' },
+                { titulo: t('why3_title'), desc: t('why3_desc'), icon: '↗' },
+                { titulo: t('why4_title'), desc: t('why4_desc'), icon: '▤' },
               ].map((item, i) => (
                 <div key={i} className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
                   <div className="text-2xl mb-2">{item.icon}</div>

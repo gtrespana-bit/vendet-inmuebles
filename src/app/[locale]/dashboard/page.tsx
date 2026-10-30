@@ -7,7 +7,7 @@ import { getSupabaseAuthHeaders } from '@/lib/supabase-auth-headers'
 import dynamic from 'next/dynamic'
 import { getTasaBCVClient, actualizarTasaClient } from '@/lib/tasaBCV'
 import { useTranslations } from 'next-intl'
-import { Package, MessageSquare, CreditCard, Eye, Heart, LogOut, X, Zap, Star, ShieldCheck, BarChart3, Settings } from 'lucide-react'
+import { Package, MessageSquare, CreditCard, Heart, X, Star, ShieldCheck, BarChart3, Settings } from 'lucide-react'
 import LocalLink from '@/components/LocalLink'
 import { routing } from '@/i18n/routing'
 
@@ -112,7 +112,9 @@ export default function DashboardPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const tab = params.get('tab')
-    if (tab) setActiveTab(tab)
+    if (tab && ['resumen', 'productos', 'mensajes', 'creditos', 'favoritos', 'verificacion', 'reputacion', 'perfil'].includes(tab)) {
+      setActiveTab(tab)
+    }
   }, [])
 
   useEffect(() => {
@@ -201,10 +203,10 @@ export default function DashboardPage() {
   if (authLoading) {
     // Show loading state while authentication is being resolved
     return (
-      <div className="min-h-[60vh] flex items-center justify-center px-4">
+      <div className="dashboard-page min-h-[60vh] flex items-center justify-center px-4" aria-busy="true">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-primary mx-auto mb-4"></div>
-          <p className="text-gray-500">Cargando...</p>
+          <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-2 border-[#d8c6a6] border-t-[#612e35]" />
+          <p className="text-sm text-gray-500">{t('loadingDashboard')}</p>
         </div>
       </div>
     )
@@ -212,11 +214,12 @@ export default function DashboardPage() {
 
   if (!session) {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center px-4">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">{t('loginRequired')}</h2>
-          <p className="text-gray-500 mb-6">{t('loginRequiredDesc')}</p>
-          <LocalLink href="/login" className="inline-block bg-brand-primary text-white px-8 py-3 rounded-lg font-bold hover:bg-brand-dark transition">{t('loginButton')}</LocalLink>
+      <div className="dashboard-page min-h-[60vh] flex items-center justify-center px-4">
+        <div className="dashboard-login-gate">
+          <p className="dashboard-page__eyebrow">{t('screenEyebrow')}</p>
+          <h2>{t('loginRequired')}</h2>
+          <p>{t('loginRequiredDesc')}</p>
+          <LocalLink href="/login?redirect=%2Fdashboard%3Ftab%3Dperfil">{t('loginButton')}</LocalLink>
         </div>
       </div>
     )
@@ -224,153 +227,198 @@ export default function DashboardPage() {
 
   const numPubsVendidas = data.productos.filter((p: any) => !p.activo && p.estado_moderacion !== 'rechazado').length
 
+  const isEnglish = pathname === '/en' || pathname.startsWith('/en/')
+  const numberFormat = new Intl.NumberFormat(isEnglish ? 'en-US' : 'es-VE')
+  const averageViews = data.productos.length ? Math.round(data.visitasTotales / data.productos.length) : 0
+  const promotedCount = data.productos.filter((p: any) => p.boosteado_en || (p.destacado && p.destacado_hasta > new Date().toISOString())).length
+  const profileName = data.nombre || user?.user_metadata?.full_name || user?.email?.split('@')[0] || ''
+  const tabs = [
+    { id: 'resumen', label: t('tabSummary'), icon: BarChart3 },
+    { id: 'productos', label: t('tabListings'), icon: Package },
+    { id: 'mensajes', label: t('tabMessages'), icon: MessageSquare },
+    { id: 'creditos', label: t('tabCredits'), icon: CreditCard },
+    { id: 'favoritos', label: t('tabFavorites'), icon: Heart },
+    { id: 'verificacion', label: t('tabVerification'), icon: ShieldCheck },
+    { id: 'reputacion', label: t('tabReputation'), icon: Star },
+    { id: 'perfil', label: t('tabProfile'), icon: Settings },
+  ]
+
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      {/* Toast */}
-      {data.toast && (
-        <div className="fixed top-4 right-4 z-50 bg-gray-900 text-white px-6 py-3 rounded-xl shadow-2xl text-sm font-medium animate-bounce max-w-xs">
-          {data.toast}
-        </div>
-      )}
+    <div className="dashboard-page">
+      <div className="dashboard-page__inner">
+        {data.toast && (
+          <div className="fixed top-4 right-4 z-50 max-w-xs rounded-sm bg-[#382a2a] px-5 py-3 text-sm font-medium text-white shadow-xl" role="status">
+            {data.toast}
+          </div>
+        )}
 
-      {/* Modals */}
-      {boostTarget && (
-        <BoostModal
-          titulo={boostTarget.titulo}
-          onClose={() => setBoostTarget(null)}
-          onBoost={() => handleBoost(boostTarget.productId)}
-        />
-      )}
-      {destacadoTarget && (
-        <DestacadoModal
-          titulo={destacadoTarget.titulo}
-          creditos={data.creditos}
-          onClose={() => setDestacadoTarget(null)}
-          onDestacar={(h) => handleDestacar(destacadoTarget.productId, h)}
-        />
-      )}
-      {cambiarPw && (
-        <PasswordModal user={user} setToast={data.setToast} onClose={() => setCambiarPw(false)} />
-      )}
+        {boostTarget && (
+          <BoostModal
+            titulo={boostTarget.titulo}
+            onClose={() => setBoostTarget(null)}
+            onBoost={() => handleBoost(boostTarget.productId)}
+          />
+        )}
+        {destacadoTarget && (
+          <DestacadoModal
+            titulo={destacadoTarget.titulo}
+            creditos={data.creditos}
+            onClose={() => setDestacadoTarget(null)}
+            onDestacar={(h) => handleDestacar(destacadoTarget.productId, h)}
+          />
+        )}
+        {cambiarPw && <PasswordModal user={user} setToast={data.setToast} onClose={() => setCambiarPw(false)} />}
 
-      {/* Header */}
-      <DashboardHeader
-        user={user}
-        nombre={data.nombre} setNombre={data.setNombre}
-        telefono={data.telefono} setTelefono={data.setTelefono}
-        estado={data.estado} setEstado={data.setEstado}
-        ciudad={data.ciudad} setCiudad={data.setCiudad}
-        fotoUrl={data.fotoUrl} setFotoUrl={data.setFotoUrl}
-        verificado={data.verificado}
-        nivelConfianza={data.nivelConfianza}
-        resenasCount={data.resenas.length}
-        promedioResenas={data.promedioResenas}
-        setToast={data.setToast}
-        setGuardando={setGuardandoPerfil}
-        onPassword={() => setCambiarPw(true)}
-        onLogout={handleLogout}
-        onFotoChange={handleFoto}
-      />
+        <header className="dashboard-page__header">
+          <div>
+            <p className="dashboard-page__eyebrow">{t('screenEyebrow')}</p>
+            <h1>{t('screenTitle')}</h1>
+            <p>{profileName ? t('screenIntroNamed', { name: profileName }) : t('screenIntro')}</p>
+          </div>
+          <div className="dashboard-page__header-actions">
+            <LocalLink href="/publicar-inmueble">{t('publishPropertyAction')}</LocalLink>
+            <button
+              type="button"
+              onClick={() => setActiveTab('perfil')}
+              aria-label={t('tabProfile')}
+            >
+              {t('tabProfile')}
+            </button>
+          </div>
+        </header>
 
-      {/* Resumen */}
-      <div className="bg-gradient-to-r from-brand-primary to-blue-800 rounded-xl p-5 text-white mb-6">
-        <h3 className="font-bold text-lg mb-3 flex items-center gap-2">{t('performance')}</h3>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
-          <div>
-            <p className="text-2xl font-black">{data.visitasTotales}</p>
-            <p className="text-xs text-blue-200">{t('totalViews')}</p>
-          </div>
-          <div>
-            <p className="text-2xl font-black">{data.productos.length ? Math.round(data.visitasTotales / data.productos.length) : 0}</p>
-            <p className="text-xs text-blue-200">{t('avgPerProduct')}</p>
-          </div>
-          <div>
-            <p className="text-2xl font-black">{data.pubCount}</p>
-            <p className="text-xs text-blue-200">{t('activeProducts')}</p>
-          </div>
-          <div>
-            <p className="text-2xl font-black">{data.productos.filter((p: any) => p.boosteado_en || (p.destacado && p.destacado_hasta > new Date().toISOString())).length}</p>
-            <p className="text-xs text-blue-200">{t('promotedNow')}</p>
-          </div>
-          <div>
-            <p className="text-2xl font-black">{data.favoritosCount}</p>
-            <p className="text-xs text-blue-200">{t('favorites')}</p>
-          </div>
-          <div>
-            <p className="text-2xl font-black">{data.creditos}</p>
-            <p className="text-xs text-blue-200">{t('creditsLabel')}</p>
-          </div>
-        </div>
-        <div className="mt-4 pt-4 border-t border-white/20">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex items-center gap-2 text-sm">
-              <span>{t('freeCredit')}</span>
+        <section className="dashboard-summary" aria-labelledby="dashboard-summary-title">
+          <div className="dashboard-summary__intro">
+            <div>
+              <p>{t('performanceEyebrow')}</p>
+              <h2 id="dashboard-summary-title">{t('performanceTitle')}</h2>
             </div>
-            <div className="flex items-center gap-2 text-sm">
+          </div>
+          <div className="dashboard-summary__grid">
+            <div className="dashboard-summary__metric"><strong>{numberFormat.format(data.visitasTotales)}</strong><span>{t('totalViews')}</span></div>
+            <div className="dashboard-summary__metric"><strong>{numberFormat.format(averageViews)}</strong><span>{t('avgPerProperty')}</span></div>
+            <div className="dashboard-summary__metric"><strong>{numberFormat.format(data.pubCount)}</strong><span>{t('activeProperties')}</span></div>
+            <div className="dashboard-summary__metric"><strong>{numberFormat.format(promotedCount)}</strong><span>{t('promotedNow')}</span></div>
+            <div className="dashboard-summary__metric"><strong>{numberFormat.format(data.favoritosCount)}</strong><span>{t('savedProperties')}</span></div>
+            <div className="dashboard-summary__metric"><strong>{numberFormat.format(data.creditos)}</strong><span>{t('creditsLabel')}</span></div>
+          </div>
+          <div className="dashboard-summary__foot">
+            <span>{t('freeCredit')}</span>
+            <div className="dashboard-summary__progress">
               <span>{t('pubProgress', { count: data.pubCount })}</span>
-              <div className="w-24 bg-white/30 rounded-full h-1.5">
-                <div className="bg-brand-accent h-1.5 rounded-full transition-all" style={{ width: `${Math.min((data.pubCount / 10) * 100, 100)}%` }} />
+              <div className="dashboard-summary__progress-track" aria-hidden="true">
+                <span style={{ width: `${Math.min((data.pubCount / 10) * 100, 100)}%` }} />
               </div>
             </div>
           </div>
-        </div>
-      </div>
+        </section>
 
-      {/* Tabs */}
-      <div className="flex gap-1 overflow-x-auto hide-scrollbar mb-6 bg-gray-100 p-1 rounded-xl">
-        {[
-          { id: 'resumen', label: t('tabSummary'), icon: BarChart3 },
-          { id: 'productos', label: t('tabListings'), icon: Package },
-          { id: 'mensajes', label: t('tabMessages'), icon: MessageSquare },
-          { id: 'creditos', label: t('tabCredits'), icon: CreditCard },
-          { id: 'favoritos', label: t('tabFavorites'), icon: Heart },
-          { id: 'verificacion', label: t('tabVerification'), icon: ShieldCheck },
-          { id: 'reputacion', label: t('tabReputation'), icon: Star },
-        ].map((item) => (
-          <button
-            key={item.id}
-            onClick={() => setActiveTab(item.id)}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition whitespace-nowrap ${
-              activeTab === item.id ? 'bg-brand-primary text-white shadow-sm' : 'text-gray-600 hover:bg-white/50'
-            }`}
-          >
-            <item.icon size={16} />
-            {item.label}
-          </button>
-        ))}
-      </div>
+        <nav className="dashboard-tabs" role="tablist" aria-label={t('tabsLabel')}>
+          {tabs.map((item) => {
+            const Icon = item.icon
+            const selected = activeTab === item.id
+            return (
+              <button
+                key={item.id}
+                id={`dashboard-tab-${item.id}`}
+                type="button"
+                role="tab"
+                aria-selected={selected}
+                aria-controls="dashboard-panel"
+                tabIndex={selected ? 0 : -1}
+                onClick={() => setActiveTab(item.id)}
+                onKeyDown={(event) => {
+                  if (!['ArrowRight', 'ArrowLeft', 'Home', 'End'].includes(event.key)) return
+                  event.preventDefault()
+                  const currentIndex = tabs.findIndex((tab) => tab.id === item.id)
+                  const nextIndex = event.key === 'Home'
+                    ? 0
+                    : event.key === 'End'
+                      ? tabs.length - 1
+                      : (currentIndex + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length
+                  const nextTab = tabs[nextIndex]
+                  setActiveTab(nextTab.id)
+                  document.getElementById(`dashboard-tab-${nextTab.id}`)?.focus()
+                }}
+              >
+                <Icon size={16} aria-hidden="true" />
+                {item.label}
+              </button>
+            )
+          })}
+        </nav>
 
-      {/* Tab Content */}
-      {activeTab === 'resumen' && <TabResumen userId={user!.id} />}
-      {activeTab === 'productos' && (
-        <Suspense fallback={<div className="p-12 text-center text-gray-400">{t('loadingListings')}</div>}>
-          <TabProductos
-            productos={data.productos}
-            onBoost={setBoostTarget}
-            onDestacar={setDestacadoTarget}
-            userId={user?.id ?? ''}
-          />
-        </Suspense>
-      )}
-      {activeTab === 'mensajes' && <TabMensajes />}
-      {activeTab === 'creditos' && (
-        <TabCreditos creditos={data.creditos} tasaBs={tasaBs} refreshCreditos={data.refreshAll} />
-      )}
-      {activeTab === 'favoritos' && <TabFavoritos favoritos={data.favoritos} />}
-      {activeTab === 'verificacion' && <SolicitarVerificacion />}
-      {activeTab === 'reputacion' && (
-        <TabReputacion
-          verificado={data.verificado}
-          nivelConfianza={data.nivelConfianza}
-          badgesAuto={data.badgesAuto}
-          resenas={data.resenas}
-          promedioResenas={data.promedioResenas}
-          numPubsActivas={data.pubCount}
-          numPubsVendidas={numPubsVendidas}
-          creadoEn={data.creadoEn}
-          ultimaActividad={data.ultimaActividad}
-        />
-      )}
+        <section
+          id="dashboard-panel"
+          className="dashboard-tab-panel"
+          role="tabpanel"
+          aria-labelledby={`dashboard-tab-${activeTab}`}
+          tabIndex={0}
+        >
+          {activeTab === 'resumen' && <TabResumen userId={user!.id} />}
+          {activeTab === 'productos' && (
+            <Suspense fallback={<div className="dashboard-panel p-10 text-center text-sm text-gray-400">{t('loadingListings')}</div>}>
+              <TabProductos
+                productos={data.productos}
+                onBoost={setBoostTarget}
+                onDestacar={setDestacadoTarget}
+                userId={user?.id ?? ''}
+              />
+            </Suspense>
+          )}
+          {activeTab === 'mensajes' && <TabMensajes />}
+          {activeTab === 'creditos' && (
+            <TabCreditos creditos={data.creditos} tasaBs={tasaBs} refreshCreditos={data.refreshAll} />
+          )}
+          {activeTab === 'favoritos' && <TabFavoritos favoritos={data.favoritos} />}
+          {activeTab === 'verificacion' && <SolicitarVerificacion />}
+          {activeTab === 'reputacion' && (
+            <TabReputacion
+              verificado={data.verificado}
+              nivelConfianza={data.nivelConfianza}
+              badgesAuto={data.badgesAuto}
+              resenas={data.resenas}
+              promedioResenas={data.promedioResenas}
+              numPubsActivas={data.pubCount}
+              numPubsVendidas={numPubsVendidas}
+              creadoEn={data.creadoEn}
+              ultimaActividad={data.ultimaActividad}
+            />
+          )}
+          {activeTab === 'perfil' && (
+            <div className="dashboard-profile-settings">
+              <div className="dashboard-profile-settings__intro">
+                <h2>{t('profileSettingsTitle')}</h2>
+                <p>{t('profileSettingsDescription')}</p>
+              </div>
+              <DashboardHeader
+                user={user}
+                nombre={data.nombre} setNombre={data.setNombre}
+                telefono={data.telefono} setTelefono={data.setTelefono}
+                estado={data.estado} setEstado={data.setEstado}
+                ciudad={data.ciudad} setCiudad={data.setCiudad}
+                fotoUrl={data.fotoUrl} setFotoUrl={data.setFotoUrl}
+                verificado={data.verificado}
+                nivelConfianza={data.nivelConfianza}
+                resenasCount={data.resenas.length}
+                promedioResenas={data.promedioResenas}
+                setToast={data.setToast}
+                setGuardando={setGuardandoPerfil}
+                onPassword={() => setCambiarPw(true)}
+                onLogout={handleLogout}
+                onFotoChange={handleFoto}
+              />
+              <div className="dashboard-profile-settings__public">
+                <div>
+                  <strong>{t('publicProfileTitle')}</strong>
+                  <span>{t('publicProfileDescription')}</span>
+                </div>
+                <LocalLink href={`/vendedor/${user!.id}`}>{t('viewPublicProfile')} →</LocalLink>
+              </div>
+            </div>
+          )}
+        </section>
+      </div>
     </div>
   )
 }

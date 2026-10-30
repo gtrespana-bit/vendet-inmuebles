@@ -45,7 +45,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   
   if (!ciudadSEO) {
     return {
-      title: 'Categoría no encontrada | VendeT Inmuebles',
+      title: 'Categoría no encontrada | Venezuela Inmuebles',
       description: 'La ciudad o categoría solicitada no existe.',
     }
   }
@@ -53,8 +53,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const cityName = ciudadSEO.nombre
   const stateName = ciudadSEO.estado
   
-  const title = `${cat.nombre} en ${cityName}, ${stateName} | Clasificados VendeT Inmuebles`
-  const description = `Compra y vende ${cat.descripcion.toLowerCase()} en ${cityName}, ${stateName}. Anuncios clasificados gratis. Publica sin costo en VendeT Inmuebles.`
+  const title = `${cat.nombre} en ${cityName}, ${stateName} | Clasificados Venezuela Inmuebles`
+  const description = `Compra y vende ${cat.descripcion.toLowerCase()} en ${cityName}, ${stateName}. Anuncios clasificados gratis. Publica sin costo en Venezuela Inmuebles.`
   
   const keywords = [
     `${cat.nombre.toLowerCase()} ${cityName}`,

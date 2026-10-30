@@ -120,11 +120,11 @@ export async function getProperties(filters: PropertyFilter = {}): Promise<{
   }
   
   if (state_id) {
-    query = query.eq('estado', state_id);
+    query = query.eq('ubicacion_estado_id', state_id);
   }
   
   if (city_id) {
-    query = query.eq('ciudad', city_id);
+    query = query.eq('ubicacion_ciudad_id', city_id);
   }
   
   if (min_price !== undefined) {

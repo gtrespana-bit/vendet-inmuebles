@@ -1,96 +1,110 @@
-'use client';
+'use client'
 
-import { useState, useRef } from 'react';
-import LocalLink from './LocalLink';
-import Image from 'next/image';
-
-interface Producto {
-  id: string;
-  titulo: string;
-  precio_usd: number;
-  main_image_url: string | null;
-  ciudad: string | null;
-  estado: string | null;
-  creado_en: string;
-  subcategoria: string | null;
-  boosteado_en: string | null;
-  destacado: boolean;
-  destacado_hasta: string | null;
-  vendedor_verificado: boolean | null;
-  _isFeatured?: boolean;
-}
+import Image from 'next/image'
+import { usePathname } from 'next/navigation'
+import { ArrowUpRight, Bath, BedDouble, MapPin, Ruler } from 'lucide-react'
+import LocalLink from './LocalLink'
+import type { CatalogPropertyRecord } from '@/types/property'
 
 interface ProductCardLazyProps {
-  p: Producto;
-  t: (key: string) => string;
-  priority?: boolean;
+  p: CatalogPropertyRecord
+  t: (key: string) => string
+  priority?: boolean
 }
 
-const PLACEHOLDER_IMAGE = '/sinimagen.webp';
+const PLACEHOLDER_IMAGE = '/sinimagen.webp'
 
-const BLUR_DATA_URL = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAADAAQDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k='
+function localizedType(value: string | null | undefined, locale: string) {
+  if (!value) return ''
+  const key = value.toLocaleLowerCase('es').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  const types: Record<string, { es: string; en: string }> = {
+    casa: { es: 'Casa', en: 'House' },
+    apartamento: { es: 'Apartamento', en: 'Apartment' },
+    terreno: { es: 'Terreno', en: 'Land' },
+    local: { es: 'Local comercial', en: 'Commercial space' },
+    'local comercial': { es: 'Local comercial', en: 'Commercial space' },
+    oficina: { es: 'Oficina', en: 'Office' },
+    galpon: { es: 'Galpón', en: 'Warehouse' },
+    townhouse: { es: 'Townhouse', en: 'Townhouse' },
+    finca: { es: 'Finca', en: 'Farm' },
+    habitacion: { es: 'Habitación', en: 'Room' },
+    quinta: { es: 'Quinta', en: 'Country house' },
+    edificio: { es: 'Edificio', en: 'Building' },
+  }
+  return types[key]?.[locale === 'en' ? 'en' : 'es'] || value
+}
 
 export const ProductCardLazy = ({ p, t, priority = false }: ProductCardLazyProps) => {
-  // Empezar visible para SSR - el IntersectionObserver solo optimiza imágenes lazy
-  // pero el contenido del producto SIEMPRE se muestra
-  const [imageLoaded, setImageLoaded] = useState(false);
-
-  const isBoosted = p.boosteado_en != null;
-  // Usar flag pre-computado del servidor para evitar hydration mismatch
-  const isFeatured = p._isFeatured !== undefined
-    ? p._isFeatured
-    : !!(p.destacado && p.destacado_hasta && new Date(p.destacado_hasta) > new Date());
-  const isPromoted = isBoosted || isFeatured;
-
-  const imgUrl = p.main_image_url || PLACEHOLDER_IMAGE;
+  const pathname = usePathname()
+  const locale = pathname === '/en' || pathname.startsWith('/en/') ? 'en' : 'es'
+  const title = p.titulo || p.title || (locale === 'en' ? 'Property' : 'Inmueble')
+  const price = Number(p.precio_usd ?? p.precio ?? p.price ?? 0)
+  const currency = p.moneda || p.currency || 'USD'
+  const city = p.ciudad || p.city || ''
+  const state = p.estado || p.state || ''
+  const location = [city, state].filter(Boolean).join(', ') || 'Venezuela'
+  const operation = `${p.operacion_slug || p.operation_type || p.operacion_nombre || ''}`.toLowerCase()
+  const operationLabel = operation.includes('alquiler') || operation.includes('rent')
+    ? t('product.forRent')
+    : t('product.forSale')
+  const propertyType = localizedType(p.tipo_nombre || p.property_type || p.tipo_slug || p.subcategoria, locale)
+  const isFeatured = p._isFeatured ?? Boolean(p.destacado && p.destacado_hasta)
+  const isBoosted = Boolean(p.boosteado_en)
+  const imageUrl = p.main_image_url || p.imagen_portada || PLACEHOLDER_IMAGE
+  const bedrooms = p.habitaciones ?? p.bedrooms
+  const bathrooms = p.banos ?? p.bathrooms
+  const area = p.area_total ?? p.area_size
+  const formattedPrice = price > 0
+    ? new Intl.NumberFormat(locale === 'en' ? 'en-US' : 'es-VE', {
+        style: 'currency', currency, maximumFractionDigits: 0,
+      }).format(price)
+    : t('product.priceOnRequest')
 
   return (
-    <LocalLink 
-      href={`/inmueble/${p.id}`} 
-      className={`bg-white rounded-xl overflow-hidden transition-all duration-200 group block border ${isPromoted ? 'border-2 border-brand-accent shadow-md hover:shadow-xl hover:-translate-y-1' : 'border-gray-100 shadow-sm hover:shadow-lg hover:-translate-y-1 hover:border-gray-200'}`}
-    >
-      <div className="aspect-square bg-gray-100 relative overflow-hidden">
-        {isFeatured && (
-          <div className="absolute top-2 left-2 z-10 bg-brand-accent text-brand-primary text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
-            ⭐ {t('product.featured')}
+    <article className="property-card">
+      <LocalLink href={`/inmueble/${p.slug || p.id}`} className="property-card__link group" aria-label={`${title} · ${location}`}>
+        <div className="property-card__media">
+          <Image
+            src={imageUrl}
+            alt={title}
+            fill
+            sizes="(max-width: 640px) 92vw, (max-width: 1024px) 46vw, 31vw"
+            className="property-card__image"
+            priority={priority}
+            loading={priority ? 'eager' : 'lazy'}
+            fetchPriority={priority ? 'high' : 'auto'}
+            quality={78}
+            onError={(event) => {
+              const target = event.currentTarget
+              if (!target.src.includes(PLACEHOLDER_IMAGE)) target.src = PLACEHOLDER_IMAGE
+            }}
+          />
+          <div className="property-card__badges">
+            <span className="property-card__operation">{operationLabel}</span>
+            {isFeatured && <span className="property-card__featured">{t('product.featured')}</span>}
+            {isBoosted && !isFeatured && <span className="property-card__featured">{t('product.boost')}</span>}
           </div>
-        )}
-        {isBoosted && !isFeatured && (
-          <div className="absolute top-2 left-2 z-10 bg-green-700 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
-            ⚡ <span className="text-white">Boost</span>
+          <span className="property-card__arrow" aria-hidden="true"><ArrowUpRight size={18} /></span>
+        </div>
+
+        <div className="property-card__body">
+          <p className="property-card__location">
+            <MapPin size={13} aria-hidden="true" />
+            <span>{location}</span>
+            {propertyType && <><span className="property-card__dot">·</span><span>{propertyType}</span></>}
+          </p>
+          <h3 className="property-card__title">{title}</h3>
+          <div className="property-card__price-row">
+            <p className="property-card__price">{formattedPrice}</p>
+            {(p.vendedor_verificado || p.propietario_verificado) && <span className="property-card__verified">{t('product.verified')}</span>}
           </div>
-        )}
-        <Image
-          src={imgUrl}
-          alt={p.titulo}
-          width={300}
-          height={300}
-          sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 20vw"
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-          loading={priority ? 'eager' : 'lazy'}
-          decoding="async"
-          fetchPriority={priority ? 'high' : 'low'}
-          placeholder="blur"
-          blurDataURL={BLUR_DATA_URL}
-          onError={(e) => {
-            const target = e.target as HTMLImageElement;
-            if (!target.src.includes(PLACEHOLDER_IMAGE)) {
-              target.src = PLACEHOLDER_IMAGE;
-            }
-          }}
-        />
-      </div>
-      <div className="p-4">
-        <h3 className="font-semibold text-gray-900 truncate group-hover:text-brand-primary transition-colors">{p.titulo}</h3>
-        <p className="text-xl font-black text-brand-primary mt-1">${new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(Number(p.precio_usd || 0))}</p>
-        {p.vendedor_verificado && (
-          <div className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-full mt-1">
-            <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-            {t('product.verified')}
+          <div className="property-card__specs" aria-label={locale === 'en' ? 'Property details' : 'Características del inmueble'}>
+            {bedrooms != null && bedrooms > 0 && <span><BedDouble size={15} aria-hidden="true" />{bedrooms}</span>}
+            {bathrooms != null && bathrooms > 0 && <span><Bath size={15} aria-hidden="true" />{bathrooms}</span>}
+            {area != null && area > 0 && <span><Ruler size={15} aria-hidden="true" />{area} m²</span>}
           </div>
-        )}
-        <p className="text-xs text-gray-500 mt-1">{p.ciudad || p.estado || 'Venezuela'}</p>
-      </div>
-    </LocalLink>
-  );
-};
+        </div>
+      </LocalLink>
+    </article>
+  )
+}

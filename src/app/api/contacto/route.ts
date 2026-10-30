@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
           <strong>Mensaje:</strong><br>
           <div style="margin-top:8px;white-space:pre-wrap">${mensajeClean}</div>
         </div>
-        <p style="margin-top:24px;color:#999;font-size:12px">VendeT-Venezuela · ${new Date().toLocaleString('es-VE')}</p>
+        <p style="margin-top:24px;color:#999;font-size:12px">Venezuela Inmuebles · ${new Date().toLocaleString('es-VE')}</p>
       </div>
     `
 
@@ -109,8 +109,8 @@ export async function POST(req: NextRequest) {
     console.log('✅ SMTP conexión verificada')
 
     await transporter.sendMail({
-      from: process.env.SMTP_FROM || '"VendeT-Venezuela" <noreply@vendet.online>',
-      to: 'soporte@vendet.online',
+      from: process.env.SMTP_FROM || '"Venezuela Inmuebles" <noreply@venezuela-inmuebles.online>',
+      to: 'soporte@venezuela-inmuebles.online',
       replyTo: emailClean,
       subject: `📩 Contacto: ${asuntoClean}`,
       html,

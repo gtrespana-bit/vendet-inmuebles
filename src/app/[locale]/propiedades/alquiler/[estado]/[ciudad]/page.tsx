@@ -14,7 +14,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { locale, estado, ciudad } = await params
   
   return {
-    title: `Propiedades en ${ciudad}, ${estado} - VendeT Inmuebles`,
+    title: `Propiedades en ${ciudad}, ${estado} - Venezuela Inmuebles`,
     description: `Encuentra propiedades en alquiler en ${ciudad}, ${estado}. Casas, apartamentos, terrenos y más.`
   }
 }

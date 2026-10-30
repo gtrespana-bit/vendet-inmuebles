@@ -24,7 +24,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const estadoName = stateData?.name || estado
   
   return {
-    title: `Propiedades en venta en ${estadoName} - VendeT Inmuebles`,
+    title: `Propiedades en venta en ${estadoName} - Venezuela Inmuebles`,
     description: `Encuentra propiedades en venta en ${estadoName}. Casas, apartamentos, terrenos y más.`
   }
 }

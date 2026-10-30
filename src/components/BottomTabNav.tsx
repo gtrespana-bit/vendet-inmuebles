@@ -16,6 +16,7 @@ function isPWA(): boolean {
 
 export default function BottomTabNav() {
   const pathname = usePathname()
+  const normalizedPathname = pathname.replace(/^\/en(?=\/|$)/, '') || '/'
   const { t } = useLocalizedMessages()
   const [isPwaMode, setIsPwaMode] = useState(false)
 
@@ -25,8 +26,8 @@ export default function BottomTabNav() {
 
   const navItems = [
     { href: '/', icon: Home, label: t('bottomNav.home') },
-    { href: '/buscar', icon: Search, label: t('bottomNav.search') },
-    { href: '/publicar', icon: PlusCircle, label: t('bottomNav.publish'), highlight: true },
+    { href: '/catalogo', icon: Search, label: t('bottomNav.search') },
+    { href: '/publicar-inmueble', icon: PlusCircle, label: t('bottomNav.publish'), highlight: true },
     { href: '/chat', icon: MessageCircle, label: t('bottomNav.chat') },
     { href: '/dashboard', icon: User, label: t('bottomNav.profile') },
   ]
@@ -42,7 +43,7 @@ export default function BottomTabNav() {
       <div className="flex items-center justify-around h-16">
         {navItems.map((item) => {
           const Icon = item.icon
-          const isActive = pathname === item.href || (item.href === '/dashboard' && pathname === '/dashboard')
+          const isActive = normalizedPathname === item.href || (item.href !== '/' && normalizedPathname.startsWith(`${item.href}/`))
           return (
             <LocalLink
               key={item.href}

@@ -1,11 +1,16 @@
 import type { Metadata } from 'next'
-import { CheckCircle, Zap, Shield, MessageCircle, Eye, Camera, DollarSign, X } from 'lucide-react'
+import { CheckCircle, Shield, MessageCircle, Eye, Camera } from 'lucide-react'
 import LocalLink from '@/components/LocalLink'
 import { getTranslations } from 'next-intl/server'
 
-export const metadata: Metadata = {
-  title: '¿Cómo Funciona? — VendeT-Venezuela',
-  description: 'Publica gratis en VendeT en 4 pasos simples. Compra y vende en Venezuela sin comisiones.',
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale } = await params
+  return {
+    title: locale === 'en' ? 'How it works' : 'Cómo funciona',
+    description: locale === 'en'
+      ? 'Learn how to search for, list and evaluate properties on Venezuela Inmuebles.'
+      : 'Descubre cómo buscar, anunciar y evaluar inmuebles en Venezuela Inmuebles.',
+  }
 }
 
 export default async function ComoFuncionaPage() {
@@ -41,7 +46,7 @@ export default async function ComoFuncionaPage() {
     { pregunta: t('faq6q'), respuesta: t('faq6a') },
   ]
 
-  const vendetItems = ['vendet1','vendet2','vendet3','vendet4','vendet5'] as const
+  const platformItems = ['platform1','platform2','platform3','platform4','platform5'] as const
   const othersItems = ['others1','others2','others3','others4','others5'] as const
 
   return (
@@ -71,29 +76,40 @@ export default async function ComoFuncionaPage() {
           </div>
         </div>
 
-        <div className="bg-white border-t border-b border-gray-100 py-10 px-4">
-          <div className="max-w-3xl mx-auto">
-            <h2 className="text-2xl font-black text-gray-900 mb-6 text-center">{t('vsTitle')}</h2>
+        <section className="bg-[#f7f3ed] border-y border-[#e8dfd2] py-12 px-4">
+          <div className="max-w-4xl mx-auto">
+            <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#9a8053] mb-2">
+              {t('journeyEyebrow')}
+            </p>
+            <h2 className="text-2xl md:text-3xl font-normal text-[#342d28] mb-7 text-center font-serif">
+              {t('vsTitle')}
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-green-50 border border-green-200 rounded-xl p-6">
-                <h3 className="font-bold text-green-800 text-lg mb-3">✅ {t('vendetTitle')}</h3>
-                <ul className="space-y-2 text-sm text-green-700">
-                  {vendetItems.map(k => (
-                    <li key={k} className="flex items-center gap-2"><CheckCircle size={14} /> {t(k)}</li>
+              <article className="bg-[#fffdfa] border border-[#e8dfd2] p-6 md:p-7">
+                <h3 className="font-bold text-[#612e35] text-lg mb-4">{t('platformTitle')}</h3>
+                <ul className="space-y-3 text-sm text-[#61584e]">
+                  {platformItems.map(k => (
+                    <li key={k} className="flex items-start gap-2.5">
+                      <CheckCircle size={15} className="mt-0.5 shrink-0 text-[#65816a]" aria-hidden="true" />
+                      <span>{t(k)}</span>
+                    </li>
                   ))}
                 </ul>
-              </div>
-              <div className="bg-red-50 border border-red-200 rounded-xl p-6">
-                <h3 className="font-bold text-red-800 text-lg mb-3">❌ {t('othersTitle')}</h3>
-                <ul className="space-y-2 text-sm text-red-700">
+              </article>
+              <article className="bg-[#eee7dc] border border-[#e1d6c5] p-6 md:p-7">
+                <h3 className="font-bold text-[#5e503d] text-lg mb-4">{t('othersTitle')}</h3>
+                <ul className="space-y-3 text-sm text-[#61584e]">
                   {othersItems.map(k => (
-                    <li key={k} className="flex items-center gap-2"><X size={14} /> {t(k)}</li>
+                    <li key={k} className="flex items-start gap-2.5">
+                      <Shield size={15} className="mt-0.5 shrink-0 text-[#9a8053]" aria-hidden="true" />
+                      <span>{t(k)}</span>
+                    </li>
                   ))}
                 </ul>
-              </div>
+              </article>
             </div>
           </div>
-        </div>
+        </section>
 
         <div className="max-w-3xl mx-auto px-4 py-12">
           <h2 className="text-2xl font-black text-gray-900 mb-8 text-center">{t('faqTitle')}</h2>
@@ -112,7 +128,7 @@ export default async function ComoFuncionaPage() {
 
         <div className="bg-white border-t border-b border-gray-100 py-10 px-4">
           <div className="max-w-2xl mx-auto text-center flex flex-col sm:flex-row gap-4 justify-center">
-            <LocalLink href="/publicar" className="bg-brand-accent text-brand-primary px-8 py-3 rounded-lg font-bold hover:bg-accent/90 transition inline-block">
+            <LocalLink href="/publicar-inmueble" className="bg-brand-accent text-brand-primary px-8 py-3 rounded-lg font-bold hover:bg-accent/90 transition inline-block">
               {t('ctaPublish')}
             </LocalLink>
             <LocalLink href="/catalogo" className="bg-white border-2 border-brand-primary text-brand-primary px-8 py-3 rounded-lg font-bold hover:bg-brand-primary hover:text-white transition inline-block">

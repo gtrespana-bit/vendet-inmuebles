@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
 
     await notifyUser(auth.supabaseAdmin, userId, {
       title: verificado ? '✅ Perfil verificado' : '❌ Verificación revocada',
-      body: verificado ? 'Tu perfil ya está verificado en VendeT.' : 'Tu perfil ya no está verificado en VendeT.',
+      body: verificado ? 'Tu perfil ya está verificado en Venezuela Inmuebles.' : 'Tu perfil ya no está verificado en Venezuela Inmuebles.',
       tag: verificado ? 'verified' : 'verified-revoked',
       icon: '/icon-192.png',
       click_url: '/dashboard',

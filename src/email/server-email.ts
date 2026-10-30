@@ -21,7 +21,7 @@ async function enviar(fromName: string, email: string, subject: string, html: st
   }
   try {
     await getTransporter().sendMail({
-      from: process.env.SMTP_FROM || `"${fromName}" <noreply@vendet.online>`,
+      from: process.env.SMTP_FROM || `"${fromName}" <noreply@venezuela-inmuebles.online>`,
       to: email,
       subject,
       html,
@@ -49,7 +49,7 @@ export async function enviarEmailProducto(
   slug: string
 ) {
   const url = `${process.env.NEXT_PUBLIC_URL || 'https://venezuela-inmuebles.online'}/inmueble/${slug}`
-  return enviar('VendeT-Venezuela', email, '✅ Tu anuncio fue publicado', `
+  return enviar('Venezuela Inmuebles', email, '✅ Tu anuncio fue publicado', `
     <div style="font-family:sans-serif;max-width:500px;margin:0 auto">
       <h2 style="color:#1e3a8a">Hola ${nombre}!</h2>
       <p>Tu anuncio fue publicado exitosamente:</p>
@@ -58,7 +58,7 @@ export async function enviarEmailProducto(
         <p style="margin:8px 0 0;color:#1e3a8a;font-size:20px;font-weight:bold">${precio}</p>
       </div>
       <a href="${url}" style="display:inline-block;background:#1e3a8a;color:#fff;padding:12px 28px;text-decoration:none;border-radius:8px;font-weight:bold;margin-top:8px">Ver anuncio →</a>
-      <p style="color:#6b7280;font-size:12px;margin-top:28px">VendeT-Venezuela — Publica más, vende más</p>
+      <p style="color:#6b7280;font-size:12px;margin-top:28px">Venezuela Inmuebles — Publica más, vende más</p>
     </div>
   `)
 }
@@ -73,14 +73,14 @@ export async function enviarEmailMensaje(
   producto: string,
   mensajePreview: string
 ) {
-  return enviar('VendeT-Venezuela', email, `💬 ${nombreComprador} te escribió sobre "${producto}"`, `
+  return enviar('Venezuela Inmuebles', email, `💬 ${nombreComprador} te escribió sobre "${producto}"`, `
     <div style="font-family:sans-serif;max-width:500px;margin:0 auto">
       <h2 style="color:#1e3a8a">Hola ${nombreVendedor}!</h2>
       <p><strong>${nombreComprador}</strong> te envió un mensaje sobre:</p>
       <p style="font-weight:bold">${producto}</p>
       <div style="background:#f3f4f6;padding:16px;border-radius:10px;margin:16px 0;font-style:italic">"${mensajePreview}"</div>
       <a href="${process.env.NEXT_PUBLIC_URL || 'https://venezuela-inmuebles.online'}/dashboard?tab=mensajes" style="display:inline-block;background:#1e3a8a;color:#fff;padding:12px 28px;text-decoration:none;border-radius:8px;font-weight:bold">Responder →</a>
-      <p style="color:#6b7280;font-size:12px;margin-top:28px">VendeT-Venezuela</p>
+      <p style="color:#6b7280;font-size:12px;margin-top:28px">Venezuela Inmuebles</p>
     </div>
   `)
 }
@@ -94,7 +94,7 @@ export async function enviarEmailCreditos(
   cantidad: number,
   balanceTotal: number
 ) {
-  return enviar('VendeT-Venezuela', email, `✅ +${cantidad} créditos en tu cuenta`, `
+  return enviar('Venezuela Inmuebles', email, `✅ +${cantidad} créditos en tu cuenta`, `
     <div style="font-family:sans-serif;max-width:500px;margin:0 auto">
       <h2 style="color:#1e3a8a">Hola ${nombre}!</h2>
       <p>Se acreditaron <strong style="color:#1e3a8a;font-size:22px">${cantidad} créditos</strong> a tu cuenta.</p>
@@ -102,7 +102,7 @@ export async function enviarEmailCreditos(
         <p style="margin:0;color:#6b7280;font-size:12px">Balance total</p>
         <p style="margin:4px 0 0;font-size:28px;font-weight:bold;color:#1e3a8a">${balanceTotal}</p>
       </div>
-      <p style="color:#6b7280;font-size:12px;margin-top:28px">VendeT-Venezuela</p>
+      <p style="color:#6b7280;font-size:12px;margin-top:28px">Venezuela Inmuebles</p>
     </div>
   `)
 }
@@ -114,7 +114,7 @@ export async function enviarEmailVerificacion(
   email: string,
   nombre: string
 ) {
-  return enviar('VendeT-Venezuela', email, '🎉 Tu cuenta fue verificada!', `
+  return enviar('Venezuela Inmuebles', email, '🎉 Tu cuenta fue verificada!', `
     <div style="font-family:sans-serif;max-width:500px;margin:0 auto">
       <h2 style="color:#1e3a8a">Hola ${nombre}!</h2>
       <div style="text-align:center;padding:20px">
@@ -123,7 +123,7 @@ export async function enviarEmailVerificacion(
         <p>Ahora tienes el sello de verificación visible en todos tus anuncios. Los compradores confían más en vendedores verificados.</p>
       </div>
       <a href="${process.env.NEXT_PUBLIC_URL || 'https://venezuela-inmuebles.online'}/dashboard" style="display:inline-block;background:#1e3a8a;color:#fff;padding:12px 28px;text-decoration:none;border-radius:8px;font-weight:bold">Ir a tu perfil →</a>
-      <p style="color:#6b7280;font-size:12px;margin-top:28px">VendeT-Venezuela</p>
+      <p style="color:#6b7280;font-size:12px;margin-top:28px">Venezuela Inmuebles</p>
     </div>
   `)
 }
@@ -144,7 +144,7 @@ export async function enviarEmailNivel(
     'Diamante': '💎',
   }
   const emoji = nivelesEmoji[nivelNuevo] || '⭐'
-  return enviar('VendeT-Venezuela', email, `${emoji} Subiste de nivel: ${nivelNuevo}!`, `
+  return enviar('Venezuela Inmuebles', email, `${emoji} Subiste de nivel: ${nivelNuevo}!`, `
     <div style="font-family:sans-serif;max-width:500px;margin:0 auto">
       <h2 style="color:#1e3a8a">Hola ${nombre}!</h2>
       <div style="text-align:center;padding:20px">
@@ -153,7 +153,7 @@ export async function enviarEmailNivel(
         <p>Subiste de <strong>${nivelAnterior}</strong> a <strong>${nivelNuevo}</strong>!</p>
       </div>
       <a href="${process.env.NEXT_PUBLIC_URL || 'https://venezuela-inmuebles.online'}/dashboard?tab=perfil" style="display:inline-block;background:#1e3a8a;color:#fff;padding:12px 28px;text-decoration:none;border-radius:8px;font-weight:bold">Ver perfil →</a>
-      <p style="color:#6b7280;font-size:12px;margin-top:28px">VendeT-Venezuela</p>
+      <p style="color:#6b7280;font-size:12px;margin-top:28px">Venezuela Inmuebles</p>
     </div>
   `)
 }

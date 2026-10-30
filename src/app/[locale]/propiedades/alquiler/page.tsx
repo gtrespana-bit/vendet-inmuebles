@@ -14,7 +14,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const t = await getTranslations({ locale, namespace: 'properties' })
   
   return {
-    title: `Propiedades en Alquiler - VendeT Inmuebles`,
+    title: `Propiedades en Alquiler - Venezuela Inmuebles`,
     description: `Encuentra propiedades en alquiler. Casas, apartamentos, locales y más.`
   }
 }
