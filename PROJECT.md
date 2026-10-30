@@ -250,6 +250,30 @@
 - La demo pública usa `src/lib/demo/demo-listings.ts` cuando la base de datos no devuelve inmuebles y lo indica con la
   etiqueta «Datos de ejemplo».
 
+## Datos de demostración (50 fichas)
+
+El catálogo arranca con 50 inmuebles reales de mercado (no datos de ejemplo) en **Valencia**, **San Diego
+(Carabobo)** y **Caracas**, con venta y alquiler, precios dentro de los rangos de mercado 2026 y fotos reales
+de portales inmobiliarios venezolanos.
+
+- Generador: `scripts/seed_propiedades_demo.py`. Vuelve a producir las 50 portadas en
+  `public/propiedades/prop-01..50.jpg` y el SQL `supabase/seeds/2026-10-30_propiedades_demo.sql`
+  (`begin` → `insert into public.inmuebles` → portada en `public.inmueble_imagenes` → `commit`).
+  El script valida que haya 50 fichas y que ninguna portada se repita.
+- Cuenta dueña de todas las fichas: agencia **TuInmueble** (`tipo_cuenta = 'agencia'`,
+  `empresa_nombre = 'TuInmueble'`, perfil verificado, plan **agencia** = publicaciones ilimitadas y 20 créditos/mes).
+  El alta es reproducible con `supabase/seeds/2026-10-30_cuenta_agencia_tuinmueble.sql`, que crea el usuario
+  en `auth.users` + `auth.identities` (contraseña por variable `:'pw'`, nunca en el repositorio), la fila en
+  `public.agencias`, la membresía `admin` y la suscripción, y reasigna las 50 fichas
+  (`usuario_id`, `agencia_id`, `agente_asignado_id`).
+- Las fichas nacen con `activo = true`, `vendido = false` y `estado_moderacion = 'aprobado'`, así que aparecen
+  de inmediato en `vw_propiedades_publicas`, en el catálogo, en el mapa y en la portada. `slug`, `creado_en` y
+  `publicado_en` los genera la base de datos.
+- Cada ficha tiene una sola foto (portada); las galerías múltiples quedan pendientes hasta ampliar el banco de
+  imágenes con interiores propios.
+- Las portadas provienen de anuncios públicos de portales venezolanos y se usan como material de demostración:
+  hay que sustituirlas por fotos propias o con licencia antes de un lanzamiento comercial.
+
 ## Notas de Diseño
 - BottomTabNav: siempre visible, no remover
 - Colores: brand-primary `#16294B`, accent `#B08542` (azul noche + latón)
