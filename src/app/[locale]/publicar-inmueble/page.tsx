@@ -7,14 +7,105 @@ import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '@/lib/supabase';
+import { getSupabaseAuthHeaders } from '@/lib/supabase-auth-headers';
 import { ESTADOS, MUNICIPIOS_POR_ESTADO } from '@/lib/ubicaciones';
 import LocationPicker from '@/components/map/LocationPicker';
 import { resolveListingGeo } from '@/lib/geo/venezuela';
+import { Sparkles, Loader2 } from 'lucide-react';
 
 interface ImagePreview {
   file: File;
   preview: string;
   id: string;
+  score?: number; // 0-100 calidad estimada de la foto
+}
+
+// Catálogo alineado con public.tipos_inmueble (seed 001)
+const TIPOS_PROPIEDAD = [
+  { slug: 'casa', key: 'typeHouse' },
+  { slug: 'apartamento', key: 'typeApartment' },
+  { slug: 'townhouse', key: 'typeTownhouse' },
+  { slug: 'terreno', key: 'typeLand' },
+  { slug: 'local-comercial', key: 'typeCommercial' },
+  { slug: 'oficina', key: 'typeOffice' },
+  { slug: 'galpon', key: 'typeWarehouse' },
+  { slug: 'habitacion', key: 'typeRoom' },
+  { slug: 'finca', key: 'typeFarm' },
+  { slug: 'edificio', key: 'typeBuilding' },
+] as const;
+
+const CONDICIONES = [
+  { value: 'Nuevo', key: 'conditionNew' },
+  { value: 'Usado - buen estado', key: 'conditionGood' },
+  { value: 'Para remodelar', key: 'conditionRenovate' },
+] as const;
+
+const AMENIDADES = [
+  'Gas doméstico',
+  'Aire acondicionado',
+  'Ventiladores',
+  'Generador eléctrico',
+  'Piscina',
+  'Ascensor',
+  'Jardín',
+  'Balcón o terraza',
+  'Cisterna',
+  'Seguridad 24 horas',
+] as const;
+
+/**
+ * Estimación local y gratuita de la calidad de una foto (sin IA ni APIs de pago):
+ * resolución, brillo y contraste. Da una puntuación 0-100 y sugerencias.
+ */
+async function scorePhoto(file: File): Promise<{ score: number; tips: string[] }> {
+  const tips: string[] = [];
+  let score = 70;
+
+  try {
+    const bitmap = await createImageBitmap(file);
+    const w = bitmap.width;
+    const h = bitmap.height;
+
+    // Resolución
+    if (w >= 1600) score += 15;
+    else if (w >= 1200) score += 8;
+    else { score -= 15; tips.push('lowRes'); }
+
+    // Orientación horizontal preferida para portadas
+    if (w > h) score += 5;
+    else tips.push('preferLandscape');
+
+    // Brillo y contraste con canvas
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      const sw = Math.min(w, 320);
+      const sh = Math.max(1, Math.round((h / w) * sw));
+      canvas.width = sw;
+      canvas.height = sh;
+      ctx.drawImage(bitmap, 0, 0, sw, sh);
+      const { data } = ctx.getImageData(0, 0, sw, sh);
+      let sum = 0;
+      let sumSq = 0;
+      const n = data.length / 4;
+      for (let i = 0; i < data.length; i += 4) {
+        const lum = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+        sum += lum;
+        sumSq += lum * lum;
+      }
+      const mean = sum / n;
+      const std = Math.sqrt(Math.max(0, sumSq / n - mean * mean));
+      if (mean < 55) { score -= 12; tips.push('tooDark'); }
+      else if (mean > 205) { score -= 10; tips.push('tooBright'); }
+      else score += 5;
+      if (std < 28) { score -= 8; tips.push('lowContrast'); }
+    }
+    bitmap.close?.();
+  } catch {
+    // Si no podemos analizarla, dejamos la puntuación base
+  }
+
+  return { score: Math.max(10, Math.min(100, Math.round(score))), tips };
 }
 
 export default function PublicarInmueblePage() {
@@ -23,49 +114,78 @@ export default function PublicarInmueblePage() {
   const locale = pathname === '/en' || pathname.startsWith('/en/') ? 'en' : 'es';
   const tLanding = useTranslations('landing');
   const tPublish = useTranslations('publishProperty');
-  const { user, loading: authLoading, session } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [maxFotos, setMaxFotos] = useState(8);
-  const [loadingPlan, setLoadingPlan] = useState(true);
   const [planLimits, setPlanLimits] = useState<any>(null);
 
   useEffect(() => {
     if (!user) return;
-    fetch('/api/user/plan')
-      .then(r => r.json())
-      .then(d => {
-        if (d.limits) {
+    let cancelled = false;
+    (async () => {
+      try {
+        const headers = await getSupabaseAuthHeaders();
+        const r = await fetch('/api/user/plan', { headers });
+        if (!r.ok) throw new Error('plan');
+        const d = await r.json();
+        if (!cancelled && d.limits) {
           setMaxFotos(d.limits.maxFotos);
           setPlanLimits(d);
         }
-        setLoadingPlan(false);
-      })
-      .catch(() => setLoadingPlan(false));
+      } catch {
+        // Sin plan info seguimos con el mínimo (8 fotos)
+      } finally {
+        if (!cancelled) { /* loading finished */ }
+      }
+    })();
+    return () => { cancelled = true; };
   }, [user]);
 
   const [loading, setLoading] = useState(false);
+  const [subiendoFotos, setSubiendoFotos] = useState(0); // 0 = no subiendo
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  
-  // Estados del formulario
+
+  // Información básica
   const [tipoOperacion, setTipoOperacion] = useState<'venta' | 'alquiler'>('venta');
+  const [tipoPropiedad, setTipoPropiedad] = useState('casa');
   const [titulo, setTitulo] = useState('');
   const [descripcion, setDescripcion] = useState('');
-  const [precio, setPrecio] = useState('');
+  const [mejorandoIA, setMejorandoIA] = useState(false);
+
+  // Ubicación
   const [estado, setEstado] = useState('');
   const [ciudad, setCiudad] = useState('');
+  const [pin, setPin] = useState<{ lat: number; lng: number } | null>(null);
+
+  // Detalles
   const [habitaciones, setHabitaciones] = useState(1);
   const [banos, setBanos] = useState(1);
-  const [area, setArea] = useState('');
+  const [areaTerreno, setAreaTerreno] = useState('');
+  const [areaConstruida, setAreaConstruida] = useState('');
+  const [estacionamiento, setEstacionamiento] = useState(0);
+  const [condicion, setCondicion] = useState('');
+  const [amueblado, setAmueblado] = useState<'no' | 'parcial' | 'total'>('no');
+  const [electricidad, setElectricidad] = useState<'110' | '220' | 'ambos'>('110');
+  const [agua24h, setAgua24h] = useState(false);
+  const [amenidades, setAmenidades] = useState<string[]>([]);
+
+  // Precio
+  const [precio, setPrecio] = useState('');
+
+  // Imágenes
   const [imagenes, setImagenes] = useState<ImagePreview[]>([]);
-  const [pin, setPin] = useState<{ lat: number; lng: number } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const toggleAmenidad = (nombre: string) => {
+    setAmenidades(prev => prev.includes(nombre) ? prev.filter(a => a !== nombre) : [...prev, nombre]);
+  };
+
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     e.target.value = '';
     if (!files.length) return;
 
-    const validFiles = files.filter(file => file.type.startsWith('image/') && file.size <= 5 * 1024 * 1024);
+    const validFiles = files.filter(file => file.type.startsWith('image/') && file.size <= 8 * 1024 * 1024);
     const remaining = Math.max(0, maxFotos - imagenes.length);
     if (validFiles.length !== files.length) {
       setError(tPublish('fileTypeError'));
@@ -74,12 +194,19 @@ export default function PublicarInmueblePage() {
     } else {
       setError(null);
     }
-    const newImages = validFiles.slice(0, remaining).map(file => ({
+    const newImages: ImagePreview[] = validFiles.slice(0, remaining).map(file => ({
       file,
       preview: URL.createObjectURL(file),
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
     }));
     setImagenes(prev => [...prev, ...newImages]);
+
+    // Puntuación local de calidad (gratuita, sin APIs)
+    for (const img of newImages) {
+      scorePhoto(img.file).then(({ score }) => {
+        setImagenes(prev => prev.map(p => p.id === img.id ? { ...p, score } : p));
+      });
+    }
   };
 
   const removeImage = (id: string) => {
@@ -88,17 +215,74 @@ export default function PublicarInmueblePage() {
     setImagenes(prev => prev.filter(img => img.id !== id));
   };
 
+  // Reordenar fotos: la primera es la portada
+  const moveImage = (index: number, dir: -1 | 1) => {
+    setImagenes(prev => {
+      const next = [...prev];
+      const target = index + dir;
+      if (target < 0 || target >= next.length) return prev;
+      [next[index], next[target]] = [next[target], next[index]];
+      return next;
+    });
+  };
+
+  const dragIndexRef = useRef<number | null>(null);
+  const handleDragStart = (index: number) => { dragIndexRef.current = index; };
+  const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); };
+  const handleDrop = (index: number) => {
+    const from = dragIndexRef.current;
+    dragIndexRef.current = null;
+    if (from === null || from === index) return;
+    setImagenes(prev => {
+      const next = [...prev];
+      const [moved] = next.splice(from, 1);
+      next.splice(index, 0, moved);
+      return next;
+    });
+  };
+
+  // Descripción con IA (solo si GEMINI_API_KEY está configurada — plan gratuito de Gemini)
+  const mejorarDescripcion = async () => {
+    setMejorandoIA(true);
+    try {
+      const headers = await getSupabaseAuthHeaders();
+      const res = await fetch('/api/ai/mejorar-descripcion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...headers },
+        body: JSON.stringify({
+          descripcion,
+          titulo,
+          tipo: tPublish(tipoPropiedadToKey(tipoPropiedad)),
+          operacion: tipoOperacion === 'venta' ? 'venta' : 'alquiler',
+          ubicacion: [ciudad, estado].filter(Boolean).join(', '),
+          habitaciones,
+          banos,
+          areaConstruida: areaConstruida || null,
+          areaTerreno: areaTerreno || null,
+          amueblado,
+          amenidades,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'IA');
+      setDescripcion(data.descripcion);
+    } catch (err: any) {
+      setError(tPublish('aiUnavailable') + (err.message ? ` (${err.message})` : ''));
+      setTimeout(() => setError(null), 5000);
+    } finally {
+      setMejorandoIA(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
     try {
-      // Validaciones básicas
       if (!titulo || !descripcion || !precio || !estado || !ciudad) {
         throw new Error(tPublish('requiredError'));
       }
-
       if (imagenes.length === 0) {
         throw new Error(tPublish('needImageError'));
       }
@@ -110,66 +294,62 @@ export default function PublicarInmueblePage() {
       if (!session || session.user.id !== user.id) {
         throw new Error(tPublish('sessionExpiredError'));
       }
+      const headers = { Authorization: `Bearer ${session.access_token}` };
 
-      // Subir imágenes a Cloudflare R2
+      // Subir imágenes por el servidor (sin CORS de R2)
       const imageUrls: string[] = [];
-      for (const img of imagenes) {
+      for (let i = 0; i < imagenes.length; i++) {
+        const img = imagenes[i];
+        setSubiendoFotos(i + 1);
         const safeFileName = img.file.name.normalize('NFKD').replace(/[^a-zA-Z0-9._-]+/g, '_').slice(0, 100);
         const fileName = `${user.id}/inmuebles/${Date.now()}-${safeFileName}`;
-        
-        // Obtener presigned URL desde API
-        const presignedRes = await fetch('/api/r2-upload', {
+
+        const formData = new FormData();
+        formData.append('key', fileName);
+        formData.append('file', img.file);
+
+        const uploadRes = await fetch('/api/r2-upload', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({ 
-            key: fileName, 
-            contentType: img.file.type || 'image/jpeg'
-          }),
+          headers,
+          body: formData,
         });
-
-        if (!presignedRes.ok) {
-          throw new Error(tPublish('signUrlError'));
-        }
-
-        const { url: uploadUrl, publicUrl } = await presignedRes.json();
-
-        // Subir imagen directamente a R2 usando presigned URL
-        const uploadRes = await fetch(uploadUrl, {
-          method: 'PUT',
-          body: img.file,
-          headers: {
-            'Content-Type': img.file.type || 'image/jpeg',
-          },
-        });
-
         if (!uploadRes.ok) {
           throw new Error(tPublish('uploadError'));
         }
-
+        const { publicUrl } = await uploadRes.json();
         imageUrls.push(publicUrl);
       }
+      setSubiendoFotos(0);
+
+      // Características especiales → catálogo `caracteristicas`
+      const caracteristicas: string[] = [];
+      if (amueblado === 'total') caracteristicas.push('Amueblado');
+      if (amueblado === 'parcial') caracteristicas.push('Amueblado parcialmente');
+      if (electricidad === '110' || electricidad === 'ambos') caracteristicas.push('Electricidad 110V');
+      if (electricidad === '220' || electricidad === 'ambos') caracteristicas.push('Electricidad 220V');
+      if (agua24h) caracteristicas.push('Agua 24 horas');
+      caracteristicas.push(...amenidades);
 
       // Crear propiedad en Supabase
       const res = await fetch('/api/properties', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.access_token}`,
-        },
+        headers: { 'Content-Type': 'application/json', ...headers },
         body: JSON.stringify({
           userId: user.id,
           titulo,
           descripcion,
           precio: parseFloat(precio),
           tipo_operacion: tipoOperacion,
+          tipo_propiedad: tipoPropiedad,
           estado,
           ciudad,
           habitaciones,
           banos,
-          area: area ? parseFloat(area) : null,
+          area: areaTerreno ? parseFloat(areaTerreno) : null,
+          area_construida: areaConstruida ? parseFloat(areaConstruida) : null,
+          puestos_estacionamiento: estacionamiento,
+          condicion: condicion || null,
+          caracteristicas,
           imagenes: imageUrls,
           latitud: pin?.lat ?? null,
           longitud: pin?.lng ?? null,
@@ -182,9 +362,7 @@ export default function PublicarInmueblePage() {
       }
 
       const nuevaPropiedad = await res.json();
-      
       setSuccess(true);
-      // Redirigir a la página de detalle de la propiedad recién creada
       setTimeout(() => {
         router.push(`${locale === 'en' ? '/en' : ''}/inmueble/${nuevaPropiedad.id}`);
       }, 1500);
@@ -192,6 +370,7 @@ export default function PublicarInmueblePage() {
       setError(err.message || 'Error al publicar inmueble');
     } finally {
       setLoading(false);
+      setSubiendoFotos(0);
     }
   };
 
@@ -217,6 +396,9 @@ export default function PublicarInmueblePage() {
     );
   }
 
+  const inputClass = 'w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-accent focus:border-transparent bg-white';
+  const sectionTitle = 'text-lg font-heading font-normal text-gray-900 mb-3 mt-2';
+
   return (
     <div className="min-h-screen bg-[#F4F1E9] py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
@@ -224,6 +406,11 @@ export default function PublicarInmueblePage() {
           <p className="home-eyebrow">{tPublish('eyebrow')}</p>
           <h1 className="text-4xl md:text-5xl font-heading font-normal tracking-tight text-gray-900 mb-3">{tPublish('title')}</h1>
           <p className="max-w-2xl text-sm leading-6 text-gray-600">{tPublish('intro')}</p>
+          {planLimits && (
+            <p className="mt-3 text-xs text-gray-500">
+              {tPublish('planUsageNote', { plan: planLimits.plan, active: planLimits.activeCount, max: planLimits.limits?.maxAnuncios >= 999999 ? '∞' : String(planLimits.limits?.maxAnuncios ?? '?') })}
+            </p>
+          )}
         </header>
 
         {success && (
@@ -238,221 +425,371 @@ export default function PublicarInmueblePage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="listing-form p-6 md:p-8 space-y-6">
-          {/* Tipo de Operación */}
-          <div>
-            <p id="operation-label" className="block text-sm font-medium text-gray-700 mb-2">
-              {tPublish('operation')}
-            </p>
-            <div className="flex gap-4" role="group" aria-labelledby="operation-label">
-              <button
-                type="button"
-                aria-pressed={tipoOperacion === 'venta'}
-                onClick={() => setTipoOperacion('venta')}
-                className={`flex-1 py-3 px-4 rounded-lg border ${
-                  tipoOperacion === 'venta'
-                    ? 'bg-brand-primary text-white border-brand-primary'
-                    : 'bg-white text-gray-700 border-[#DCD6C6] hover:bg-[#F7F4EC]'
-                }`}
-              >
-                {tPublish('sale')}
-              </button>
-              <button
-                type="button"
-                aria-pressed={tipoOperacion === 'alquiler'}
-                onClick={() => setTipoOperacion('alquiler')}
-                className={`flex-1 py-3 px-4 rounded-lg border ${
-                  tipoOperacion === 'alquiler'
-                    ? 'bg-brand-primary text-white border-brand-primary'
-                    : 'bg-white text-gray-700 border-[#DCD6C6] hover:bg-[#F7F4EC]'
-                }`}
-              >
-                {tPublish('rent')}
-              </button>
+        <form onSubmit={handleSubmit} className="listing-form p-6 md:p-8 space-y-8">
+          {/* ============ 1. INFORMACIÓN BÁSICA ============ */}
+          <section aria-labelledby="sec-basica">
+            <p className="home-eyebrow">1 · {tPublish('sectionBasics')}</p>
+            <h2 id="sec-basica" className={sectionTitle}>{tPublish('sectionBasics')}</h2>
+
+            <div className="space-y-5">
+              {/* Operación */}
+              <div>
+                <p id="operation-label" className="block text-sm font-medium text-gray-700 mb-2">
+                  {tPublish('operation')}
+                </p>
+                <div className="flex gap-4" role="group" aria-labelledby="operation-label">
+                  <button
+                    type="button"
+                    aria-pressed={tipoOperacion === 'venta'}
+                    onClick={() => setTipoOperacion('venta')}
+                    className={`flex-1 py-3 px-4 rounded-lg border ${
+                      tipoOperacion === 'venta'
+                        ? 'bg-brand-primary text-white border-brand-primary'
+                        : 'bg-white text-gray-700 border-[#DCD6C6] hover:bg-[#F7F4EC]'
+                    }`}
+                  >
+                    {tPublish('sale')}
+                  </button>
+                  <button
+                    type="button"
+                    aria-pressed={tipoOperacion === 'alquiler'}
+                    onClick={() => setTipoOperacion('alquiler')}
+                    className={`flex-1 py-3 px-4 rounded-lg border ${
+                      tipoOperacion === 'alquiler'
+                        ? 'bg-brand-primary text-white border-brand-primary'
+                        : 'bg-white text-gray-700 border-[#DCD6C6] hover:bg-[#F7F4EC]'
+                    }`}
+                  >
+                    {tPublish('rent')}
+                  </button>
+                </div>
+              </div>
+
+              {/* Tipo de propiedad */}
+              <div>
+                <label htmlFor="tipo-propiedad" className="block text-sm font-medium text-gray-700 mb-2">
+                  {tPublish('propertyType')} *
+                </label>
+                <select
+                  id="tipo-propiedad"
+                  value={tipoPropiedad}
+                  onChange={(e) => setTipoPropiedad(e.target.value)}
+                  className={inputClass}
+                  required
+                >
+                  {TIPOS_PROPIEDAD.map(t => (
+                    <option key={t.slug} value={t.slug}>{tPublish(t.key)}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Título */}
+              <div>
+                <label htmlFor="titulo" className="block text-sm font-medium text-gray-700 mb-2">
+                  {tPublish('titleField')}
+                </label>
+                <input
+                  type="text"
+                  id="titulo"
+                  value={titulo}
+                  onChange={(e) => setTitulo(e.target.value)}
+                  className={inputClass}
+                  placeholder={tPublish('titlePlaceholder')}
+                  required
+                />
+              </div>
+
+              {/* Descripción + IA */}
+              <div>
+                <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
+                  <label htmlFor="descripcion" className="block text-sm font-medium text-gray-700">
+                    {tPublish('description')}
+                  </label>
+                  <button
+                    type="button"
+                    onClick={mejorarDescripcion}
+                    disabled={mejorandoIA}
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-brand-primary hover:bg-brand-accent/10 px-3 py-1.5 rounded-lg border border-brand-accent/40 transition disabled:opacity-50"
+                  >
+                    {mejorandoIA ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
+                    {tPublish('aiImprove')}
+                  </button>
+                </div>
+                <textarea
+                  id="descripcion"
+                  value={descripcion}
+                  onChange={(e) => setDescripcion(e.target.value)}
+                  rows={5}
+                  className={inputClass}
+                  placeholder={tPublish('descriptionPlaceholder')}
+                  required
+                />
+              </div>
             </div>
-          </div>
+          </section>
 
-          {/* Título */}
-          <div>
-            <label htmlFor="titulo" className="block text-sm font-medium text-gray-700 mb-2">
-              {tPublish('titleField')}
-            </label>
-            <input
-              type="text"
-              id="titulo"
-              value={titulo}
-              onChange={(e) => setTitulo(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-accent focus:border-transparent"
-              placeholder={tPublish('titlePlaceholder')}
-              required
-            />
-          </div>
+          {/* ============ 2. UBICACIÓN ============ */}
+          <section aria-labelledby="sec-ubicacion">
+            <p className="home-eyebrow">2 · {tPublish('sectionLocation')}</p>
+            <h2 id="sec-ubicacion" className={sectionTitle}>{tPublish('sectionLocation')}</h2>
 
-          {/* Descripción */}
-          <div>
-            <label htmlFor="descripcion" className="block text-sm font-medium text-gray-700 mb-2">
-              {tPublish('description')}
-            </label>
-            <textarea
-              id="descripcion"
-              value={descripcion}
-              onChange={(e) => setDescripcion(e.target.value)}
-              rows={4}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-accent focus:border-transparent"
-              placeholder={tPublish('descriptionPlaceholder')}
-              required
-            />
-          </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="estado" className="block text-sm font-medium text-gray-700 mb-2">
+                  {tPublish('state')}
+                </label>
+                <select
+                  id="estado"
+                  value={estado}
+                  onChange={(e) => {
+                    setEstado(e.target.value);
+                    setCiudad('');
+                  }}
+                  className={inputClass}
+                  required
+                >
+                  <option value="">{tPublish('selectState')}</option>
+                  {ESTADOS.map((est) => (
+                    <option key={est} value={est}>{est}</option>
+                  ))}
+                </select>
+              </div>
 
-          {/* Precio */}
-          <div>
-            <label htmlFor="precio" className="block text-sm font-medium text-gray-700 mb-2">
-              {tPublish('price')}
-            </label>
-            <input
-              type="number"
-              id="precio"
-              value={precio}
-              onChange={(e) => setPrecio(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-accent focus:border-transparent"
-              placeholder="0"
-              min="0"
-              step="0.01"
-              required
-            />
-          </div>
+              <div>
+                <label htmlFor="ciudad" className="block text-sm font-medium text-gray-700 mb-2">
+                  {tPublish('city')}
+                </label>
+                <select
+                  id="ciudad"
+                  value={ciudad}
+                  onChange={(e) => setCiudad(e.target.value)}
+                  className={inputClass}
+                  disabled={!estado}
+                  required
+                >
+                  <option value="">{tPublish('selectCity')}</option>
+                  {estado && MUNICIPIOS_POR_ESTADO[estado]?.map((mun) => (
+                    <option key={mun.nombre} value={mun.capital}>
+                      {mun.capital} ({mun.nombre})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
 
-          {/* Ubicación */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="estado" className="block text-sm font-medium text-gray-700 mb-2">
-                {tPublish('state')}
-              </label>
-              <select
-                id="estado"
-                value={estado}
-                onChange={(e) => {
-                  setEstado(e.target.value);
-                  setCiudad('');
+            {/* Mapa */}
+            <div className="mt-4">
+              <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  {tPublish('mapTitle')}
+                </label>
+                <span className="text-xs text-gray-500">{tPublish('mapOptional')}</span>
+              </div>
+              <LocationPicker
+                value={pin}
+                center={(() => {
+                  const geo = resolveListingGeo({ ciudad, estado });
+                  return geo.point ?? { lat: 8.6, lng: -66.2 };
+                })()}
+                onChange={setPin}
+                labels={{
+                  approximate: tPublish('mapApproximate'),
+                  exact: tPublish('mapExact'),
+                  viewListing: '',
+                  bedrooms: '',
+                  bathrooms: '',
+                  area: '',
+                  empty: '',
+                  zoomIn: '',
+                  zoomOut: '',
+                  resetView: '',
                 }}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-accent focus:border-transparent"
-                required
-              >
-                <option value="">{tPublish('selectState')}</option>
-                {ESTADOS.map((est) => (
-                  <option key={est} value={est}>{est}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label htmlFor="ciudad" className="block text-sm font-medium text-gray-700 mb-2">
-                {tPublish('city')}
-              </label>
-              <select
-                id="ciudad"
-                value={ciudad}
-                onChange={(e) => setCiudad(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-accent focus:border-transparent"
-                disabled={!estado}
-                required
-              >
-                <option value="">{tPublish('selectCity')}</option>
-                {estado && MUNICIPIOS_POR_ESTADO[estado]?.map((mun) => (
-                  <option key={mun.nombre} value={mun.capital}>
-                    {mun.capital} ({mun.nombre})
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* Ubicación exacta en el mapa (opcional) */}
-          <div>
-            <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
-              <label className="block text-sm font-medium text-gray-700">
-                {tPublish('mapTitle')}
-              </label>
-              <span className="text-xs text-gray-500">{tPublish('mapOptional')}</span>
-            </div>
-            <LocationPicker
-              value={pin}
-              center={(() => {
-                const geo = resolveListingGeo({ ciudad, estado });
-                return geo.point ?? { lat: 8.6, lng: -66.2 };
-              })()}
-              onChange={setPin}
-              labels={{
-                approximate: tPublish('mapApproximate'),
-                exact: tPublish('mapExact'),
-                viewListing: '',
-                bedrooms: '',
-                bathrooms: '',
-                area: '',
-                empty: '',
-                zoomIn: '',
-                zoomOut: '',
-                resetView: '',
-              }}
-              hint={tPublish('mapHint')}
-              clearLabel={tPublish('mapClear')}
-              emptyLabel={tPublish('mapEmpty')}
-              placeLabel={tPublish('mapPlace')}
-            />
-            <p className="mt-2 text-xs text-gray-500">{tPublish('mapDescription')}</p>
-          </div>
-
-          {/* Características */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label htmlFor="habitaciones" className="block text-sm font-medium text-gray-700 mb-2">
-                {tPublish('bedrooms')}
-              </label>
-              <input
-                type="number"
-                id="habitaciones"
-                value={habitaciones}
-                onChange={(e) => setHabitaciones(parseInt(e.target.value))}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-accent focus:border-transparent"
-                min="0"
+                hint={tPublish('mapHint')}
+                clearLabel={tPublish('mapClear')}
+                emptyLabel={tPublish('mapEmpty')}
+                placeLabel={tPublish('mapPlace')}
               />
+              <p className="mt-2 text-xs text-gray-500">{tPublish('mapDescription')}</p>
             </div>
+          </section>
 
-            <div>
-              <label htmlFor="banos" className="block text-sm font-medium text-gray-700 mb-2">
-                {tPublish('bathrooms')}
+          {/* ============ 3. DETALLES ============ */}
+          <section aria-labelledby="sec-detalles">
+            <p className="home-eyebrow">3 · {tPublish('sectionDetails')}</p>
+            <h2 id="sec-detalles" className={sectionTitle}>{tPublish('sectionDetails')}</h2>
+
+            <div className="space-y-5">
+              {/* Números básicos */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                  <label htmlFor="habitaciones" className="block text-sm font-medium text-gray-700 mb-2">
+                    {tPublish('bedrooms')}
+                  </label>
+                  <input
+                    type="number"
+                    id="habitaciones"
+                    value={habitaciones}
+                    onChange={(e) => setHabitaciones(parseInt(e.target.value))}
+                    className={inputClass}
+                    min="0"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="banos" className="block text-sm font-medium text-gray-700 mb-2">
+                    {tPublish('bathrooms')}
+                  </label>
+                  <input
+                    type="number"
+                    id="banos"
+                    value={banos}
+                    onChange={(e) => setBanos(parseInt(e.target.value))}
+                    className={inputClass}
+                    min="0"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="estacionamiento" className="block text-sm font-medium text-gray-700 mb-2">
+                    {tPublish('parking')}
+                  </label>
+                  <input
+                    type="number"
+                    id="estacionamiento"
+                    value={estacionamiento}
+                    onChange={(e) => setEstacionamiento(Math.max(0, parseInt(e.target.value) || 0))}
+                    className={inputClass}
+                    min="0"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="condicion" className="block text-sm font-medium text-gray-700 mb-2">
+                    {tPublish('condition')}
+                  </label>
+                  <select
+                    id="condicion"
+                    value={condicion}
+                    onChange={(e) => setCondicion(e.target.value)}
+                    className={inputClass}
+                  >
+                    <option value="">{tPublish('selectOptional')}</option>
+                    {CONDICIONES.map(c => (
+                      <option key={c.value} value={c.value}>{tPublish(c.key)}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Áreas */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="area-terreno" className="block text-sm font-medium text-gray-700 mb-2">
+                    {tPublish('landArea')} <span className="text-gray-400 font-normal">({tPublish('optional')})</span>
+                  </label>
+                  <input
+                    type="number"
+                    id="area-terreno"
+                    value={areaTerreno}
+                    onChange={(e) => setAreaTerreno(e.target.value)}
+                    className={inputClass}
+                    placeholder="m²"
+                    min="0"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="area-construida" className="block text-sm font-medium text-gray-700 mb-2">
+                    {tPublish('builtArea')} <span className="text-gray-400 font-normal">({tPublish('optional')})</span>
+                  </label>
+                  <input
+                    type="number"
+                    id="area-construida"
+                    value={areaConstruida}
+                    onChange={(e) => setAreaConstruida(e.target.value)}
+                    className={inputClass}
+                    placeholder="m²"
+                    min="0"
+                  />
+                </div>
+              </div>
+
+              {/* Amueblado */}
+              <div>
+                <p id="furnished-label" className="block text-sm font-medium text-gray-700 mb-2">{tPublish('furnished')}</p>
+                <div className="flex flex-wrap gap-2" role="group" aria-labelledby="furnished-label">
+                  {(['no', 'parcial', 'total'] as const).map(opt => (
+                    <button
+                      key={opt}
+                      type="button"
+                      aria-pressed={amueblado === opt}
+                      onClick={() => setAmueblado(opt)}
+                      className={`px-4 py-2.5 rounded-lg border text-sm font-medium transition ${
+                        amueblado === opt
+                          ? 'bg-brand-primary text-white border-brand-primary'
+                          : 'bg-white text-gray-700 border-[#DCD6C6] hover:bg-[#F7F4EC]'
+                      }`}
+                    >
+                      {tPublish(opt === 'no' ? 'furnishedNone' : opt === 'parcial' ? 'furnishedPartial' : 'furnishedFull')}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Electricidad */}
+              <div>
+                <p id="power-label" className="block text-sm font-medium text-gray-700 mb-2">{tPublish('electricity')}</p>
+                <div className="flex flex-wrap gap-2" role="group" aria-labelledby="power-label">
+                  {(['110', '220', 'ambos'] as const).map(opt => (
+                    <button
+                      key={opt}
+                      type="button"
+                      aria-pressed={electricidad === opt}
+                      onClick={() => setElectricidad(opt)}
+                      className={`px-4 py-2.5 rounded-lg border text-sm font-medium transition ${
+                        electricidad === opt
+                          ? 'bg-brand-primary text-white border-brand-primary'
+                          : 'bg-white text-gray-700 border-[#DCD6C6] hover:bg-[#F7F4EC]'
+                      }`}
+                    >
+                      {tPublish(opt === 'ambos' ? 'powerBoth' : `power${opt === '110' ? '110' : '220'}`)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Agua 24h */}
+              <label className="flex items-center gap-3 cursor-pointer w-fit">
+                <input
+                  type="checkbox"
+                  checked={agua24h}
+                  onChange={(e) => setAgua24h(e.target.checked)}
+                  className="w-5 h-5 rounded border-gray-300 text-brand-primary focus:ring-brand-accent"
+                />
+                <span className="text-sm font-medium text-gray-700">{tPublish('water24h')}</span>
               </label>
-              <input
-                type="number"
-                id="banos"
-                value={banos}
-                onChange={(e) => setBanos(parseInt(e.target.value))}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-accent focus:border-transparent"
-                min="0"
-              />
-            </div>
 
-            <div>
-              <label htmlFor="area" className="block text-sm font-medium text-gray-700 mb-2">
-                {tPublish('area')}
-              </label>
-              <input
-                type="number"
-                id="area"
-                value={area}
-                onChange={(e) => setArea(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-accent focus:border-transparent"
-                placeholder="0"
-                min="0"
-              />
+              {/* Amenidades */}
+              <div>
+                <p id="amenities-label" className="block text-sm font-medium text-gray-700 mb-2">{tPublish('amenities')}</p>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2" role="group" aria-labelledby="amenities-label">
+                  {AMENIDADES.map(nombre => (
+                    <label key={nombre} className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg border border-[#DCD6C6] bg-white hover:bg-[#F7F4EC] cursor-pointer text-sm text-gray-700">
+                      <input
+                        type="checkbox"
+                        checked={amenidades.includes(nombre)}
+                        onChange={() => toggleAmenidad(nombre)}
+                        className="w-4 h-4 rounded border-gray-300 text-brand-primary focus:ring-brand-accent"
+                      />
+                      {nombre}
+                    </label>
+                  ))}
+                </div>
+              </div>
             </div>
-          </div>
+          </section>
 
-          {/* Imágenes */}
-          <div>
-            <p id="images-label" className="block text-sm font-medium text-gray-700 mb-2">
-              {tPublish('images')}
-            </p>
+          {/* ============ 4. IMÁGENES ============ */}
+          <section aria-labelledby="sec-fotos">
+            <p className="home-eyebrow">4 · {tPublish('sectionPhotos')}</p>
+            <h2 id="sec-fotos" className={sectionTitle}>{tPublish('sectionPhotos')}</h2>
+
             <button
               type="button"
               aria-labelledby="images-label"
@@ -463,8 +800,8 @@ export default function PublicarInmueblePage() {
               <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
-              <p className="mt-1 text-sm text-gray-600">{tPublish('uploadPrompt')}</p>
-              <p id="images-help" className="text-xs text-gray-500">{tPublish('uploadLimit')}</p>
+              <p id="images-label" className="mt-1 text-sm text-gray-600">{tPublish('uploadPrompt')}</p>
+              <p id="images-help" className="text-xs text-gray-500">{tPublish('uploadLimitUpdated', { max: maxFotos })}</p>
             </button>
             <input
               id="listing-images"
@@ -476,11 +813,17 @@ export default function PublicarInmueblePage() {
               className="hidden"
             />
 
-            {/* Vista previa de imágenes */}
             {imagenes.length > 0 && (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-                {imagenes.map((img) => (
-                  <div key={img.id} className="relative group">
+                {imagenes.map((img, index) => (
+                  <div
+                    key={img.id}
+                    className="relative group cursor-grab active:cursor-grabbing"
+                    draggable
+                    onDragStart={() => handleDragStart(index)}
+                    onDragOver={handleDragOver}
+                    onDrop={() => handleDrop(index)}
+                  >
                     <Image
                       src={img.preview}
                       alt={tPublish('previewAlt')}
@@ -489,6 +832,44 @@ export default function PublicarInmueblePage() {
                       unoptimized
                       className="w-full h-32 object-cover rounded-lg"
                     />
+                    {index === 0 && (
+                      <span className="absolute bottom-1 left-1 bg-brand-primary text-white text-[9px] font-bold px-1.5 py-0.5 rounded">
+                        {tPublish('coverPhoto')}
+                      </span>
+                    )}
+                    {typeof img.score === 'number' && (
+                      <span
+                        title={tPublish('photoScoreTitle')}
+                        className={`absolute top-1 left-1 text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                          img.score >= 75 ? 'bg-emerald-100 text-emerald-700'
+                          : img.score >= 50 ? 'bg-amber-100 text-amber-700'
+                          : 'bg-red-100 text-red-700'
+                        }`}
+                      >
+                        📸 {img.score}
+                      </span>
+                    )}
+                    {/* Reordenar: flechas (funcionan también en móvil) */}
+                    <div className="absolute bottom-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        type="button"
+                        aria-label={tPublish('moveEarlier')}
+                        onClick={() => moveImage(index, -1)}
+                        disabled={index === 0}
+                        className="bg-black/60 text-white rounded p-1 disabled:opacity-30 hover:bg-black/80"
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M15 18l-6-6 6-6" /></svg>
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={tPublish('moveLater')}
+                        onClick={() => moveImage(index, 1)}
+                        disabled={index === imagenes.length - 1}
+                        className="bg-black/60 text-white rounded p-1 disabled:opacity-30 hover:bg-black/80"
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M9 6l6 6-6 6" /></svg>
+                      </button>
+                    </div>
                     <button
                       type="button"
                       aria-label={tPublish('removeImage')}
@@ -503,22 +884,54 @@ export default function PublicarInmueblePage() {
                 ))}
               </div>
             )}
-          </div>
+            {imagenes.length > 1 && (
+              <p className="mt-2 text-xs text-gray-500">{tPublish('reorderHint')}</p>
+            )}
+          </section>
+
+          {/* ============ 5. PRECIO ============ */}
+          <section aria-labelledby="sec-precio">
+            <p className="home-eyebrow">5 · {tPublish('sectionPrice')}</p>
+            <h2 id="sec-precio" className={sectionTitle}>{tPublish('sectionPrice')}</h2>
+            <div className="max-w-xs">
+              <label htmlFor="precio" className="block text-sm font-medium text-gray-700 mb-2">
+                {tPublish('price')}
+              </label>
+              <input
+                type="number"
+                id="precio"
+                value={precio}
+                onChange={(e) => setPrecio(e.target.value)}
+                className={inputClass}
+                placeholder="0"
+                min="0"
+                step="0.01"
+                required
+              />
+            </div>
+          </section>
 
           {/* Botón de envío */}
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || subiendoFotos > 0}
             className={`w-full py-3 px-4 rounded-lg text-white font-semibold ${
-              loading
+              loading || subiendoFotos > 0
                 ? 'bg-gray-400 cursor-not-allowed'
                 : 'bg-brand-primary hover:bg-brand-dark'
             }`}
           >
-            {loading ? tPublish('publishing') : tPublish('publishButton')}
+            {subiendoFotos > 0
+              ? tPublish('uploadingPhotos', { current: subiendoFotos, total: imagenes.length })
+              : loading ? tPublish('publishing') : tPublish('publishButton')}
           </button>
         </form>
       </div>
     </div>
   );
+}
+
+function tipoPropiedadToKey(slug: string): string {
+  const found = TIPOS_PROPIEDAD.find(t => t.slug === slug);
+  return found ? found.key : 'typeHouse';
 }

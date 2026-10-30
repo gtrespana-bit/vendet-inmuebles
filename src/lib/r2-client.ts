@@ -53,6 +53,27 @@ export async function getUploadPresignedUrl(
   return await getSignedUrl(client, command, { expiresIn })
 }
 
+/**
+ * Sube un objeto directamente desde el servidor (sin pasar por el navegador).
+ * Evita los problemas de CORS del bucket R2: el navegador sólo habla con
+ * nuestra API y el PUT a R2 ocurre aquí, en el servidor.
+ */
+export async function uploadObjectServer(
+  key: string,
+  body: Uint8Array | Buffer,
+  contentType: string = 'image/jpeg'
+): Promise<string> {
+  const client = getClient()
+  const sanitized = key.replace(/^\/+/, '')
+  await client.send(new PutObjectCommand({
+    Bucket: R2_BUCKET,
+    Key: sanitized,
+    Body: body,
+    ContentType: contentType,
+  }))
+  return getR2PublicUrl(sanitized)
+}
+
 /** Genera un presigned URL para eliminar un archivo de R2 */
 export async function getDeletePresignedUrl(
   key: string,
