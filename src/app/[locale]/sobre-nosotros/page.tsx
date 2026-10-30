@@ -79,7 +79,7 @@ export default async function SobreNosotrosPage() {
             <h2 className="text-2xl font-black text-gray-900 mb-3">{t('ctaTitle')}</h2>
             <p className="text-gray-600 mb-6">{t('ctaDesc')}</p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <LocalLink href="/register" className="bg-brand-accent text-brand-primary px-8 py-3 rounded-lg font-bold hover:bg-accent/90 transition inline-block">
+              <LocalLink href="/register" className="bg-brand-accent text-[var(--on-gold)] px-8 py-3 rounded-lg font-bold hover:bg-accent/90 transition inline-block">
                 {t('ctaRegister')}
               </LocalLink>
               <LocalLink href="/catalogo" className="bg-white border-2 border-brand-primary text-brand-primary px-8 py-3 rounded-lg font-bold hover:bg-brand-primary hover:text-white transition inline-block">

@@ -100,7 +100,7 @@ export default function PlanesPage() {
                 }`}
               >
                 {plan.badge && (
-                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-brand-accent text-white px-4 py-1 rounded-full text-sm font-bold shadow-sm">
+                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-brand-accent text-[var(--on-gold)] px-4 py-1 rounded-full text-sm font-bold shadow-sm">
                     {plan.badge}
                   </div>
                 )}
@@ -132,7 +132,7 @@ export default function PlanesPage() {
                 <ul className="space-y-3 mb-8 flex-grow">
                   {plan.features.map((feature, idx) => (
                     <li key={idx} className="flex items-start gap-3">
-                      <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <Check className="w-5 h-5 text-[var(--gold-text)] flex-shrink-0 mt-0.5" />
                       <span className="text-gray-700 text-sm">{feature}</span>
                     </li>
                   ))}
@@ -142,7 +142,7 @@ export default function PlanesPage() {
                   href="/registrarse"
                   className={`block w-full text-center py-3 rounded-lg font-medium transition-colors ${
                     plan.destacado
-                      ? 'bg-brand-accent hover:bg-[#b09050] text-white'
+                      ? 'bg-brand-accent hover:brightness-105 text-[var(--on-gold)]'
                       : plan.nombre === 'Agencia'
                       ? 'bg-brand-primary hover:bg-brand-dark text-white'
                       : 'bg-gray-100 hover:bg-gray-200 text-brand-dark'

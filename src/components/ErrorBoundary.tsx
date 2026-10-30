@@ -28,7 +28,7 @@ export const ErrorBoundary = ({ children }: ErrorBoundaryProps) => {
         <p className="mb-4 text-[#8a4b4d]">{t('loadingErrorDescription')}</p>
         <button
           onClick={() => window.location.reload()}
-          className="bg-[#0E3B33] px-4 py-2 font-semibold text-white transition hover:bg-[#0A2F29]"
+          className="bg-[var(--burgundy)] px-4 py-2 font-semibold text-white transition hover:bg-[var(--burgundy-dark)]"
         >
           {t('retry')}
         </button>

@@ -88,7 +88,7 @@ export default function TabResumen({ userId }: { userId: string }) {
 
   const number = new Intl.NumberFormat(locale === 'en' ? 'en-US' : 'es-VE')
   const cards = stats ? [
-    { label: t('activeListings'), value: number.format(stats.activos), icon: BarChart3, color: 'text-[#0E3B33]', bg: 'bg-[#f0e9df]' },
+    { label: t('activeListings'), value: number.format(stats.activos), icon: BarChart3, color: 'text-[var(--burgundy)]', bg: 'bg-[var(--paper-deep)]' },
     { label: t('totalVisits'), value: number.format(stats.totalVisitas), icon: Eye, color: 'text-[#795f3f]', bg: 'bg-[#f2ece2]' },
     { label: t('unreadMessages'), value: number.format(stats.mensajesNoLeidos), icon: MessageCircle, color: stats.mensajesNoLeidos > 0 ? 'text-[#9a524a]' : 'text-[#8a8076]', bg: stats.mensajesNoLeidos > 0 ? 'bg-[#f8e9e6]' : 'bg-[#f1ede7]' },
     { label: t('savedFavorites'), value: number.format(stats.favoritos), icon: TrendingUp, color: 'text-[#8b7046]', bg: 'bg-[#f2ece2]' },

@@ -1,10 +1,10 @@
 'use client'
 
-import Image from 'next/image'
 import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { ArrowUpRight, Globe, Menu, Search, X } from 'lucide-react'
 import LocalLink from '@/components/LocalLink'
+import { BrandMark } from '@/components/BrandMark'
 import { useAuth } from '@/components/AuthProvider'
 import { useLocalizedMessages } from '@/hooks/useLocalizedMessages'
 
@@ -32,7 +32,7 @@ export function Header() {
     <header className="site-header">
       <div className="site-header__inner">
         <LocalLink href="/" className="site-brand" aria-label="Venezuela Inmuebles, inicio">
-          <Image src="/brand-mark.svg" alt="" width={38} height={38} priority unoptimized />
+          <BrandMark size={38} />
           <span className="site-brand__name"><strong>Venezuela</strong><span>Inmuebles</span></span>
         </LocalLink>
 

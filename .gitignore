@@ -75,3 +75,4 @@ supabase/functions/**
 
 # Directorio de compilación aislado usado por los demos
 .next-dev/
+.next-build/

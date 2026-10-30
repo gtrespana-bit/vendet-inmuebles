@@ -55,7 +55,7 @@ export default async function LandingCiudad({ nombre, estado }: Props) {
             <LocalLink key={property.id} href={`/inmueble/${property.id}`} className="bg-white rounded-xl overflow-hidden shadow-sm border hover:shadow-lg transition group block">
               <div className="aspect-square bg-gray-100 relative overflow-hidden">
                 {property.destacado && new Date(property.destacado_hasta) > new Date() && (
-                  <div className="absolute top-2 left-2 z-10 bg-brand-accent text-brand-primary text-[10px] font-bold px-2 py-0.5 rounded-full">⭐ {t('featured')}</div>
+                  <div className="absolute top-2 left-2 z-10 bg-brand-accent text-[var(--on-gold)] text-[10px] font-bold px-2 py-0.5 rounded-full">⭐ {t('featured')}</div>
                 )}
                 {property.main_image_url ? (
                   <Image src={property.main_image_url} alt={property.titulo} width={300} height={300} className="w-full h-full object-cover group-hover:scale-105 transition-transform" loading="lazy" />

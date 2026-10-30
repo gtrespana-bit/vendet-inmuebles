@@ -205,7 +205,7 @@ export default function DashboardPage() {
     return (
       <div className="dashboard-page min-h-[60vh] flex items-center justify-center px-4" aria-busy="true">
         <div className="text-center">
-          <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-2 border-[#D8CDB4] border-t-[#0E3B33]" />
+          <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-2 border-[var(--line)] border-t-[var(--burgundy)]" />
           <p className="text-sm text-gray-500">{t('loadingDashboard')}</p>
         </div>
       </div>

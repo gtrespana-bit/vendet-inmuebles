@@ -57,7 +57,7 @@ export default function ResultadosUbicacion({
             <input name="q" defaultValue={q} placeholder="Buscar..." className="w-full border rounded-lg pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-accent" />
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           </div>
-          <button type="submit" className="bg-brand-accent text-brand-primary px-5 rounded-lg font-bold text-sm hover:bg-accent/90 transition whitespace-nowrap">Buscar</button>
+          <button type="submit" className="bg-brand-accent text-[var(--on-gold)] px-5 rounded-lg font-bold text-sm hover:bg-accent/90 transition whitespace-nowrap">Buscar</button>
         </form>
       </div>
 

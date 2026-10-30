@@ -258,7 +258,7 @@ export default function CatalogoClient({ initialProducts = [], initialCount = 0 
               <Search size={48} className="text-gray-300 mx-auto mb-4" />
               <h3 className="text-xl font-bold text-gray-800 mb-2">{t('catalog.empty')}</h3>
               <p className="text-gray-500 mb-4">{t('catalog.emptyCta')}</p>
-              <LocalLink href="/publicar-inmueble" className="inline-block bg-brand-accent text-brand-primary px-6 py-3 rounded-lg font-bold hover:bg-accent/90 transition">
+              <LocalLink href="/publicar-inmueble" className="inline-block bg-brand-accent text-[var(--on-gold)] px-6 py-3 rounded-lg font-bold hover:bg-accent/90 transition">
                 {t('catalog.publishFree')}
               </LocalLink>
             </div>

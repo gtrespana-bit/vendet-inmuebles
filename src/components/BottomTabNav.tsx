@@ -54,7 +54,7 @@ export default function BottomTabNav() {
             >
               {item.highlight ? (
                 <div className="w-14 h-14 bg-brand-accent rounded-full flex items-center justify-center shadow-lg shadow-yellow-200 active:scale-95 transition-transform">
-                  <Icon size={26} className="text-brand-primary" />
+                  <Icon size={26} className="text-[var(--on-gold)]" />
                 </div>
               ) : (
                 <div className="flex flex-col items-center">

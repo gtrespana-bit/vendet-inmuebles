@@ -58,7 +58,7 @@ export default function TabCreditos({ creditos, tasaBs, refreshCreditos }: { cre
           const precioBs = (pkg.precio * tasa).toFixed(2)
           return (
             <div key={pkg.creditos} className={`bg-white rounded-2xl shadow-lg overflow-hidden border-2 transition hover:-translate-y-1 ${pkg.popular ? 'border-brand-accent' : 'border-transparent'}`}>
-              {pkg.popular && <div className="bg-brand-accent text-brand-primary text-center py-1.5 text-xs font-bold">⭐ MÁS POPULAR</div>}
+              {pkg.popular && <div className="bg-brand-accent text-[var(--on-gold)] text-center py-1.5 text-xs font-bold">⭐ MÁS POPULAR</div>}
               <div className="bg-gradient-to-br from-brand-primary to-blue-800 p-6 text-white text-center">
                 <p className="text-5xl font-black">{pkg.creditos}</p>
                 <p className="text-sm opacity-80">créditos</p>
