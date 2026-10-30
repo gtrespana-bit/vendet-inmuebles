@@ -1,82 +1,91 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
-import { Check, Star, Building2, Crown } from 'lucide-react'
+import { Check, Star, Building2, User, Building, HeartHandshake } from 'lucide-react'
 
 export const metadata: Metadata = {
   title: 'Planes y Precios | Venezuela Inmuebles',
-  description: 'Elige el plan que mejor se adapte a tus necesidades. Publica propiedades gratis y destaca tus anuncios.',
+  description: 'Elige el plan que mejor se adapte a tus necesidades. Prueba gratuita de 30 días en planes de pago, como iniciativa solidaria para apoyar al sector inmobiliario.',
 }
 
 const planes = [
   {
-    nombre: 'Personal',
-    precio: 'Gratis',
-    periodo: 'durante lanzamiento',
-    descripcion: 'Para propietarios que venden o alquilan',
-    icon: Building2,
+    nombre: 'Gratuita',
+    precioMensual: '$0',
+    precioAnual: '$0',
+    descripcion: 'Para usuarios que buscan vender o alquilar un único inmueble',
+    icon: User,
     color: 'gray',
     features: [
-      'Hasta 3 publicaciones activas',
-      'Fotos ilimitadas por propiedad',
-      'Contacto directo con compradores',
-      'Estadísticas básicas',
+      '1 anuncio activo',
+      '8 fotos por inmueble',
+      'Verificación de identidad gratuita',
     ],
     cta: 'Registrarse Gratis',
     destacado: false,
   },
   {
-    nombre: 'Agente',
-    precio: 'Gratis',
-    periodo: 'beta de lanzamiento',
-    descripcion: 'Para agentes inmobiliarios independientes',
+    nombre: 'Profesional',
+    precioMensual: '$9,99/mes',
+    precioAnual: '$99/año',
+    descripcion: 'Para agentes independientes y vendedores activos',
     icon: Star,
-    color: 'blue',
+    color: 'brand-accent',
     features: [
-      'Publicaciones ilimitadas',
-      'Perfil verificado con badge',
-      'Destacar 2 propiedades al mes',
-      'Estadísticas avanzadas',
+      '5 anuncios activos',
+      '20 fotos por inmueble',
+      '5 créditos incluidos al mes',
+      'Escaparate con URL personalizada',
+      'Métricas de rendimiento',
+      'Enlace a vídeo y recorridos/planos',
       'Soporte prioritario',
+      'Verificación de identidad gratuita',
     ],
-    cta: 'Registrarse como Agente',
+    cta: 'Probar Gratis por 30 Días',
     destacado: true,
-    badge: 'RECOMENDADO',
+    badge: 'MÁS POPULAR',
   },
   {
-    nombre: 'Inmobiliaria',
-    precio: 'Gratis',
-    periodo: 'beta de lanzamiento',
-    descripcion: 'Para empresas inmobiliarias',
-    icon: Crown,
-    color: 'purple',
+    nombre: 'Agencia',
+    precioMensual: '$39,99/mes',
+    precioAnual: '$399/año',
+    descripcion: 'Para equipos y agencias inmobiliarias',
+    icon: Building2,
+    color: 'brand-primary',
     features: [
-      'Todo lo del plan Agente',
-      'Múltiples agentes en una cuenta',
-      'Landing page personalizada',
-      'API para integración',
-      'Gestor de cuenta dedicado',
+      'Anuncios activos sin límite',
+      '30 fotos por inmueble',
+      '20 créditos al mes (compartidos)',
+      'Escaparate de marca y métricas agregadas',
+      'Publicación y edición masiva',
+      'Enlace a vídeo y recorridos/planos',
+      'Soporte con devolución de llamada',
+      '5 usuarios incluidos',
+      'Mensajería privada por agente',
+      'Verificación de identidad gratuita',
     ],
-    cta: 'Contactar Ventas',
+    cta: 'Probar Gratis por 30 Días',
     destacado: false,
   },
 ]
 
 export default function PlanesPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white py-16">
+    <div className="min-h-screen bg-brand-gray py-16">
       <div className="container mx-auto px-4">
         {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-            Planes para Todos
-          </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Publica tus propiedades gratis durante nuestro lanzamiento. 
-            Sin costos ocultos, sin sorpresas.
-          </p>
-          <div className="mt-4 inline-block bg-green-100 text-green-800 px-4 py-2 rounded-full text-sm font-medium">
-            🎉 Todo gratis durante el lanzamiento
+          <div className="flex justify-center mb-4">
+            <span className="inline-flex items-center gap-2 bg-brand-primary/10 text-brand-primary px-4 py-2 rounded-full text-sm font-medium">
+              <HeartHandshake className="w-4 h-4" />
+              Iniciativa Solidaria: 1 Mes de Prueba Gratis
+            </span>
           </div>
+          <h1 className="text-4xl md:text-5xl font-bold text-brand-dark mb-4">
+            Planes y Precios
+          </h1>
+          <p className="text-xl text-brand-dark/70 max-w-2xl mx-auto">
+            Elige el plan ideal para ti. Disfruta de 30 días de prueba en nuestros planes de pago sin compromiso, sin tarjeta de crédito y sin cobros automáticos.
+          </p>
         </div>
 
         {/* Planes Grid */}
@@ -87,35 +96,37 @@ export default function PlanesPage() {
               <div
                 key={plan.nombre}
                 className={`relative bg-white rounded-2xl shadow-lg p-8 flex flex-col ${
-                  plan.destacado ? 'ring-2 ring-blue-500 scale-105' : ''
+                  plan.destacado ? 'ring-2 ring-brand-accent scale-105' : ''
                 }`}
               >
                 {plan.badge && (
-                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-4 py-1 rounded-full text-sm font-bold">
+                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-brand-accent text-white px-4 py-1 rounded-full text-sm font-bold shadow-sm">
                     {plan.badge}
                   </div>
                 )}
 
                 <div className="mb-6">
                   <Icon className={`w-12 h-12 mb-4 ${
-                    plan.color === 'blue' ? 'text-blue-600' : 
-                    plan.color === 'purple' ? 'text-purple-600' : 
+                    plan.color === 'brand-accent' ? 'text-brand-accent' : 
+                    plan.color === 'brand-primary' ? 'text-brand-primary' : 
                     'text-gray-600'
                   }`} />
-                  <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                  <h2 className="text-2xl font-bold text-brand-dark mb-2">
                     {plan.nombre}
                   </h2>
-                  <p className="text-gray-600 text-sm mb-4">
+                  <p className="text-brand-dark/70 text-sm mb-4 min-h-[40px]">
                     {plan.descripcion}
                   </p>
                   <div className="mb-2">
-                    <span className="text-4xl font-bold text-gray-900">
-                      {plan.precio}
+                    <span className="text-4xl font-bold text-brand-dark">
+                      {plan.precioMensual}
                     </span>
+                    {plan.nombre !== 'Gratuita' && (
+                      <span className="text-sm font-normal text-gray-500 ml-1">
+                        o {plan.precioAnual}
+                      </span>
+                    )}
                   </div>
-                  <p className="text-sm text-gray-500">
-                    {plan.periodo}
-                  </p>
                 </div>
 
                 <ul className="space-y-3 mb-8 flex-grow">
@@ -128,11 +139,13 @@ export default function PlanesPage() {
                 </ul>
 
                 <Link
-                  href={plan.nombre === 'Inmobiliaria' ? '/contacto' : '/registrarse'}
+                  href="/registrarse"
                   className={`block w-full text-center py-3 rounded-lg font-medium transition-colors ${
                     plan.destacado
-                      ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                      : 'bg-gray-100 hover:bg-gray-200 text-gray-900'
+                      ? 'bg-brand-accent hover:bg-[#b09050] text-white'
+                      : plan.nombre === 'Agencia'
+                      ? 'bg-brand-primary hover:bg-brand-dark text-white'
+                      : 'bg-gray-100 hover:bg-gray-200 text-brand-dark'
                   }`}
                 >
                   {plan.cta}
@@ -142,69 +155,37 @@ export default function PlanesPage() {
           })}
         </div>
 
-        {/* Sección de servicios adicionales */}
-        <div className="mt-20 max-w-4xl mx-auto">
-          <h2 className="text-3xl font-bold text-center text-gray-900 mb-8">
-            Servicios Adicionales (Próximamente)
-          </h2>
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="bg-white rounded-xl shadow p-6">
-              <h3 className="font-bold text-lg mb-2">⭐ Destacar Propiedad</h3>
-              <p className="text-gray-600 text-sm mb-3">
-                Aparece primero en búsquedas y resultados por 7 días
-              </p>
-              <p className="text-2xl font-bold text-blue-600">$5-15 USD</p>
-              <p className="text-xs text-gray-500 mt-1">Disponible pronto</p>
-            </div>
-            <div className="bg-white rounded-xl shadow p-6">
-              <h3 className="font-bold text-lg mb-2">✅ Verificación Premium</h3>
-              <p className="text-gray-600 text-sm mb-3">
-                Badge de verificación anual con documentos oficiales
-              </p>
-              <p className="text-2xl font-bold text-blue-600">$10 USD/año</p>
-              <p className="text-xs text-gray-500 mt-1">Disponible pronto</p>
-            </div>
-          </div>
-        </div>
-
         {/* FAQ */}
         <div className="mt-20 max-w-3xl mx-auto">
-          <h2 className="text-3xl font-bold text-center text-gray-900 mb-8">
-            Preguntas Frecuentes
+          <h2 className="text-3xl font-bold text-center text-brand-dark mb-8">
+            Condiciones de la Prueba Gratis y Preguntas Frecuentes
           </h2>
           <div className="space-y-6">
-            <div>
-              <h3 className="font-bold text-lg mb-2">¿Cuánto tiempo será gratis?</h3>
+            <div className="bg-white p-6 rounded-xl shadow-sm">
+              <h3 className="font-bold text-lg mb-2 text-brand-dark">¿Cómo funciona la prueba gratuita de 30 días?</h3>
               <p className="text-gray-600">
-                Durante las primeras semanas o meses de lanzamiento. Te avisaremos con al menos 30 días de anticipación antes de cualquier cambio.
+                Como iniciativa solidaria para apoyar al sector inmobiliario en estos momentos, ofrecemos 1 mes gratis del plan Profesional o Agencia. Empieza tu prueba sin necesidad de ingresar tarjeta de crédito. Al finalizar los 30 días, te avisaremos para que decidas si deseas suscribirte o volver al plan Gratuito.
               </p>
             </div>
-            <div>
-              <h3 className="font-bold text-lg mb-2">¿Qué pasa con mis publicaciones cuando empiecen los pagos?</h3>
+            <div className="bg-white p-6 rounded-xl shadow-sm">
+              <h3 className="font-bold text-lg mb-2 text-brand-dark">¿Qué pasa cuando termina la prueba si no deseo pagar?</h3>
               <p className="text-gray-600">
-                Tus publicaciones existentes seguirán activas. Solo aplicarían los nuevos planes a publicaciones futuras o renovaciones.
+                <strong>No habrá ningún cobro automático</strong> ni perderás tus anuncios. Tu cuenta simplemente volverá al plan Gratuito. Si tenías más de 1 anuncio activo, los anuncios adicionales serán pausados (pero no eliminados). Podrás elegir cuál mantener activo o reactivarlos en cualquier momento suscribiéndote a un plan de pago.
               </p>
             </div>
-            <div>
-              <h3 className="font-bold text-lg mb-2">¿Puedo cambiar de plan después?</h3>
+            <div className="bg-white p-6 rounded-xl shadow-sm">
+              <h3 className="font-bold text-lg mb-2 text-brand-dark">¿Qué son los créditos incluidos?</h3>
               <p className="text-gray-600">
-                Sí, puedes cambiar entre planes en cualquier momento desde tu dashboard.
+                Los créditos incluidos te permiten destacar tus anuncios para obtener mayor visibilidad. El plan Profesional incluye 5 créditos mensuales y el plan Agencia incluye 20 créditos mensuales que puedes compartir entre los agentes de tu equipo.
+              </p>
+            </div>
+            <div className="bg-white p-6 rounded-xl shadow-sm">
+              <h3 className="font-bold text-lg mb-2 text-brand-dark">¿Qué significa la verificación de identidad gratuita?</h3>
+              <p className="text-gray-600">
+                Verificamos tu identidad gratuitamente en todos los planes para generar más confianza en la comunidad. Esto indicará que eres una persona real, aunque ten en cuenta que la insignia de identidad verificada no afirma la titularidad ni certifica el estado legal de los inmuebles publicados.
               </p>
             </div>
           </div>
-        </div>
-
-        {/* CTA Final */}
-        <div className="mt-16 text-center">
-          <Link
-            href="/registrarse"
-            className="inline-block bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-lg font-medium text-lg transition-colors"
-          >
-            Comenzar Gratis Ahora
-          </Link>
-          <p className="mt-4 text-sm text-gray-500">
-            Sin tarjeta de crédito • Sin compromisos • Cancela cuando quieras
-          </p>
         </div>
       </div>
     </div>

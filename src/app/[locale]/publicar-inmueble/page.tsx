@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import LocalLink from '@/components/LocalLink';
 import { useTranslations } from 'next-intl';
@@ -21,7 +21,25 @@ export default function PublicarInmueblePage() {
   const locale = pathname === '/en' || pathname.startsWith('/en/') ? 'en' : 'es';
   const tLanding = useTranslations('landing');
   const tPublish = useTranslations('publishProperty');
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, session } = useAuth();
+  const [maxFotos, setMaxFotos] = useState(8);
+  const [loadingPlan, setLoadingPlan] = useState(true);
+  const [planLimits, setPlanLimits] = useState<any>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    fetch('/api/user/plan')
+      .then(r => r.json())
+      .then(d => {
+        if (d.limits) {
+          setMaxFotos(d.limits.maxFotos);
+          setPlanLimits(d);
+        }
+        setLoadingPlan(false);
+      })
+      .catch(() => setLoadingPlan(false));
+  }, [user]);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -45,7 +63,7 @@ export default function PublicarInmueblePage() {
     if (!files.length) return;
 
     const validFiles = files.filter(file => file.type.startsWith('image/') && file.size <= 5 * 1024 * 1024);
-    const remaining = Math.max(0, 8 - imagenes.length);
+    const remaining = Math.max(0, maxFotos - imagenes.length);
     if (validFiles.length !== files.length) {
       setError(tPublish('fileTypeError'));
     } else if (validFiles.length > remaining) {

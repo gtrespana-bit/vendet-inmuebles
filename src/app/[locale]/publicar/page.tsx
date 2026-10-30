@@ -89,6 +89,22 @@ export default function PublicarPage() {
   const [showEmprendedor, setShowEmprendedor] = useState(false)
   const [pubCount, setPubCount] = useState(0)
 
+  const [maxFotos, setMaxFotos] = useState(10);
+  const [loadingPlan, setLoadingPlan] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+    fetch('/api/user/plan')
+      .then(r => r.json())
+      .then(d => {
+        if (d.limits) {
+          setMaxFotos(d.limits.maxFotos);
+        }
+        setLoadingPlan(false);
+      })
+      .catch(() => setLoadingPlan(false));
+  }, [user]);
+
   // Redirect if not logged in
   useEffect(() => {
     if (!authLoading && !session) {
@@ -138,7 +154,7 @@ export default function PublicarPage() {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files) return
-    const maxFiles = 10 - imagenes.length
+    const maxFiles = maxFotos - imagenes.length
     if (maxFiles <= 0) return
 
     const newImages: ImageFile[] = []
@@ -659,7 +675,7 @@ export default function PublicarPage() {
                   )}
                 </div>
               ))}
-              {imagenes.length < 10 && (
+              {imagenes.length < maxFotos && (
                 <label className="aspect-square rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:border-brand-accent hover:bg-yellow-50 transition">
                   <Camera size={24} className="text-gray-400" /><span className="text-xs text-gray-500 mt-1">{t('add')}</span>
                   <input type="file" accept="image/*" multiple onChange={handleImageUpload} className="hidden" />

@@ -3,6 +3,7 @@ import { revalidatePath } from 'next/cache'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { requireAuthenticatedUser } from '@/lib/api-auth'
 import { sanitizeString } from '@/lib/validation'
+import { checkPlanLimits } from '@/lib/plans'
 
 export async function POST(req: NextRequest) {
   try {
@@ -48,6 +49,14 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    const planData = await checkPlanLimits(auth.user.id)
+    if (!planData.canPublish) {
+      return NextResponse.json(
+        { error: `Límite de publicaciones alcanzado para el plan ${planData.plan}` },
+        { status: 403 }
+      )
+    }
+
     const { data: category, error: categoryError } = await auth.supabaseAdmin
       .from('categorias')
       .select('id')
@@ -74,7 +83,7 @@ export async function POST(req: NextRequest) {
     }
 
     const imageUrls = Array.isArray(body.imagenes)
-      ? body.imagenes.filter((url: unknown): url is string => typeof url === 'string' && url.startsWith('https://')).slice(0, 20)
+      ? body.imagenes.filter((url: unknown): url is string => typeof url === 'string' && url.startsWith('https://')).slice(0, planData.limits.maxFotos)
       : []
     const firstImage = typeof body.imagen_url === 'string' && body.imagen_url.startsWith('https://')
       ? body.imagen_url
