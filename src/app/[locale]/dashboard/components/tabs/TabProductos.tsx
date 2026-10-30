@@ -13,14 +13,21 @@ export default function TabProductos({
   onBoost,
   onDestacar,
   userId,
+  visitasTotales = 0,
+  averageViews = 0,
+  promotedCount = 0,
 }: {
   productos: any[]
   onBoost: (m: { productId: string; titulo: string }) => void
   onDestacar: (m: { productId: string; titulo: string }) => void
   userId: string
+  visitasTotales?: number
+  averageViews?: number
+  promotedCount?: number
 }) {
   const t = useTranslations('dashboard')
   const locale = useLocale()
+  const [filtro, setFiltro] = useState<'todos' | 'activos' | 'pausados' | 'vendidos' | 'pendientes'>('todos')
   const [vendidoModal, setVendidoModal] = useState<string | null>(null)
   const [vendidoPaso, setVendidoPaso] = useState<'tipo' | 'comprador' | 'reseña' | 'confirmado'>('tipo')
   const [interesados, setInteresados] = useState<any[]>([])
@@ -247,6 +254,31 @@ export default function TabProductos({
   const dateLocale = locale === 'en' ? 'en-US' : 'es-VE'
   const numberFormat = (value: number) => new Intl.NumberFormat(dateLocale).format(value)
 
+  // Estadísticas de rendimiento de TUS anuncios (viven aquí, no en «Inicio»)
+  const stats = {
+    total: productos.length,
+    activos: productos.filter((p: any) => p.activo && !p.vendido && p.estado_moderacion !== 'pendiente').length,
+    pausados: productos.filter((p: any) => !p.activo && !p.vendido && p.estado_moderacion !== 'rechazado').length,
+    vendidos: productos.filter((p: any) => p.vendido).length,
+    pendientes: productos.filter((p: any) => p.estado_moderacion === 'pendiente').length,
+  }
+
+  const filtrados = productos.filter((p: any) => {
+    if (filtro === 'activos') return p.activo && !p.vendido
+    if (filtro === 'pausados') return !p.activo && !p.vendido && p.estado_moderacion !== 'rechazado'
+    if (filtro === 'vendidos') return p.vendido === true
+    if (filtro === 'pendientes') return p.estado_moderacion === 'pendiente'
+    return true
+  })
+
+  const filtros: { id: typeof filtro; label: string; count: number }[] = [
+    { id: 'todos', label: t('filterAll'), count: stats.total },
+    { id: 'activos', label: t('filterActive'), count: stats.activos },
+    { id: 'pausados', label: t('filterPaused'), count: stats.pausados },
+    { id: 'vendidos', label: t('filterSold'), count: stats.vendidos },
+    ...(stats.pendientes > 0 ? [{ id: 'pendientes' as const, label: t('filterPending'), count: stats.pendientes }] : []),
+  ]
+
   return (
     <section className="dashboard-panel" aria-labelledby="dashboard-properties-title">
       <div className="mb-4 flex items-end justify-between gap-4">
@@ -258,8 +290,39 @@ export default function TabProductos({
           + {t('publishPropertyAction')}
         </LocalLink>
       </div>
+
+      {/* Rendimiento de tus anuncios */}
+      <div className="dashboard-mini-stats" aria-label={t('listingsStatsAria')}>
+        <div className="dashboard-mini-stats__item"><strong>{numberFormat(stats.total)}</strong><span>{t('statsTotal')}</span></div>
+        <div className="dashboard-mini-stats__item"><strong>{numberFormat(stats.activos)}</strong><span>{t('filterActive')}</span></div>
+        <div className="dashboard-mini-stats__item"><strong>{numberFormat(stats.pausados)}</strong><span>{t('filterPaused')}</span></div>
+        <div className="dashboard-mini-stats__item"><strong>{numberFormat(stats.vendidos)}</strong><span>{t('filterSold')}</span></div>
+        <div className="dashboard-mini-stats__item"><strong>{numberFormat(visitasTotales)}</strong><span>{t('totalViews')}</span></div>
+        <div className="dashboard-mini-stats__item"><strong>{numberFormat(averageViews)}</strong><span>{t('avgPerProperty')}</span></div>
+        <div className="dashboard-mini-stats__item"><strong>{numberFormat(promotedCount)}</strong><span>{t('promotedNow')}</span></div>
+      </div>
+
+      {/* Filtros por estado */}
+      <div className="dashboard-filter-chips" role="group" aria-label={t('filterAria')}>
+        {filtros.map((f) => (
+          <button
+            key={f.id}
+            type="button"
+            onClick={() => setFiltro(f.id)}
+            aria-pressed={filtro === f.id}
+            className={`dashboard-filter-chip${filtro === f.id ? ' dashboard-filter-chip--active' : ''}`}
+          >
+            {f.label} <span className="dashboard-filter-chip__count">{numberFormat(f.count)}</span>
+          </button>
+        ))}
+      </div>
+
+      {filtrados.length === 0 && (
+        <p className="dashboard-filter-empty">{t('filterEmpty')}</p>
+      )}
+
       <div className="dashboard-property-list">
-        {productos.map((p) => {
+        {filtrados.map((p) => {
           const isBoosted = p.boosteado_en != null
           const isFeatured = p.destacado && p.destacado_hasta && p.destacado_hasta > now
           const isVendido = p.vendido === true

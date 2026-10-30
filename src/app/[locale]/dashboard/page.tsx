@@ -12,6 +12,7 @@ import LocalLink from '@/components/LocalLink'
 import { routing } from '@/i18n/routing'
 
 // Components
+import ProfileHero from './components/ProfileHero'
 import DashboardHeader from './components/DashboardHeader'
 import TabResumen from './components/TabResumen'
 import TabMensajes from './components/tabs/TabMensajes'
@@ -225,13 +226,10 @@ export default function DashboardPage() {
     )
   }
 
-  const numPubsVendidas = data.productos.filter((p: any) => !p.activo && p.estado_moderacion !== 'rechazado').length
+  const numPubsVendidas = data.productos.filter((p: any) => p.vendido || (!p.activo && p.estado_moderacion !== 'rechazado')).length
 
-  const isEnglish = pathname === '/en' || pathname.startsWith('/en/')
-  const numberFormat = new Intl.NumberFormat(isEnglish ? 'en-US' : 'es-VE')
   const averageViews = data.productos.length ? Math.round(data.visitasTotales / data.productos.length) : 0
   const promotedCount = data.productos.filter((p: any) => p.boosteado_en || (p.destacado && p.destacado_hasta > new Date().toISOString())).length
-  const profileName = data.nombre || user?.user_metadata?.full_name || user?.email?.split('@')[0] || ''
   const tabs = [
     { id: 'resumen', label: t('tabSummary'), icon: BarChart3 },
     { id: 'productos', label: t('tabListings'), icon: Package },
@@ -269,49 +267,23 @@ export default function DashboardPage() {
         )}
         {cambiarPw && <PasswordModal user={user} setToast={data.setToast} onClose={() => setCambiarPw(false)} />}
 
-        <header className="dashboard-page__header">
-          <div>
-            <p className="dashboard-page__eyebrow">{t('screenEyebrow')}</p>
-            <h1>{t('screenTitle')}</h1>
-            <p>{profileName ? t('screenIntroNamed', { name: profileName }) : t('screenIntro')}</p>
-          </div>
-          <div className="dashboard-page__header-actions">
-            <LocalLink href="/publicar-inmueble">{t('publishPropertyAction')}</LocalLink>
-            <button
-              type="button"
-              onClick={() => setActiveTab('perfil')}
-              aria-label={t('tabProfile')}
-            >
-              {t('tabProfile')}
-            </button>
-          </div>
-        </header>
-
-        <section className="dashboard-summary" aria-labelledby="dashboard-summary-title">
-          <div className="dashboard-summary__intro">
-            <div>
-              <p>{t('performanceEyebrow')}</p>
-              <h2 id="dashboard-summary-title">{t('performanceTitle')}</h2>
-            </div>
-          </div>
-          <div className="dashboard-summary__grid">
-            <div className="dashboard-summary__metric"><strong>{numberFormat.format(data.visitasTotales)}</strong><span>{t('totalViews')}</span></div>
-            <div className="dashboard-summary__metric"><strong>{numberFormat.format(averageViews)}</strong><span>{t('avgPerProperty')}</span></div>
-            <div className="dashboard-summary__metric"><strong>{numberFormat.format(data.pubCount)}</strong><span>{t('activeProperties')}</span></div>
-            <div className="dashboard-summary__metric"><strong>{numberFormat.format(promotedCount)}</strong><span>{t('promotedNow')}</span></div>
-            <div className="dashboard-summary__metric"><strong>{numberFormat.format(data.favoritosCount)}</strong><span>{t('savedProperties')}</span></div>
-            <div className="dashboard-summary__metric"><strong>{numberFormat.format(data.creditos)}</strong><span>{t('creditsLabel')}</span></div>
-          </div>
-          <div className="dashboard-summary__foot">
-            <span>{t('freeCredit')}</span>
-            <div className="dashboard-summary__progress">
-              <span>{t('pubProgress', { count: data.pubCount })}</span>
-              <div className="dashboard-summary__progress-track" aria-hidden="true">
-                <span style={{ width: `${Math.min((data.pubCount / 10) * 100, 100)}%` }} />
-              </div>
-            </div>
-          </div>
-        </section>
+        <ProfileHero
+          userId={user!.id}
+          nombre={data.nombre || user?.user_metadata?.full_name || user?.email?.split('@')[0] || ''}
+          email={user?.email}
+          fotoUrl={data.fotoUrl}
+          verificado={data.verificado}
+          nivelConfianza={data.nivelConfianza}
+          estado={data.estado}
+          ciudad={data.ciudad}
+          creadoEn={data.creadoEn}
+          resenasCount={data.resenas.length}
+          promedioResenas={data.promedioResenas}
+          creditos={data.creditos}
+          planInfo={data.planInfo}
+          onGoToTab={setActiveTab}
+          onFotoChange={handleFoto}
+        />
 
         <nav className="dashboard-tabs" role="tablist" aria-label={t('tabsLabel')}>
           {tabs.map((item) => {
@@ -355,7 +327,15 @@ export default function DashboardPage() {
           aria-labelledby={`dashboard-tab-${activeTab}`}
           tabIndex={0}
         >
-          {activeTab === 'resumen' && <TabResumen userId={user!.id} />}
+          {activeTab === 'resumen' && (
+            <TabResumen
+              userId={user!.id}
+              productos={data.productos}
+              verificado={data.verificado}
+              planInfo={data.planInfo}
+              onGoToTab={setActiveTab}
+            />
+          )}
           {activeTab === 'productos' && (
             <Suspense fallback={<div className="dashboard-panel p-10 text-center text-sm text-gray-400">{t('loadingListings')}</div>}>
               <TabProductos
@@ -363,6 +343,9 @@ export default function DashboardPage() {
                 onBoost={setBoostTarget}
                 onDestacar={setDestacadoTarget}
                 userId={user?.id ?? ''}
+                visitasTotales={data.visitasTotales}
+                averageViews={averageViews}
+                promotedCount={promotedCount}
               />
             </Suspense>
           )}

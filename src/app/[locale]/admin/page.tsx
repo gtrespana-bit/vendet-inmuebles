@@ -10,10 +10,11 @@ import {
   CreditCard, Shield, Users, BarChart3, ShieldCheck,
   Package, Star, Pause, Play, Trash2, Search, RefreshCw,
   SortAsc, SortDesc, ExternalLink, Zap, ChevronDown,
-  Megaphone, Download, Eye, Loader2, Check, X, Tag
+  Megaphone, Download, Eye, Loader2, Check, X, Tag, Crown
 } from 'lucide-react'
 import VerificacionTab from './VerificacionTab'
 import MetricasTab from './MetricasTab'
+import PlanesTab from './PlanesTab'
 import Image from 'next/image'
 
 import { isAdminEmail } from '@/lib/admin-config'
@@ -22,6 +23,7 @@ const TABS = [
   { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
   { id: 'publicaciones', label: 'Publicaciones', icon: Package },
   { id: 'usuarios', label: 'Usuarios', icon: Users },
+  { id: 'planes', label: 'Planes', icon: Crown },
   { id: 'verificacion', label: 'Verificación', icon: ShieldCheck },
 ]
 
@@ -1171,6 +1173,7 @@ export default function AdminPage() {
       {/* Content */}
       {tab === 'dashboard' && <MetricasTab />}
       {tab === 'usuarios' && <UsuariosTab notify={notify} />}
+      {tab === 'planes' && <PlanesTab notify={notify} />}
       {tab === 'publicaciones' && <PublicacionesTab notify={notify} />}
       {tab === 'verificacion' && <VerificacionTab notify={notify} />}
       {tab === 'moderacion' && <ModeracionTab notify={notify} adminEmail={user?.email || ''} />}

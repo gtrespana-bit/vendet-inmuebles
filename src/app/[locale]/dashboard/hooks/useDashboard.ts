@@ -3,6 +3,17 @@ import { supabase } from '@/lib/supabase'
 import { getSupabaseAuthHeaders } from '@/lib/supabase-auth-headers'
 import { useAuth } from '@/components/AuthProvider'
 
+export interface PlanInfo {
+  plan: string
+  estado: string | null
+  trialEndsAt: string | null
+  fin: string | null
+  creditosIncluidos: number
+  limits: { maxAnuncios: number; maxFotos: number; creditosMes: number }
+  activeCount: number
+  canPublish: boolean
+}
+
 export interface DashboardData {
   productos: any[]
   visitasTotales: number
@@ -45,6 +56,7 @@ export function useDashboard() {
   const [creadoEn, setCreadoEn] = useState<string | null>(null)
   const [resenas, setResenas] = useState<any[]>([])
   const [promedioResenas, setPromedioResenas] = useState(0)
+  const [planInfo, setPlanInfo] = useState<PlanInfo | null>(null)
   const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState<string | null>(null)
 
@@ -53,7 +65,7 @@ export function useDashboard() {
 
     // Supabase client automatically handles auth tokens via persistSession + autoRefreshToken
     Promise.all([
-      supabase.from('vw_propiedades_publicas').select('id, titulo, precio, estado, ciudad, activo, visitas, creado_en, main_image_url, operacion_nombre, destacado, destacado_hasta').eq('usuario_id', user.id).order('creado_en', { ascending: false }).then(({ data }: { data: any[] | null }) => setProductos(data || [])),
+      supabase.from('vw_propiedades_publicas').select('id, titulo, precio, estado, ciudad, activo, visitas, creado_en, main_image_url, operacion_nombre, destacado, destacado_hasta, boosteado_en, estado_moderacion, vendido').eq('usuario_id', user.id).order('creado_en', { ascending: false }).then(({ data }: { data: any[] | null }) => setProductos(data || [])),
 
       supabase.from('vw_propiedades_publicas').select('visitas').eq('usuario_id', user.id).then(({ data }: { data: any[] | null }) => setVisitasTotales(data?.reduce((sum: number, p: { visitas: number | null }) => sum + (p.visitas || 0), 0) || 0)),
       supabase.from('favoritos').select('producto_id, creado_en').eq('user_id', user.id).order('creado_en', { ascending: false }).then(async ({ data }: { data: any[] | null }) => {
@@ -96,14 +108,21 @@ export function useDashboard() {
           ...review,
           producto_titulo: review.producto_titulo || titleById.get(review.producto_id) || 'Producto eliminado',
         }))
-        setResenas(flattenedResenas)
-        if (reviews.length > 0) {
-          const avg = reviews.reduce((sum: number, review: { puntuacion: number }) => sum + review.puntuacion, 0) / reviews.length
-          setPromedioResenas(Math.round(avg * 10) / 10)
-        } else {
-          setPromedioResenas(0)
-        }
-      }),
+          setResenas(flattenedResenas)
+          if (reviews.length > 0) {
+            const avg = reviews.reduce((sum: number, review: { puntuacion: number }) => sum + review.puntuacion, 0) / reviews.length
+            setPromedioResenas(Math.round(avg * 10) / 10)
+          } else {
+            setPromedioResenas(0)
+          }
+        }),
+      // Plan de suscripción (límites, estado y fechas)
+      getSupabaseAuthHeaders()
+        .then((authHeaders: Record<string, string>) =>
+          fetch('/api/user/plan', { headers: authHeaders }).then((res: Response) => (res.ok ? res.json() : null))
+        )
+        .then((plan: any) => { if (plan && plan.plan) setPlanInfo(plan as PlanInfo) })
+        .catch(() => {}),
     ]).finally(() => setLoading(false))
   }, [user])
 
@@ -185,6 +204,6 @@ export function useDashboard() {
     creditos, setCreditos, pubCount, nombre, setNombre, telefono, setTelefono,
     estado, setEstado, ciudad, setCiudad, fotoUrl, setFotoUrl, verificado,
     nivelConfianza, badgesAuto, ultimaActividad, creadoEn, resenas,
-    promedioResenas, loading, setToast, toast, refreshAll,
+    promedioResenas, planInfo, loading, setToast, toast, refreshAll,
   }
 }

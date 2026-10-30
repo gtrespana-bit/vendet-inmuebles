@@ -13,7 +13,7 @@ export async function checkPlanLimits(userId: string) {
   // Get active subscription and its plan
   const { data: susData, error: susError } = await supabase
     .from('suscripciones')
-    .select('plan, estado, trial_ends_at')
+    .select('plan, estado, trial_ends_at, fin, creditos_incluidos')
     .eq('user_id', userId)
     .in('estado', ['activa', 'trial'])
     .order('created_at', { ascending: false })
@@ -22,9 +22,17 @@ export async function checkPlanLimits(userId: string) {
 
   // Default to 'gratuita' if no active subscription
   let currentPlanName = 'gratuita'
+  let estado: string | null = null
+  let trialEndsAt: string | null = null
+  let fin: string | null = null
+  let creditosIncluidos = 0
   
   if (susData && (susData.estado === 'activa' || (susData.estado === 'trial' && new Date(susData.trial_ends_at) > new Date()))) {
     currentPlanName = susData.plan
+    estado = susData.estado
+    trialEndsAt = susData.trial_ends_at || null
+    fin = susData.fin || null
+    creditosIncluidos = susData.creditos_incluidos ?? 0
   }
 
   const limits = PLANS[currentPlanName as keyof typeof PLANS] || PLANS.gratuita
@@ -44,6 +52,10 @@ export async function checkPlanLimits(userId: string) {
 
   return {
     plan: currentPlanName,
+    estado,
+    trialEndsAt,
+    fin,
+    creditosIncluidos,
     limits,
     activeCount: activeCount || 0,
     canPublish,
