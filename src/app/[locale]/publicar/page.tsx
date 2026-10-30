@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import LocalLink from '@/components/LocalLink'
 import { useRouter } from 'next/navigation'
 import { supabase, isSupabaseConfigured } from '@/lib/supabase'
@@ -8,7 +8,7 @@ import { getSupabaseAuthHeaders } from '@/lib/supabase-auth-headers'
 import { useAuth } from '@/components/AuthProvider'
 import { categoriasData } from '@/lib/categorias'
 import { ESTADOS, getMunicipiosNombres } from '@/lib/ubicaciones'
-import { Camera, X, UploadCloud, AlertCircle, Phone, Mail, MapPin, MessageSquare } from 'lucide-react'
+import { Camera, X, UploadCloud, AlertCircle, Phone, Mail, MapPin, MessageSquare, ChevronLeft, ChevronRight } from 'lucide-react'
 import { verificarContenido, formatearAlertaModeracion } from '@/lib/moderacion'
 import { emailProductoPublicado } from '@/lib/server-email'
 import { useTranslations } from 'next-intl'
@@ -121,6 +121,9 @@ export default function PublicarPage() {
     }
   }, [authLoading, session, router, user])
 
+  // Referencia para el reordenamiento por drag & drop (declarada antes de cualquier early return)
+  const dragIndexRef = useRef<number | null>(null)
+
   // Cleanup preview URLs on unmount
   useEffect(() => {
     return () => {
@@ -181,41 +184,35 @@ export default function PublicarPage() {
     // Marcar todas como subiendo
     setImagenes(prev => prev.map(p => ({ ...p, uploading: true })))
 
-    // Subir todas las imágenes en paralelo a R2 (via presigned URLs)
+    // Subir todas las imágenes por el servidor a R2 (sin CORS)
     const uploadPromises = imagenes.map(async (img, i) => {
       const ext = img.file.name.split('.').pop() || 'jpg'
       const key = `${userId}/${Date.now()}_${i}.${ext}`.replace(/\s+/g, '_')
 
-      // Pedir presigned URL al servidor
-      const res = await fetch('/api/r2-upload', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...(await getSupabaseAuthHeaders()) },
-        body: JSON.stringify({ key, contentType: img.file.type || 'image/jpeg' }),
-      })
+      try {
+        const formData = new FormData()
+        formData.append('key', key)
+        formData.append('file', img.file)
 
-      if (!res.ok) {
-        console.error('Error obteniendo presigned URL')
+        const res = await fetch('/api/r2-upload', {
+          method: 'POST',
+          headers: await getSupabaseAuthHeaders(),
+          body: formData,
+        })
+
+        if (!res.ok) {
+          console.error('Error subiendo imagen:', res.status)
+          setImagenes(prev => prev.map((p, idx) => idx === i ? { ...p, error: true, uploading: false } : p))
+          return null
+        }
+
+        const { publicUrl } = await res.json()
+        setImagenes(prev => prev.map((p, idx) => idx === i ? { ...p, uploadedUrl: publicUrl, uploading: false } : p))
+        return publicUrl as string
+      } catch {
         setImagenes(prev => prev.map((p, idx) => idx === i ? { ...p, error: true, uploading: false } : p))
         return null
       }
-
-      const { url: uploadUrl, publicUrl } = await res.json()
-
-      // Subir archivo directamente a R2
-      const uploadRes = await fetch(uploadUrl, {
-        method: 'PUT',
-        body: img.file,
-        headers: { 'Content-Type': img.file.type || 'image/jpeg' },
-      })
-
-      if (!uploadRes.ok) {
-        console.error('Error subiendo a R2:', uploadRes.status)
-        setImagenes(prev => prev.map((p, idx) => idx === i ? { ...p, error: true, uploading: false } : p))
-        return null
-      }
-
-      setImagenes(prev => prev.map((p, idx) => idx === i ? { ...p, uploadedUrl: publicUrl, uploading: false } : p))
-      return publicUrl
     })
 
     const results = await Promise.all(uploadPromises)
@@ -225,6 +222,33 @@ export default function PublicarPage() {
     setUploadProgress(Math.round((urls.length / imagenes.length) * 100))
 
     return urls
+  }
+
+  // Reordenar fotos: la primera es la portada
+  const moveImage = (index: number, dir: -1 | 1) => {
+    setImagenes(prev => {
+      const next = [...prev]
+      const target = index + dir
+      if (target < 0 || target >= next.length) return prev
+      const tmp = next[index]
+      next[index] = next[target]
+      next[target] = tmp
+      return next
+    })
+  }
+
+  const handleDragStart = (index: number) => { dragIndexRef.current = index }
+  const handleDragOver = (e: React.DragEvent) => { e.preventDefault() }
+  const handleDrop = (index: number) => {
+    const from = dragIndexRef.current
+    dragIndexRef.current = null
+    if (from === null || from === index) return
+    setImagenes(prev => {
+      const next = [...prev]
+      const [moved] = next.splice(from, 1)
+      next.splice(index, 0, moved)
+      return next
+    })
   }
 
   const handleSubmit = async () => {
@@ -655,9 +679,16 @@ export default function PublicarPage() {
             <p className="text-sm text-gray-500">{t('photosDesc')}</p>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
               {imagenes.map((img, i) => (
-                <div key={i} className="aspect-square relative rounded-lg overflow-hidden group border border-gray-200">
+                <div
+                  key={i}
+                  className="aspect-square relative rounded-lg overflow-hidden group border border-gray-200 cursor-grab active:cursor-grabbing"
+                  draggable={!img.uploading}
+                  onDragStart={() => handleDragStart(i)}
+                  onDragOver={handleDragOver}
+                  onDrop={() => handleDrop(i)}
+                >
                   <Image src={img.preview} alt="" className="w-full h-full object-cover" fill sizes="100px" unoptimized />
-                  {i === 0 && img.uploadedUrl && <span className="absolute top-1 left-1 bg-brand-accent text-[var(--on-gold)] text-[10px] font-bold px-1.5 py-0.5 rounded">{t('cover')}</span>}
+                  {i === 0 && <span className="absolute top-1 left-1 bg-brand-accent text-[var(--on-gold)] text-[10px] font-bold px-1.5 py-0.5 rounded z-10">{t('cover')}</span>}
                   {img.uploading && (
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                       <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -669,9 +700,30 @@ export default function PublicarPage() {
                     </div>
                   )}
                   {!img.uploading && (
-                    <button onClick={() => removeImage(i)} className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition">
-                      <X size={14} />
-                    </button>
+                    <>
+                      <button onClick={() => removeImage(i)} className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition z-10">
+                        <X size={14} />
+                      </button>
+                      {/* Reordenar */}
+                      <div className="absolute bottom-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                        <button
+                          onClick={() => moveImage(i, -1)}
+                          disabled={i === 0}
+                          aria-label="Mover antes"
+                          className="bg-black/60 text-white rounded p-1 disabled:opacity-30 hover:bg-black/80"
+                        >
+                          <ChevronLeft size={12} />
+                        </button>
+                        <button
+                          onClick={() => moveImage(i, 1)}
+                          disabled={i === imagenes.length - 1}
+                          aria-label="Mover después"
+                          className="bg-black/60 text-white rounded p-1 disabled:opacity-30 hover:bg-black/80"
+                        >
+                          <ChevronRight size={12} />
+                        </button>
+                      </div>
+                    </>
                   )}
                 </div>
               ))}

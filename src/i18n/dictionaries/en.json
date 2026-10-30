@@ -1491,7 +1491,11 @@
     "uploadingPhotos": "Uploading photo {current} of {total}…",
     "aiImprove": "Improve with AI",
     "aiUnavailable": "AI is not available right now.",
-    "planUsageNote": "Current plan: {plan} · active listings {active}/{max}"
+    "planUsageNote": "Current plan: {plan} · active listings {active}/{max}",
+    "moveEarlier": "Move earlier",
+    "moveLater": "Move later",
+    "reorderHint": "Drag the photos or use the arrows to reorder them. The first one is the cover.",
+    "mapPinSet": "📍 Exact location set on the map"
   },
   "pushBanner": {
     "title": "Stay up to date",
@@ -1654,5 +1658,16 @@
     "openOsm": "Open in OpenStreetMap",
     "approxNote": "The exact location is arranged with the owner.",
     "locationTitle": "Location on the map"
+  },
+  "editListing": {
+    "title": "Edit listing",
+    "subtitle": "Update the details, photos and their order. The first photo is the cover.",
+    "save": "Save changes",
+    "saving": "Saving…",
+    "saved": "Changes saved successfully",
+    "redirecting": "Opening your listing…",
+    "cancel": "Cancel",
+    "notFound": "Listing not found or you are not its owner",
+    "goDashboard": "Go to my dashboard"
   }
 }

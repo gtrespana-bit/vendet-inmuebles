@@ -167,10 +167,10 @@ export async function POST(req: NextRequest) {
 
       if (nombres.length > 0) {
         const { data: todas } = await supabase.from('caracteristicas').select('id, nombre').limit(500)
-        const porNombre = new Map<string, string>()
+        const porNombre = new Map<string, string | number>()
         ;(todas || []).forEach((c: any) => porNombre.set(String(c.nombre).toLowerCase().trim(), c.id))
 
-        const ids: string[] = []
+        const ids: Array<string | number> = []
         for (const nombre of nombres) {
           let id = porNombre.get(nombre.toLowerCase())
           if (!id) {
@@ -179,8 +179,8 @@ export async function POST(req: NextRequest) {
               .insert({ nombre })
               .select('id')
               .single()
-            const creadoId = creada && typeof (creada as any).id === 'string' ? String((creada as any).id) : null
-            if (creadoId) {
+            const creadoId = creada?.id ?? null
+            if (creadoId !== null && creadoId !== undefined) {
               id = creadoId
               porNombre.set(nombre.toLowerCase(), creadoId)
             }
@@ -190,7 +190,7 @@ export async function POST(req: NextRequest) {
 
         if (ids.length > 0) {
           const { error: carError } = await supabase.from('inmueble_caracteristicas').insert(
-            ids.map((id: string) => ({ inmueble_id: property.id, caracteristica_id: id }))
+            ids.map((cid: string | number) => ({ inmueble_id: property.id, caracteristica_id: cid }))
           )
           if (carError) {
             // No fatal: el inmueble ya existe; las características son optativas
@@ -203,6 +203,182 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(property, { status: 201 })
   } catch (error: any) {
     console.error('Error creating property:', error)
+    return NextResponse.json(
+      { error: error?.message || 'Error interno del servidor' },
+      { status: 500 }
+    )
+  }
+}
+
+/**
+ * PATCH /api/properties — Editar un anuncio propio
+ * Body: { id, titulo?, descripcion?, precio?, tipo? (slug), ciudad?, estado?,
+ *         area_construida?, area_terreno?, puestos_estacionamiento?, condicion?,
+ *         electricidad?, agua?, caracteristicas?: string[],
+ *         imagenes?: Array<{ id?: string, url: string }> }
+ * Las imágenes se envían como lista completa (la primera = portada).
+ */
+export async function PATCH(req: NextRequest) {
+  try {
+    const token = req.headers.get('authorization')?.replace(/^Bearer\s+/i, '')
+    if (!token) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    }
+    const supabase = createServerClient()
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    if (authError || !user) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    }
+
+    const body = await req.json()
+    const id = typeof body.id === 'string' ? body.id : null
+    if (!id) {
+      return NextResponse.json({ error: 'Falta el id del inmueble' }, { status: 400 })
+    }
+
+    // El inmueble debe existir y ser del usuario autenticado
+    const { data: existing } = await supabase
+      .from('inmuebles')
+      .select('id, user_id')
+      .eq('id', id)
+      .single()
+    if (!existing || existing.user_id !== user.id) {
+      return NextResponse.json({ error: 'Inmueble no encontrado' }, { status: 404 })
+    }
+
+    // Campos editables
+    const cambios: Record<string, unknown> = {}
+    const str = (v: unknown, max: number) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, max) : undefined)
+    const num = (v: unknown) => {
+      if (v === null) return null
+      if (typeof v === 'number' && Number.isFinite(v) && v >= 0) return v
+      return undefined
+    }
+
+    const titulo = str(body.titulo, 150)
+    if (titulo !== undefined) cambios.titulo = titulo
+    const descripcion = str(body.descripcion, 6000)
+    if (descripcion !== undefined) cambios.descripcion = descripcion
+    const precio = num(body.precio)
+    if (precio !== undefined) cambios.precio = precio
+    const ciudad = str(body.ciudad, 100)
+    if (ciudad !== undefined) cambios.ciudad = ciudad
+    const estado = str(body.estado, 100)
+    if (estado !== undefined) cambios.estado = estado
+    const areaConstruida = num(body.area_construida)
+    if (areaConstruida !== undefined) cambios.area_construida = areaConstruida
+    const areaTerreno = num(body.area_terreno)
+    if (areaTerreno !== undefined) cambios.area_terreno = areaTerreno
+    const puestos = num(body.puestos_estacionamiento)
+    if (puestos !== undefined) cambios.puestos_estacionamiento = puestos
+    const condicion = str(body.condicion, 60)
+    if (condicion !== undefined) cambios.condicion = condicion || null
+    const electricidad = str(body.electricidad, 20)
+    if (electricidad !== undefined) cambios.electricidad = electricidad || null
+    const agua = str(body.agua, 20)
+    if (agua !== undefined) cambios.agua = agua || null
+
+    if (typeof body.tipo === 'string' && body.tipo.trim()) {
+      const slug = body.tipo.trim().toLowerCase()
+      if (/^[a-z-]{2,40}$/.test(slug)) {
+        const { data: tipoRow } = await supabase
+          .from('tipos_inmueble')
+          .select('id')
+          .eq('slug', slug)
+          .single()
+        if (tipoRow?.id) cambios.tipo_id = tipoRow.id
+      }
+    }
+
+    if (Object.keys(cambios).length > 0) {
+      const { error } = await supabase.from('inmuebles').update(cambios).eq('id', id)
+      if (error) throw error
+    }
+
+    // Características (reemplazo completo)
+    if (Array.isArray(body.caracteristicas)) {
+      const limpias: string[] = Array.from(new Set(
+        (body.caracteristicas as unknown[])
+          .filter((c): c is string => typeof c === 'string')
+          .map((c) => c.trim().toLowerCase())
+          .filter((c) => c.length >= 2)
+      )).slice(0, 25)
+
+      const { data: existentes } = await supabase.from('caracteristicas').select('id, nombre')
+      const mapa = new Map<string, string | number>()
+      for (const c of existentes || []) mapa.set(String(c.nombre).toLowerCase(), c.id)
+
+      const ids: Array<string | number> = []
+      for (const nombre of limpias) {
+        const found = mapa.get(nombre)
+        if (found) {
+          ids.push(found)
+          continue
+        }
+        const { data: creada } = await supabase
+          .from('caracteristicas')
+          .insert({ nombre: nombre.slice(0, 60) })
+          .select('id')
+          .single()
+        const creadoId = creada?.id ?? null
+        if (creadoId !== null && creadoId !== undefined) {
+          mapa.set(nombre, creadoId)
+          ids.push(creadoId)
+        }
+      }
+
+      const { error: delErr } = await supabase.from('inmueble_caracteristicas').delete().eq('inmueble_id', id)
+      if (delErr) throw delErr
+      if (ids.length > 0) {
+        const { error: joinErr } = await supabase.from('inmueble_caracteristicas').insert(
+          ids.map((cid: string | number) => ({ inmueble_id: id, caracteristica_id: cid }))
+        )
+        if (joinErr) throw joinErr
+      }
+    }
+
+    // Imágenes (lista completa: la primera es portada)
+    if (Array.isArray(body.imagenes)) {
+      const nuevas = body.imagenes
+        .filter((img: unknown): img is { id?: string; url: string } =>
+          !!img && typeof (img as { url?: unknown }).url === 'string' && !!(img as { url: string }).url.startsWith('http'))
+        .slice(0, 20)
+
+      const { data: filasActuales } = await supabase
+        .from('inmueble_imagenes')
+        .select('id')
+        .eq('inmueble_id', id)
+
+      const actualesIds = new Set((filasActuales || []).map((f) => String(f.id)))
+      const conservar = new Set(nuevas.map((img: { id?: string }) => img.id).filter(Boolean) as string[])
+
+      // Borrar las que ya no están en la lista
+      const borrar = Array.from(actualesIds).filter((fid) => !conservar.has(fid))
+      if (borrar.length > 0) {
+        const { error: delErr } = await supabase.from('inmueble_imagenes').delete().in('id', borrar)
+        if (delErr) throw delErr
+      }
+
+      // Reordenar las conservadas y añadir las nuevas
+      for (let i = 0; i < nuevas.length; i++) {
+        const img = nuevas[i]
+        if (img.id && actualesIds.has(img.id)) {
+          await supabase.from('inmueble_imagenes').update({ orden: i }).eq('id', img.id)
+        } else if (!img.id) {
+          await supabase.from('inmueble_imagenes').insert({ inmueble_id: id, url: img.url, orden: i })
+        }
+      }
+
+      // Portada del listado = primera foto
+      const primera = nuevas[0]?.url
+      if (primera) {
+        await supabase.from('inmuebles').update({ imagen_url: primera }).eq('id', id)
+      }
+    }
+
+    return NextResponse.json({ success: true })
+  } catch (error: any) {
+    console.error('Error updating property:', error)
     return NextResponse.json(
       { error: error?.message || 'Error interno del servidor' },
       { status: 500 }

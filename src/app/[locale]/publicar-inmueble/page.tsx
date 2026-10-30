@@ -215,6 +215,32 @@ export default function PublicarInmueblePage() {
     setImagenes(prev => prev.filter(img => img.id !== id));
   };
 
+  // Reordenar fotos: la primera es la portada
+  const moveImage = (index: number, dir: -1 | 1) => {
+    setImagenes(prev => {
+      const next = [...prev];
+      const target = index + dir;
+      if (target < 0 || target >= next.length) return prev;
+      [next[index], next[target]] = [next[target], next[index]];
+      return next;
+    });
+  };
+
+  const dragIndexRef = useRef<number | null>(null);
+  const handleDragStart = (index: number) => { dragIndexRef.current = index; };
+  const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); };
+  const handleDrop = (index: number) => {
+    const from = dragIndexRef.current;
+    dragIndexRef.current = null;
+    if (from === null || from === index) return;
+    setImagenes(prev => {
+      const next = [...prev];
+      const [moved] = next.splice(from, 1);
+      next.splice(index, 0, moved);
+      return next;
+    });
+  };
+
   // Descripción con IA (solo si GEMINI_API_KEY está configurada — plan gratuito de Gemini)
   const mejorarDescripcion = async () => {
     setMejorandoIA(true);
@@ -790,7 +816,14 @@ export default function PublicarInmueblePage() {
             {imagenes.length > 0 && (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
                 {imagenes.map((img, index) => (
-                  <div key={img.id} className="relative group">
+                  <div
+                    key={img.id}
+                    className="relative group cursor-grab active:cursor-grabbing"
+                    draggable
+                    onDragStart={() => handleDragStart(index)}
+                    onDragOver={handleDragOver}
+                    onDrop={() => handleDrop(index)}
+                  >
                     <Image
                       src={img.preview}
                       alt={tPublish('previewAlt')}
@@ -816,6 +849,27 @@ export default function PublicarInmueblePage() {
                         📸 {img.score}
                       </span>
                     )}
+                    {/* Reordenar: flechas (funcionan también en móvil) */}
+                    <div className="absolute bottom-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        type="button"
+                        aria-label={tPublish('moveEarlier')}
+                        onClick={() => moveImage(index, -1)}
+                        disabled={index === 0}
+                        className="bg-black/60 text-white rounded p-1 disabled:opacity-30 hover:bg-black/80"
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M15 18l-6-6 6-6" /></svg>
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={tPublish('moveLater')}
+                        onClick={() => moveImage(index, 1)}
+                        disabled={index === imagenes.length - 1}
+                        className="bg-black/60 text-white rounded p-1 disabled:opacity-30 hover:bg-black/80"
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M9 6l6 6-6 6" /></svg>
+                      </button>
+                    </div>
                     <button
                       type="button"
                       aria-label={tPublish('removeImage')}
@@ -829,6 +883,9 @@ export default function PublicarInmueblePage() {
                   </div>
                 ))}
               </div>
+            )}
+            {imagenes.length > 1 && (
+              <p className="mt-2 text-xs text-gray-500">{tPublish('reorderHint')}</p>
             )}
           </section>
 

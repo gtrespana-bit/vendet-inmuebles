@@ -1489,7 +1489,11 @@
     "uploadingPhotos": "Subiendo foto {current} de {total}…",
     "aiImprove": "Mejorar con IA",
     "aiUnavailable": "La IA no está disponible ahora.",
-    "planUsageNote": "Plan actual: {plan} · anuncios activos {active}/{max}"
+    "planUsageNote": "Plan actual: {plan} · anuncios activos {active}/{max}",
+    "moveEarlier": "Mover antes",
+    "moveLater": "Mover después",
+    "reorderHint": "Arrastra las fotos o usa las flechas para ordenarlas. La primera es la portada.",
+    "mapPinSet": "📍 Ubicación exacta fijada en el mapa"
   },
   "pushBanner": {
     "title": "Mantente al día",
@@ -1652,5 +1656,16 @@
     "openOsm": "Abrir en OpenStreetMap",
     "approxNote": "La ubicación exacta se coordina con el propietario.",
     "locationTitle": "Ubicación en el mapa"
+  },
+  "editListing": {
+    "title": "Editar anuncio",
+    "subtitle": "Actualiza los datos, fotos y su orden. La primera foto es la portada.",
+    "save": "Guardar cambios",
+    "saving": "Guardando…",
+    "saved": "Cambios guardados correctamente",
+    "redirecting": "Abriendo tu anuncio…",
+    "cancel": "Cancelar",
+    "notFound": "Anuncio no encontrado o no eres su propietario",
+    "goDashboard": "Ir a mi panel"
   }
 }
