@@ -1,13 +1,11 @@
 'use client'
 
-import { useEffect, useState, useRef, memo } from 'react'
+import { useEffect, useRef } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { usePathname } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import LocalLink from '@/components/LocalLink'
-import Image from 'next/image'
-import { Search, ChevronRight, XCircle } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
+import { Search, ChevronRight } from 'lucide-react'
 import { categoriasData } from '@/lib/categorias'
 import UbicacionSelector from '@/components/UbicacionSelector'
 import { Pagination } from '@/components/Pagination'
@@ -17,89 +15,12 @@ import { useProductPagination } from '@/hooks/useProductPagination'
 import { useProductLoader } from '@/hooks/useProductLoader'
 import { LoadingIndicator } from '@/components/LoadingIndicator'
 import { usePrefetch } from '@/hooks/usePrefetch'
-
-type Producto = {
-  id: string
-  titulo: string
-  precio_usd: number
-  main_image_url: string | null
-  ciudad: string | null
-  estado: string | null
-  creado_en: string
-  subcategoria: string | null
-  destacado: boolean
-  vendedor_verificado: boolean | null
-}
+import type { CatalogPropertyRecord } from '@/types/property'
 
 interface CatalogoPageProps {
-  initialProducts?: Producto[]
+  initialProducts?: CatalogPropertyRecord[]
   initialCount?: number
 }
-
-const PLACEHOLDER_IMAGE = '/sinimagen.webp'
-
-const BLUR_DATA_URL = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAADAAQDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k='
-
-function getPlaceholderImage(titulo: string) {
-  return PLACEHOLDER_IMAGE
-}
-
-function ProductCardSkeleton() {
-  return (
-    <div className="bg-white rounded-xl overflow-hidden border border-gray-100 shadow-sm animate-pulse">
-      <div className="aspect-square bg-gray-200" />
-      <div className="p-4 space-y-2">
-        <div className="h-4 bg-gray-200 rounded w-3/4" />
-        <div className="h-6 bg-gray-200 rounded w-1/2" />
-        <div className="h-3 bg-gray-200 rounded w-1/3" />
-      </div>
-    </div>
-  )
-}
-
-const ProductCard = memo(({ p, priority = false, t }: { p: Producto; priority?: boolean; t: (key: string) => string }) => {
-  const imgUrl = p.main_image_url || PLACEHOLDER_IMAGE
-
-  return (
-    <LocalLink href={`/inmueble/${p.id}`} className="bg-white rounded-xl overflow-hidden transition-all duration-200 group block border border-gray-100 shadow-sm hover:shadow-lg hover:-translate-y-1 hover:border-gray-200">
-      <div className="aspect-square bg-gray-100 relative overflow-hidden">
-        <Image
-          src={imgUrl}
-          alt={p.titulo}
-          width={300}  // Reducir tamaño para optimización
-          height={300}
-          sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 20vw"
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-          loading={priority ? 'eager' : 'lazy'}
-          priority={priority}
-          decoding="async"
-          placeholder="blur"
-          blurDataURL={BLUR_DATA_URL}
-          fetchPriority={priority ? 'high' : 'low'} // Cambiar a 'low' para no prioritarios
-          onError={(e) => {
-            const target = e.target as HTMLImageElement
-            if (!target.src.includes(PLACEHOLDER_IMAGE)) {
-              target.src = PLACEHOLDER_IMAGE
-            }
-          }}
-        />
-      </div>
-      <div className="p-4">
-        <h3 className="font-semibold text-gray-900 truncate group-hover:text-brand-primary transition-colors">{p.titulo}</h3>
-        <p className="text-xl font-black text-brand-primary mt-1">${new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(Number(p.precio_usd || 0))}</p>
-        {p.vendedor_verificado && (
-          <div className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-full mt-1">
-            <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-            {t('product.verified')}
-          </div>
-        )}
-        <p className="text-xs text-gray-500 mt-1">{p.ciudad || p.estado || 'Venezuela'}</p>
-      </div>
-    </LocalLink>
-  )
-})
-
-ProductCard.displayName = 'ProductCard'
 
 export default function CatalogoClient({ initialProducts = [], initialCount = 0 }: CatalogoPageProps) {
   const tc = useTranslations('catalog')
@@ -135,7 +56,7 @@ export default function CatalogoClient({ initialProducts = [], initialCount = 0 
   const hasActiveFilters = !!(categoria || subcategoria || marca || q || precioMin || precioMax || ubicacionEstado || ubicacionCiudad || operacion)
 
   // Usar los hooks de carga y precarga de productos
-  const { productos: loadedProductos, loading, error, totalCount: loaderTotalCount, loadProducts } = useProductLoader();
+  const { productos: loadedProductos, loading, totalCount: loaderTotalCount, loadProducts } = useProductLoader();
   const { prefetchPage } = usePrefetch();
 
   // Determinar qué productos usar
@@ -145,10 +66,9 @@ export default function CatalogoClient({ initialProducts = [], initialCount = 0 
     : initialProducts;
   const totalCountToUse = hasActiveFilters ? loaderTotalCount : initialCount;
 
-  // Calcular productos para la página actual
+  // Renderizar sólo la página actual para limitar imágenes y nodos en pantalla
   const startIndex = (currentPage - 1) * itemsPerPage
-  const endIndex = startIndex + itemsPerPage
-  const productosPagina = productosToUse.slice(startIndex, endIndex)
+  const productosPagina = productosToUse.slice(startIndex, startIndex + itemsPerPage)
   const totalPages = Math.ceil(productosToUse.length / itemsPerPage)
 
   const isFirstRender = useRef(true)
@@ -267,9 +187,8 @@ export default function CatalogoClient({ initialProducts = [], initialCount = 0 
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
       />
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Breadcrumbs visuales */}
-        <nav className="flex items-center gap-2 text-sm text-gray-500 mb-6 flex-wrap" aria-label="Breadcrumb">
+      <div className="catalog-page home-shell py-8">
+        <nav className="catalog-breadcrumbs" aria-label="Breadcrumb">
           {breadcrumbs.map((item, index) => (
             <span key={index} className="flex items-center gap-2">
               {index > 0 && <ChevronRight size={14} className="text-gray-400" />}
@@ -287,8 +206,8 @@ export default function CatalogoClient({ initialProducts = [], initialCount = 0 
           ))}
         </nav>
 
-      <div className="flex flex-col lg:flex-row gap-6">
-        <aside className="w-full lg:w-72 flex-shrink-0">
+      <div className="catalog-layout">
+        <aside className="catalog-sidebar">
           <CatalogFilters
             categoria={categoria}
             operacionTipo={operacion}
@@ -300,18 +219,21 @@ export default function CatalogoClient({ initialProducts = [], initialCount = 0 
           />
         </aside>
 
-        <div className="flex-1">
-          <div className="bg-white rounded-xl p-4 mb-4 shadow-sm">
+        <div className="catalog-results">
+          <div className="catalog-results-head">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div>
-                <h1 className="text-xl font-bold text-gray-900">{tituloMostrar}</h1>
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="catalog-overline">{t('catalog.breadcrumb')}</p>
+                <h1>{tituloMostrar}</h1>
+                <p className="catalog-result-count">
                   {loading ? t('common.loading') : t('catalog.results', { count: totalCountToUse || 0 })}
                 </p>
               </div>
-              <form action="/buscar" method="GET" className="flex gap-2 w-full sm:w-auto">
-                <input name="q" defaultValue={q} placeholder={`${t('common.search')}...`} className="w-full sm:w-60 border rounded-lg px-4 py-2 text-sm" />
-                <button type="submit" className="bg-brand-primary text-white px-4 rounded-lg font-bold text-sm hover:bg-brand-dark transition">{t('common.search')}</button>
+              <form action={pathname.startsWith('/en') ? '/en/catalogo' : '/catalogo'} method="GET" className="catalog-search">
+                {operacion && <input type="hidden" name="operacion" value={operacion} />}
+                {categoria && <input type="hidden" name="categoria" value={categoria} />}
+                <input name="q" defaultValue={q} placeholder={`${t('common.search')}...`} aria-label={t('common.search')} />
+                <button type="submit" aria-label={t('common.search')}><Search size={17} /></button>
               </form>
             </div>
           </div>
@@ -332,17 +254,17 @@ export default function CatalogoClient({ initialProducts = [], initialCount = 0 
           {loading ? (
             <LoadingIndicator count={6} />
           ) : productosToUse.length === 0 ? (
-            <div className="bg-white rounded-xl p-16 text-center shadow-sm border">
+            <div className="catalog-empty">
               <Search size={48} className="text-gray-300 mx-auto mb-4" />
               <h3 className="text-xl font-bold text-gray-800 mb-2">{t('catalog.empty')}</h3>
               <p className="text-gray-500 mb-4">{t('catalog.emptyCta')}</p>
-              <LocalLink href="/publicar" className="inline-block bg-brand-accent text-brand-primary px-6 py-3 rounded-lg font-bold hover:bg-accent/90 transition">
+              <LocalLink href="/publicar-inmueble" className="inline-block bg-brand-accent text-brand-primary px-6 py-3 rounded-lg font-bold hover:bg-accent/90 transition">
                 {t('catalog.publishFree')}
               </LocalLink>
             </div>
           ) : (
             <OptimizedProductGrid
-              productos={productosToUse}
+              productos={productosPagina}
               t={t}
               currentPage={currentPage}
               itemsPerPage={itemsPerPage}

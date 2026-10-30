@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { getTranslations } from 'next-intl/server'
 
 export const metadata: Metadata = {
-  title: 'Política de Privacidad — VendeT-Venezuela',
+  title: 'Política de Privacidad — Venezuela Inmuebles',
 }
 
 export default async function PrivacidadPage() {

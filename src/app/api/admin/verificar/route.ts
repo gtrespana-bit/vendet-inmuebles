@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
 
     await notifyUser(auth.supabaseAdmin, userId, {
       title: '✅ Perfil verificado',
-      body: 'Tu perfil ya está verificado en VendeT. Ahora tienes acceso a todas las funciones.',
+      body: 'Tu perfil ya está verificado en Venezuela Inmuebles. Ahora tienes acceso a todas las funciones.',
       tag: 'verified',
       icon: '/icon-192.png',
       click_url: '/dashboard',

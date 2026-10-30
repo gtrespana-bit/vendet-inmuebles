@@ -1,4 +1,4 @@
-# VendeT Inmuebles
+# Venezuela Inmuebles
 
 Portal inmobiliario para publicar y descubrir inmuebles en Venezuela. La aplicación está construida con Next.js 14, React 18, Supabase y Cloudflare R2 (opcional para imágenes de publicaciones).
 

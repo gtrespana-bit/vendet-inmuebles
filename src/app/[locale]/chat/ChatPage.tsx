@@ -1,15 +1,16 @@
 'use client'
 
 import { useEffect, useState, useRef, useCallback } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { getSupabaseAuthHeaders } from '@/lib/supabase-auth-headers'
 import { useAuth } from '@/components/AuthProvider'
 import Avatar from '@/components/Avatar'
-import { Send, ArrowLeft, Search, User, Trash2, ExternalLink, Star } from 'lucide-react'
+import { Send, ArrowLeft, Search, User, Trash2, ExternalLink, Star, MessageSquare } from 'lucide-react'
 import LocalLink from '@/components/LocalLink'
 import { useTranslations } from 'next-intl'
 import { emailMensajeRecibido } from '@/lib/server-email'
+import { localizePath } from '@/lib/auth-redirect'
 
 type Conversacion = {
   id: string
@@ -36,42 +37,41 @@ type Mensaje = {
   creado_en: string
 }
 
-function formatTime(iso: string | null): string {
+function formatTime(iso: string | null, locale: string): string {
   if (!iso) return ''
-  const d = new Date(iso)
-  const now = new Date()
-  const diffMs = now.getTime() - d.getTime()
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return ''
+  const diffMs = Date.now() - date.getTime()
   const diffMin = Math.floor(diffMs / 60000)
-  if (diffMin < 1) return 'Ahora'
-  if (diffMin < 60) return `${diffMin}m`
+  const relative = new Intl.RelativeTimeFormat(locale === 'en' ? 'en' : 'es', { numeric: 'auto', style: 'short' })
+  if (diffMin < 1) return relative.format(0, 'second')
+  if (diffMin < 60) return relative.format(-diffMin, 'minute')
   const diffH = Math.floor(diffMin / 60)
-  if (diffH < 24) return `${diffH}h`
+  if (diffH < 24) return relative.format(-diffH, 'hour')
   const diffD = Math.floor(diffH / 24)
-  if (diffD < 7) return `${diffD}d`
-  return d.toLocaleDateString('es-VE', { day: '2-digit', month: 'short' })
+  if (diffD < 7) return relative.format(-diffD, 'day')
+  return new Intl.DateTimeFormat(locale === 'en' ? 'en-US' : 'es-VE', { day: '2-digit', month: 'short' }).format(date)
 }
 
-function formatHora(iso: string): string {
-  return new Date(iso).toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit' })
-}
-
-function slugProducto(titulo: string, id: string): string {
-  return titulo.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/(^\-|-$)/g, '') + '-' + id.substring(0, 8)
+function formatHora(iso: string, locale: string): string {
+  const date = new Date(iso)
+  return Number.isNaN(date.getTime()) ? '' : new Intl.DateTimeFormat(locale === 'en' ? 'en-US' : 'es-VE', { hour: '2-digit', minute: '2-digit' }).format(date)
 }
 
 export default function ChatPageClient() {
   const t = useTranslations('chat')
   const { user, loading: authLoading } = useAuth()
   const router = useRouter()
+  const pathname = usePathname()
+  const locale = pathname === '/en' || pathname.startsWith('/en/') ? 'en' : 'es'
   const searchParams = useSearchParams()
   const productoId = searchParams?.get('producto_id')
   const vendedorId = searchParams?.get('vendedor_id')
 
   const [conversaciones, setConversaciones] = useState<Conversacion[]>(() => {
-    // Restore cached conversations for instant render
     if (typeof window !== 'undefined') {
       try {
-        const cached = sessionStorage.getItem('vendete_chat_convs')
+        const cached = sessionStorage.getItem('venezuela_inmuebles_chat_convs')
         if (cached) return JSON.parse(cached)
       } catch {}
     }
@@ -95,7 +95,6 @@ export default function ChatPageClient() {
   userRef.current = user
   convIdRef.current = convId
 
-  // ─── Estados reseña comprador ───
   const [mostrarResena, setMostrarResena] = useState(false)
   const [ratingResena, setRatingResena] = useState(5)
   const [comentarioResena, setComentarioResena] = useState('')
@@ -104,26 +103,28 @@ export default function ChatPageClient() {
   const [productoOwnerId, setProductoOwnerId] = useState<string | null>(null)
   const [yaDejoResena, setYaDejoResena] = useState(false)
 
-  // BroadcastChannel para sincronizar badge con Header
   useEffect(() => {
-    if (typeof window === 'undefined') return
-    const bc = new BroadcastChannel('vendete_unread_sync')
+    if (typeof window === 'undefined' || !('BroadcastChannel' in window)) return
+    const bc = new BroadcastChannel('venezuela_inmuebles_unread_sync')
     bcRef.current = bc
     return () => bc.close()
   }, [])
 
-  // ─── Auth guard ───
+  // Retain the property enquiry through sign-in, then open the same conversation.
   useEffect(() => {
-    if (authLoading) return
-    if (!user) router.push('/login')
-  }, [user, authLoading, router])
+    if (authLoading || user) return
+    const params = new URLSearchParams()
+    if (productoId) params.set('producto_id', productoId)
+    if (vendedorId) params.set('vendedor_id', vendedorId)
+    const queryString = params.toString()
+    const returnPath = `/chat${queryString ? `?${queryString}` : ''}`
+    router.replace(localizePath(`/login?redirect=${encodeURIComponent(returnPath)}`, locale))
+  }, [user, authLoading, router, locale, productoId, vendedorId])
 
-  // ─── Auto-scroll ───
   useEffect(() => {
     chatContainerRef.current?.scrollTo({ top: chatContainerRef.current.scrollHeight, behavior: 'smooth' })
   }, [mensajes])
 
-  // ─── Cargar owner del producto y verificar reseña comprador ───
   useEffect(() => {
     if (!convId || !user) return
     setProductoOwnerId(null)
@@ -131,228 +132,208 @@ export default function ChatPageClient() {
     setYaDejoResena(false)
 
     getSupabaseAuthHeaders()
-    .then(authHeaders => fetch('/api/chat/review-status', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...authHeaders },
-      body: JSON.stringify({ convId, userId: user.id }),
-    }))
-    .then(async r => {
-      const data = await r.json()
-      setProductoOwnerId(data.productoOwnerId)
-      setPuedeResenar(data.puedeResenar)
-      setYaDejoResena(data.yaDejoResena)
-    })
-    .catch(err => console.error('[REVIEW-STATUS] error:', err))
+      .then(authHeaders => fetch('/api/chat/review-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders },
+        body: JSON.stringify({ convId, userId: user.id }),
+      }))
+      .then(async response => {
+        const data = await response.json()
+        setProductoOwnerId(data.productoOwnerId)
+        setPuedeResenar(data.puedeResenar)
+        setYaDejoResena(data.yaDejoResena)
+      })
+      .catch(error => console.error('[REVIEW-STATUS] error:', error))
   }, [convId, user])
 
-  // ─── Cargar conversaciones ───
   const loadConversaciones = useCallback(async () => {
     const uid = userRef.current?.id
     if (!uid) { loadingRef.current = false; return }
 
     const { data: convs, error } = await supabase
       .from('conversaciones')
-      .select('id, user1_id, user2_id, ultimo_mensaje_en, ultimo_mensaje_contenido')
+      .select('id, user1_id, user2_id, producto_id, ultimo_mensaje_en, ultimo_mensaje_contenido')
       .or(`user1_id.eq.${uid},user2_id.eq.${uid}`)
       .order('ultimo_mensaje_en', { ascending: false })
 
-    if (error) { console.error('Error loading convs:', error); return }
+    if (error) { console.error('Error loading conversations:', error); return }
 
-    const otroIds = Array.from(new Set(convs?.map((c: any) => c.user1_id === uid ? c.user2_id : c.user1_id).filter(Boolean) || []))
-    const prodIds = Array.from(new Set(convs?.filter((c: any) => c.producto_id).map((c: any) => c.producto_id as string) || []))
-
-    // Also fetch profiles/products for URL params if they exist
+    const otroIds = Array.from(new Set(convs?.map((conversation: any) => conversation.user1_id === uid ? conversation.user2_id : conversation.user1_id).filter(Boolean) || []))
+    const prodIds = Array.from(new Set(convs?.filter((conversation: any) => conversation.producto_id).map((conversation: any) => conversation.producto_id as string) || []))
     if (vendedorId && !otroIds.includes(vendedorId)) otroIds.push(vendedorId)
     if (productoId && !prodIds.includes(productoId)) prodIds.push(productoId)
 
-    // Fetch perfiles via API server-side (bypass RLS) / productos via supabase client
-    let perfilMap = new Map<string, { nombre: string; foto: string | null; email: string | null }>()
+    const perfilMap = new Map<string, { nombre: string; foto: string | null; email: string | null }>()
     if (otroIds.length) {
       try {
-        const resp = await fetch(`/api/user-bulk?ids=${encodeURIComponent(otroIds.join(','))}`, {
+        const response = await fetch(`/api/user-bulk?ids=${encodeURIComponent(otroIds.join(','))}`, {
           headers: await getSupabaseAuthHeaders(),
         })
-        const json = await resp.json()
-        json.profiles?.forEach((p: { id: string; nombre: string; foto_perfil_url: string | null }) => {
-          perfilMap.set(p.id, { nombre: p.nombre || 'Usuario', foto: p.foto_perfil_url || null, email: null })
+        const json = await response.json()
+        json.profiles?.forEach((profile: { id: string; nombre: string; foto_perfil_url: string | null }) => {
+          perfilMap.set(profile.id, { nombre: profile.nombre || t('unknownUser'), foto: profile.foto_perfil_url || null, email: null })
         })
-      } catch (e) { console.error('Error fetching user-bulk:', e) }
+      } catch (error) { console.error('Error fetching user profiles:', error) }
     }
-    const [, productosRes] = await Promise.all([
-      Promise.resolve(null),
-      prodIds.length ? supabase.from('vw_propiedades_publicas').select('id, titulo').in('id', prodIds) : Promise.resolve({ data: [] }),
-    ])
 
+    const productosRes = prodIds.length
+      ? await supabase.from('vw_propiedades_publicas').select('id, titulo').in('id', prodIds)
+      : { data: [] }
     const prodMap = new Map<string, string>()
-    productosRes.data?.forEach((p: any) => prodMap.set(p.id, p.titulo || ''))
+    productosRes.data?.forEach((property: any) => prodMap.set(property.id, property.titulo || ''))
 
-    // Unread count
     const unreadMap = new Map<string, number>()
-    if (convs && convs.length > 0) {
+    if (convs?.length) {
       const { data: unreadData } = await supabase
         .from('mensajes')
         .select('conversacion_id')
         .eq('destinatario_id', uid)
         .eq('leido', false)
-        .in('conversacion_id', convs.map((c: any) => c.id))
-      unreadData?.forEach((m: { conversacion_id: string }) => {
-        const count = unreadMap.get(m.conversacion_id) || 0
-        unreadMap.set(m.conversacion_id, count + 1)
+        .in('conversacion_id', convs.map((conversation: any) => conversation.id))
+      unreadData?.forEach((message: { conversacion_id: string }) => {
+        unreadMap.set(message.conversacion_id, (unreadMap.get(message.conversacion_id) || 0) + 1)
       })
     }
 
-    const enriched: Conversacion[] = (convs || []).map((c: any) => {
-      const otroId = c.user1_id === uid ? c.user2_id : c.user1_id
-      const p = perfilMap.get(otroId)
+    const enriched: Conversacion[] = (convs || []).map((conversation: any) => {
+      const otherId = conversation.user1_id === uid ? conversation.user2_id : conversation.user1_id
+      const profile = perfilMap.get(otherId)
       return {
-        ...c,
-        otro_nombre: p?.nombre || 'Usuario',
-        otro_foto: p?.foto || null,
-        otro_email: p?.email || null,
-        producto_titulo: c.producto_id ? (prodMap.get(c.producto_id) || null) : null,
-        no_leidos: unreadMap.get(c.id) || 0,
+        ...conversation,
+        ultimo_mensaje: conversation.ultimo_mensaje_contenido || conversation.ultimo_mensaje || null,
+        otro_nombre: profile?.nombre || t('unknownUser'),
+        otro_foto: profile?.foto || null,
+        otro_email: profile?.email || null,
+        producto_titulo: conversation.producto_id ? (prodMap.get(conversation.producto_id) || null) : null,
+        no_leidos: unreadMap.get(conversation.id) || 0,
       }
     })
 
     setConversaciones(enriched)
+    try { sessionStorage.setItem('venezuela_inmuebles_chat_convs', JSON.stringify(enriched)) } catch {}
 
-    // Cache en sessionStorage para carga instantánea la próxima vez
-    try {
-      sessionStorage.setItem('vendete_chat_convs', JSON.stringify(enriched))
-    } catch {}
-
-    // If URL has producto_id + vendedor_id, try to find or create conv
     if (productoId && vendedorId && vendedorId !== uid) {
-      const match = enriched.find(c =>
-        c.producto_id === productoId &&
-        ((c.user1_id === uid && c.user2_id === vendedorId) ||
-         (c.user1_id === vendedorId && c.user2_id === uid))
+      const match = enriched.find(conversation =>
+        conversation.producto_id === productoId &&
+        ((conversation.user1_id === uid && conversation.user2_id === vendedorId) ||
+         (conversation.user1_id === vendedorId && conversation.user2_id === uid))
       )
       if (match) {
         setConvId(match.id)
         setShowMobileChat(true)
       } else {
-        // Create conversation directly in DB
-        const u1 = uid < vendedorId ? uid : vendedorId
-        const u2 = uid < vendedorId ? vendedorId : uid
-        const { data: newConv, error: insErr } = await supabase
-          .from('conversaciones')
-          .insert({ user1_id: u1, user2_id: u2, producto_id: productoId })
-          .select()
-          .single()
-
-        if (insErr || !newConv) {
-          console.error('Error creating conversation:', insErr)
-        } else {
-          const perfil = perfilMap.get(vendedorId)
-          setConversaciones(prev => [{
-            ...newConv,
-            otro_nombre: perfil?.nombre || 'Usuario',
-            otro_foto: perfil?.foto || null,
+        try {
+          const response = await fetch('/api/crear-conversacion', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...(await getSupabaseAuthHeaders()) },
+            body: JSON.stringify({ vendedorId, productoId }),
+          })
+          const newConversation = await response.json()
+          if (!response.ok) throw new Error(newConversation.error || t('connectionError'))
+          const profile = perfilMap.get(vendedorId)
+          setConversaciones(previous => [{
+            ...newConversation,
+            ultimo_mensaje: null,
+            otro_nombre: profile?.nombre || t('unknownUser'),
+            otro_foto: profile?.foto || null,
+            otro_email: profile?.email || null,
             producto_titulo: prodMap.get(productoId) || null,
             no_leidos: 0,
-          }, ...prev])
-          setConvId(newConv.id)
+          }, ...previous.filter(conversation => conversation.id !== newConversation.id)])
+          setConvId(newConversation.id)
           setShowMobileChat(true)
+        } catch (error) {
+          console.error('Could not open property conversation:', error)
+          setToastMsg(error instanceof Error ? error.message : t('connectionError'))
         }
       }
     }
-  }, [productoId, vendedorId])
+  }, [productoId, vendedorId, t])
 
-  // Load once
   useEffect(() => {
     if (authLoading || !user) return
     loadingRef.current = true
     setLoadingConvs(true)
-    loadConversaciones().then(() => { loadingRef.current = false; setLoadingConvs(false) })
+    loadConversaciones().finally(() => { loadingRef.current = false; setLoadingConvs(false) })
   }, [user, authLoading, loadConversaciones])
 
-  // ─── Cargar mensajes ───
   const loadMensajes = useCallback(async (id: string) => {
     const { data, error } = await supabase
       .from('mensajes')
       .select('id, remitente_id, destinatario_id, contenido, leido, creado_en, conversacion_id')
       .eq('conversacion_id', id)
       .order('creado_en', { ascending: true })
-
-    if (error) { console.error('Error loading msgs:', error); return }
+    if (error) { console.error('Error loading messages:', error); return }
     setMensajes(data || [])
   }, [])
 
-  // Load messages on mount/conv change (realtime handles live updates)
   useEffect(() => {
-    if (!convId) return
-    loadMensajes(convId)
+    if (convId) loadMensajes(convId)
   }, [convId, loadMensajes])
 
-  // ─── Realtime: listen for new inserts en mensajes ───
   useEffect(() => {
     if (!user) return
-    const sub = supabase
+    const subscription = supabase
       .channel('chat-msgs')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensajes' }, (payload: any) => {
-        const nuevo = payload.new as any
-        if (nuevo.conversacion_id === convIdRef.current) {
-          setMensajes(prev => {
-            if (prev.some(m => m.id === nuevo.id)) return prev
-            return [...prev, nuevo]
-          })
+        const incoming = payload.new as any
+        if (incoming.conversacion_id === convIdRef.current) {
+          setMensajes(previous => previous.some(message => message.id === incoming.id) ? previous : [...previous, incoming])
         }
       })
       .subscribe()
-    return () => { supabase.removeChannel(sub) }
+    return () => { supabase.removeChannel(subscription) }
   }, [user])
 
-  // ─── Realtime: actualizar sidebar ───
   useEffect(() => {
     if (!user) return
-    const sub = supabase
+    const subscription = supabase
       .channel('chat-convs')
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'conversaciones' }, (payload: any) => {
         const updated = payload.new as any
         if (updated.user1_id !== user.id && updated.user2_id !== user.id) return
-        setConversaciones(prev => {
-          const idx = prev.findIndex(c => c.id === updated.id)
-          if (idx < 0) return prev
-          const arr = [...prev]
-          arr[idx] = { ...arr[idx], ultimo_mensaje: updated.ultimo_mensaje, ultimo_mensaje_en: updated.ultimo_mensaje_en }
-          return arr.sort((a, b) => (b.ultimo_mensaje_en || '').localeCompare(a.ultimo_mensaje_en || ''))
+        setConversaciones(previous => {
+          const index = previous.findIndex(conversation => conversation.id === updated.id)
+          if (index < 0) return previous
+          const next = [...previous]
+          next[index] = {
+            ...next[index],
+            ultimo_mensaje: updated.ultimo_mensaje_contenido || updated.ultimo_mensaje || next[index].ultimo_mensaje,
+            ultimo_mensaje_en: updated.ultimo_mensaje_en,
+          }
+          return next.sort((a, b) => (b.ultimo_mensaje_en || '').localeCompare(a.ultimo_mensaje_en || ''))
         })
       })
       .subscribe()
-    return () => { supabase.removeChannel(sub) }
+    return () => { supabase.removeChannel(subscription) }
   }, [user])
 
-  // ─── Seleccionar conversacion ───
   const seleccionarConv = async (id: string) => {
     setConvId(id)
     setShowMobileChat(true)
-    // Marcar como leido via API server-side (evita RLS bloqueante)
     try {
-      const resp = await fetch('/api/mensajes-leidos', {
+      const response = await fetch('/api/mensajes-leidos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(await getSupabaseAuthHeaders()) },
-        body: JSON.stringify({ conversacion_id: id, destinatario_id: user!.id })
+        body: JSON.stringify({ conversacion_id: id, destinatario_id: user!.id }),
       })
-      if (resp.ok) {
-        // Señal al Header para refrescar badge
+      if (response.ok) {
         bcRef.current?.postMessage({ action: 'refresh-unread' })
-        localStorage.setItem('vendete_unread_refresh', Date.now().toString())
+        localStorage.setItem('venezuela_inmuebles_unread_refresh', Date.now().toString())
       }
-    } catch (e) {
-      console.error('Error marcando leidos:', e)
-    }
-    setConversaciones(prev => prev.map(c => c.id === id ? { ...c, no_leidos: 0 } : c))
+    } catch (error) { console.error('Error marking messages read:', error) }
+    setConversaciones(previous => previous.map(conversation => conversation.id === id ? { ...conversation, no_leidos: 0 } : conversation))
     await loadMensajes(id)
   }
 
-  // ─── Eliminar conversacion ───
-  const eliminarConv = async (id: string, e: React.MouseEvent) => {
-    e.stopPropagation()
+  const eliminarConv = async (id: string, event: React.MouseEvent) => {
+    event.stopPropagation()
     if (!confirm(t('deleteConversation'))) return
-    await supabase.from('mensajes').delete().eq('conversacion_id', id)
-    await supabase.from('conversaciones').delete().eq('id', id)
-    setConversaciones(prev => prev.filter(c => c.id !== id))
+    const { error: messageError } = await supabase.from('mensajes').delete().eq('conversacion_id', id)
+    if (messageError) { setToastMsg(messageError.message); return }
+    const { error: conversationError } = await supabase.from('conversaciones').delete().eq('id', id)
+    if (conversationError) { setToastMsg(conversationError.message); return }
+    setConversaciones(previous => previous.filter(conversation => conversation.id !== id))
     if (convId === id) {
       setConvId(null)
       setShowMobileChat(false)
@@ -360,358 +341,279 @@ export default function ChatPageClient() {
     }
   }
 
-  // ─── Enviar reseña comprador → vendedor ───
   const enviarResenaComprador = async () => {
     if (!convId || !user || enviandoResena || !productoOwnerId) return
-    const conv = conversaciones.find(c => c.id === convId)
-    if (!conv || !conv.producto_id) return
+    const conversation = conversaciones.find(item => item.id === convId)
+    if (!conversation?.producto_id) return
 
     setEnviandoResena(true)
     try {
-      const resp = await fetch('/api/admin/enviar-resena', {
+      const response = await fetch('/api/admin/enviar-resena', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(await getSupabaseAuthHeaders()) },
         body: JSON.stringify({
           evaluador_id: user.id,
           evaluado_id: productoOwnerId,
-          producto_id: conv.producto_id,
+          producto_id: conversation.producto_id,
           puntuacion: ratingResena,
           comentario: comentarioResena.trim() || null,
         }),
       })
-      const json = await resp.json()
-      if (!resp.ok) {
-        console.error('Error enviando reseña:', json)
-        alert(t('reviewError') + (json.error || json._error || ''))
-        setEnviandoResena(false)
-        return
-      }
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || t('reviewError'))
       setMostrarResena(false)
       setYaDejoResena(true)
       setComentarioResena('')
       setRatingResena(5)
-    } catch (e) {
-      console.error('Error enviando reseña:', e)
-      alert(t('connectionError'))
+    } catch (error) {
+      setToastMsg(error instanceof Error ? error.message : t('reviewError'))
+    } finally {
+      setEnviandoResena(false)
     }
-    setEnviandoResena(false)
   }
 
-  // ─── Enviar mensaje ───
   const enviarMensaje = async () => {
-    const msg = texto.trim()
-    if (!msg || !convId || !user || enviando) return
+    const message = texto.trim()
+    if (!message || !convId || !user || enviando) return
     setEnviando(true)
+    const conversation = conversaciones.find(item => item.id === convId)
+    if (!conversation) { setEnviando(false); return }
+    const recipientId = conversation.user1_id === user.id ? conversation.user2_id : conversation.user1_id
 
-    // Get conversation to find recipient
-    const conv = conversaciones.find(c => c.id === convId)
-    if (!conv) { console.error('ChatPage: conversacion no encontrada', convId); setEnviando(false); return }
-    const destinatarioId = conv.user1_id === user.id ? conv.user2_id : conv.user1_id
-
-    // Insert directly via Supabase (always worked this way)
     const { error } = await supabase.from('mensajes').insert({
       conversacion_id: convId,
       remitente_id: user.id,
-      destinatario_id: destinatarioId,
-      contenido: msg,
+      destinatario_id: recipientId,
+      contenido: message,
     })
 
     if (error) {
-      console.error('Error enviando mensaje:', error.message)
-      setToastMsg('Error al enviar: ' + error.message)
-      setTimeout(() => setToastMsg(null), 4000)
+      setToastMsg(`${t('sendError')}: ${error.message}`)
       setEnviando(false)
       return
     }
 
-    // Success
     setTexto('')
     await loadMensajes(convId)
-
-    // Push notification al destinatario
     try {
       await fetch('/api/push/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(await getSupabaseAuthHeaders()) },
         body: JSON.stringify({
-          targetUserId: destinatarioId,
-          titulo: `💬 ${conv.otro_nombre || 'Alguien'} te escribió`,
-          cuerpo: msg.length > 100 ? msg.slice(0, 100) + '...' : msg,
+          targetUserId: recipientId,
+          titulo: `${t('newMessageFrom')} ${conversation.otro_nombre || t('unknownUser')}`,
+          cuerpo: message.length > 100 ? `${message.slice(0, 100)}…` : message,
           click_url: `/chat?conversation=${convId}`,
         }),
       })
-    } catch (e) { console.error('Push send failed:', e) }
+    } catch (error) { console.error('Push send failed:', error) }
 
-    // Email notification
-      if (conv.otro_email && user && user.id !== destinatarioId) {
-        const producto = conv.producto_titulo || 'un producto'
-        const preview = msg.length > 100 ? msg.substring(0, 100) + '...' : msg
-        emailMensajeRecibido(conv.otro_email, conv.otro_nombre, user?.email?.split('@')[0] || 'Alguien', producto, preview).catch(e => console.error('Error email mensaje:', e))
-      }
+    if (conversation.otro_email && user.id !== recipientId) {
+      const propertyTitle = conversation.producto_titulo || t('aProperty')
+      const preview = message.length > 100 ? `${message.substring(0, 100)}…` : message
+      emailMensajeRecibido(conversation.otro_email, conversation.otro_nombre, user.email?.split('@')[0] || t('unknownUser'), propertyTitle, preview).catch(error => console.error('Error emailing conversation:', error))
+    }
     setEnviando(false)
   }
 
-  // ─── Loading ───
   if (authLoading || !user) {
     return (
-      <div className="max-w-6xl mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold text-gray-800 mb-6">💬 Mensajes</h1>
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 h-[600px] md:h-auto flex items-center justify-center">
-          <div className="text-center text-gray-400">
-            <div className="w-12 h-12 border-4 border-brand-accent border-t-brand-primary rounded-full animate-spin mx-auto mb-3" />
-            <p>Cargando mensajes...</p>
+      <div className="inbox-page min-h-[60vh]" aria-busy="true">
+        <div className="inbox-page__inner">
+          <header className="inbox-page__heading"><p>{t('title')}</p><h1>{t('title')}</h1></header>
+          <div className="inbox-shell inbox-shell--loading">
+            <div className="text-center text-[#897f75]">
+              <div className="mx-auto mb-3 h-10 w-10 animate-spin rounded-full border-2 border-[#d8c6a6] border-t-[#612e35]" />
+              <p>{t('loadingConversations')}</p>
+            </div>
           </div>
         </div>
       </div>
     )
   }
 
-  const filtradas = conversaciones.filter(c =>
-    c.otro_nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
-    (c.producto_titulo?.toLowerCase() ?? '').includes(busqueda.toLowerCase())
+  const filtered = conversaciones.filter(conversation =>
+    conversation.otro_nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
+    (conversation.producto_titulo?.toLowerCase() ?? '').includes(busqueda.toLowerCase())
   )
-  const convActual = conversaciones.find(c => c.id === convId)
+  const currentConversation = conversaciones.find(conversation => conversation.id === convId)
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-gray-800 mb-6">💬 Mensajes</h1>
+    <main className="inbox-page">
+      <div className="inbox-page__inner">
+        <header className="inbox-page__heading">
+          <div>
+            <p>{t('eyebrow')}</p>
+            <h1>{t('title')}</h1>
+          </div>
+          <span>{t('privateConversationNote')}</span>
+        </header>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="flex flex-col md:flex-row md:h-[600px] max-h-[calc(100dvh-140px)]">
-          {/* ─── Sidebar ─── */}
-          <div className={`${showMobileChat ? 'hidden md:flex' : 'flex'} flex-col w-full md:w-80 border-r border-gray-100`}>
-            <div className="p-3 border-b">
-              <div className="relative">
-                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+        <div className="inbox-shell">
+          <div className="inbox-shell__layout">
+            <aside className={`${showMobileChat ? 'hidden md:flex' : 'flex'} inbox-sidebar`} aria-label={t('conversationList')}>
+              <div className="inbox-sidebar__search">
+                <Search size={16} aria-hidden="true" />
                 <input
-                  type="text"
+                  type="search"
                   value={busqueda}
-                  onChange={e => setBusqueda(e.target.value)}
-                  placeholder="Buscar conversacion..."
-                  className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm bg-gray-50 focus:bg-white focus:border-brand-accent outline-none transition"
+                  onChange={event => setBusqueda(event.target.value)}
+                  placeholder={t('searchConversations')}
+                  aria-label={t('searchConversations')}
                 />
               </div>
-            </div>
 
-            <div className="flex-1 overflow-y-auto">
-              {loadingConvs && conversaciones.length === 0 ? (
-                <div className="p-4 space-y-4 animate-pulse">
-                  {[1, 2, 3, 4, 5].map(i => (
-                    <div key={i} className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gray-200 flex-shrink-0" />
-                      <div className="flex-1 space-y-2">
-                        <div className="h-4 bg-gray-200 rounded w-3/4" />
-                        <div className="h-3 bg-gray-100 rounded w-1/2" />
+              <div className="inbox-sidebar__list">
+                {loadingConvs && conversaciones.length === 0 ? (
+                  <div className="p-4 space-y-4 animate-pulse" aria-label={t('loadingConversations')}>
+                    {[1, 2, 3, 4].map(index => (
+                      <div key={index} className="flex items-start gap-3">
+                        <div className="h-10 w-10 rounded-full bg-[#eee8df]" />
+                        <div className="flex-1 space-y-2"><div className="h-3 w-3/4 bg-[#eee8df]" /><div className="h-3 w-1/2 bg-[#f3eee7]" /></div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              ) : filtradas.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full px-6 text-center">
-                  <User size={48} className="text-gray-300 mb-3" />
-                  <p className="text-gray-500 font-medium">{conversaciones.length === 0 ? 'No hay conversaciones' : 'Sin resultados'}</p>
-                  <p className="text-sm text-gray-400 mt-1">Envia un mensaje a un vendedor desde cualquier producto</p>
+                    ))}
+                  </div>
+                ) : filtered.length === 0 ? (
+                  <div className="inbox-empty">
+                    <User size={33} aria-hidden="true" />
+                    <p>{conversaciones.length === 0 ? t('noConversations') : t('noSearchResults')}</p>
+                    <span>{conversaciones.length === 0 ? t('noConversationsDesc') : t('tryAnotherSearch')}</span>
+                  </div>
+                ) : filtered.map(conversation => (
+                  <article key={conversation.id} className={`inbox-conversation ${convId === conversation.id ? 'is-active' : ''}`}>
+                    <button
+                      type="button"
+                      className="inbox-conversation__select"
+                      onClick={() => seleccionarConv(conversation.id)}
+                      aria-current={convId === conversation.id ? 'true' : undefined}
+                    >
+                      <Avatar nombre={conversation.otro_nombre} fotoUrl={conversation.otro_foto} size="md" />
+                      <span className="inbox-conversation__content">
+                        <span className="inbox-conversation__topline">
+                          <strong>{conversation.otro_nombre}</strong>
+                          {conversation.ultimo_mensaje_en && <time>{formatTime(conversation.ultimo_mensaje_en, locale)}</time>}
+                        </span>
+                        <span className="inbox-conversation__preview">{conversation.ultimo_mensaje || t('noMessagesYet')}</span>
+                        {conversation.producto_titulo && <span className="inbox-conversation__property">{conversation.producto_titulo}</span>}
+                      </span>
+                      {conversation.no_leidos > 0 && <span className="inbox-conversation__unread">{conversation.no_leidos}</span>}
+                    </button>
+                    <button
+                      type="button"
+                      className="inbox-conversation__delete"
+                      onClick={(event) => eliminarConv(conversation.id, event)}
+                      title={t('deleteConversationAction')}
+                      aria-label={t('deleteConversationAction')}
+                    ><Trash2 size={14} aria-hidden="true" /></button>
+                    {conversation.producto_id && (
+                      <LocalLink href={`/inmueble/${conversation.producto_id}`} className="inbox-conversation__property-link">
+                        {t('viewProperty')} <ExternalLink size={11} aria-hidden="true" />
+                      </LocalLink>
+                    )}
+                  </article>
+                ))}
+              </div>
+            </aside>
+
+            <section className={`${showMobileChat ? 'flex' : 'hidden md:flex'} inbox-chat`} aria-label={t('chatWindow')}>
+              {!convId ? (
+                <div className="inbox-chat__placeholder">
+                  <span><MessageSquare size={31} aria-hidden="true" /></span>
+                  <p>{t('selectConversation')}</p>
+                  <small>{t('selectConversationHint')}</small>
                 </div>
               ) : (
-                filtradas.map(c => (
-                  <div
-                    key={c.id}
-                    className={`group w-full flex items-start gap-3 p-3 border-b border-gray-50 transition text-left relative ${convId === c.id ? 'bg-blue-50 border-l-2 border-l-brand-primary' : 'bg-white hover:bg-gray-50'}`}
-                  >
-                    {/* Eliminar */}
-                    <button
-                      onClick={(e) => eliminarConv(c.id, e)}
-                      className="absolute top-1 right-1 p-1 rounded text-gray-400 opacity-0 group-hover:opacity-100 hover:bg-red-50 hover:text-red-500 transition"
-                      title="Eliminar"
-                    >
-                      <Trash2 size={14} />
+                <>
+                  <header className="inbox-chat__header">
+                    <button type="button" onClick={() => setShowMobileChat(false)} className="inbox-chat__back" aria-label={t('backToConversations')}>
+                      <ArrowLeft size={19} />
                     </button>
-                    {/* Contenido: zona clickeable solo nombre+avatar */}
-                    <button
-                      onClick={() => seleccionarConv(c.id)}
-                      className="flex items-start gap-3 w-full cursor-pointer text-left"
-                    >
-                      <Avatar nombre={c.otro_nombre} fotoUrl={c.otro_foto} size="md" />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-center">
-                          <p className="font-semibold text-gray-800 text-sm truncate">{c.otro_nombre}</p>
-                          {c.ultimo_mensaje_en && (
-                            <span className="text-xs text-gray-400 ml-2 flex-shrink-0">{formatTime(c.ultimo_mensaje_en)}</span>
+                    {currentConversation && (
+                      <>
+                        <Avatar nombre={currentConversation.otro_nombre} fotoUrl={currentConversation.otro_foto} size="sm" />
+                        <div className="inbox-chat__identity">
+                          <strong>{currentConversation.otro_nombre}</strong>
+                          {currentConversation.producto_titulo && currentConversation.producto_id && (
+                            <LocalLink href={`/inmueble/${currentConversation.producto_id}`}>
+                              {t('aboutProperty')}: {currentConversation.producto_titulo} <ExternalLink size={11} aria-hidden="true" />
+                            </LocalLink>
                           )}
                         </div>
-                        <p className="text-sm text-gray-500 truncate mt-0.5">{c.ultimo_mensaje || 'Sin mensajes'}</p>
-                        {c.producto_titulo && c.producto_id && (
-                          <a
-                            href={`/inmueble/${c.producto_id}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-[11px] text-blue-500 mt-0.5 inline-flex items-center gap-0.5 hover:underline max-w-[90%] truncate"
-                            onClick={(e) => e.stopPropagation()}
-                            title={t('viewProductNewTab')}
-                          >
-                            📦 {c.producto_titulo}
-                          </a>
-                        )}
-                      </div>
-                      {c.no_leidos > 0 && (
-                        <span className="bg-brand-dark text-white text-xs rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0">{c.no_leidos}</span>
-                      )}
-                    </button>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-
-          {/* ─── Chat ─── */}
-          <div className={`${showMobileChat ? 'flex' : 'hidden md:flex'} flex-col flex-1`}>
-            {!convId ? (
-              <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
-                <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                  <svg width={40} height={40} fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-                    <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </div>
-                <p className="font-medium">Selecciona una conversacion</p>
-                <p className="text-sm mt-1">O escribe a un vendedor desde un producto</p>
-              </div>
-            ) : (
-              <>
-                {/* Header */}
-                <div className="flex items-center gap-3 p-4 border-b bg-white">
-                  <button onClick={() => setShowMobileChat(false)} className="md:hidden p-1">
-                    <ArrowLeft size={20} className="text-gray-600" />
-                  </button>
-                  {convActual && (
-                    <>
-                      <Avatar nombre={convActual.otro_nombre} fotoUrl={convActual.otro_foto} size="sm" />
-                      <div>
-                        <p className="font-semibold text-gray-800 text-sm">{convActual.otro_nombre}</p>
-                        {convActual.producto_titulo && convActual.producto_id && (
-                          <LocalLink
-                            href={`/inmueble/${convActual.producto_id}`}
-                            className="text-xs text-blue-600 truncate hover:underline flex items-center gap-0.5"
-                          >
-                            {convActual.producto_titulo}
-                            <ExternalLink size={9} />
-                          </LocalLink>
-                        )}
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                {/* Mensajes */}
-                <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50 min-h-0">
-                  {mensajes.map(m => {
-                    const esMio = m.remitente_id === user?.id
-                    const isCompraExitosa = m.contenido?.includes('compra exitosa') || m.contenido?.includes('fue exitosa')
-                    return (
-                      <div key={m.id} className={`flex ${esMio ? 'justify-end' : 'justify-start'}`}>
-                        <div className={`max-w-[75%] px-4 py-2.5 rounded-2xl ${
-                          esMio ? 'bg-brand-primary text-white rounded-br-sm' : 'bg-white text-gray-800 border border-gray-100 rounded-bl-sm'
-                        }`}>
-                          <p className="text-sm break-words">{m.contenido}</p>
-                          <p className={`text-[10px] mt-1 ${esMio ? 'text-blue-200' : 'text-gray-400'}`}>
-                            {formatHora(m.creado_en)}
-                          </p>
-                        </div>
-                      </div>
-                    )
-                  })}
-                  {puedeResenar && (
-                    <div className="flex justify-center">
-                      <button
-                        onClick={() => setMostrarResena(true)}
-                        className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-sm font-semibold px-6 py-3 rounded-xl hover:brightness-105 transition shadow-lg flex items-center gap-2"
-                      >
-                        ⭐ Deja tu reseña al vendedor
-                      </button>
-                    </div>
-                  )}
-                  {enviando && (
-                    <div className="flex justify-end">
-                      <div className="bg-blue-200 text-blue-800 px-4 py-2.5 rounded-2xl rounded-br-sm text-sm">
-                        Enviando...
-                      </div>
-                    </div>
-                  )}
-                  <div ref={mensajesEndRef} />
-                </div>
-
-                {/* Input */}
-                <div className="flex items-center gap-2 p-3 border-t bg-white">
-                  <input
-                    type="text"
-                    value={texto}
-                    onChange={e => setTexto(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviarMensaje() } }}
-                    placeholder={t('typeMessage')}
-                    className="flex-1 border rounded-full px-4 py-2.5 text-sm outline-none focus:border-brand-accent transition disabled:opacity-50"
-                    disabled={enviando}
-                  />
-                  <button
-                    onClick={enviarMensaje}
-                    disabled={!texto.trim() || enviando}
-                    className="w-10 h-10 bg-brand-primary text-white rounded-full flex items-center justify-center hover:bg-brand-dark transition disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {enviando ? (
-                      <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                    ) : (
-                      <Send size={18} />
+                      </>
                     )}
-                  </button>
-                </div>
+                  </header>
 
-                {/* ─── Modal reseña comprador ─── */}
-                {mostrarResena && (
-                  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setMostrarResena(false)}>
-                    <div className="bg-white rounded-2xl p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
-                      <h3 className="text-lg font-bold text-gray-800 mb-1">⭐ Deja tu reseña</h3>
-                      <p className="text-sm text-gray-500 mb-4">¿Cómo fue tu experiencia con {convActual?.otro_nombre}?</p>
-
-                      {/* Estrellas */}
-                      <div className="flex justify-center gap-1 mb-4">
-                        {[1,2,3,4,5].map(i => (
-                          <button key={i} type="button" onClick={() => setRatingResena(i)} className="transition hover:scale-110">
-                            <Star size={32} className={i <= ratingResena ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'} />
-                          </button>
-                        ))}
+                  <div ref={chatContainerRef} className="inbox-chat__messages" aria-live="polite">
+                    {mensajes.map(message => {
+                      const isMine = message.remitente_id === user.id
+                      return (
+                        <div key={message.id} className={`inbox-message ${isMine ? 'is-mine' : ''}`}>
+                          <div className="inbox-message__bubble">
+                            <p>{message.contenido}</p>
+                            <time>{formatHora(message.creado_en, locale)}</time>
+                          </div>
+                        </div>
+                      )
+                    })}
+                    {puedeResenar && !yaDejoResena && (
+                      <div className="inbox-review-prompt">
+                        <p>{t('reviewPrompt')}</p>
+                        <button type="button" onClick={() => setMostrarResena(true)}><Star size={15} fill="currentColor" /> {t('leaveReview')}</button>
                       </div>
-
-                      {/* Comentario */}
-                      <textarea
-                        value={comentarioResena}
-                        onChange={e => setComentarioResena(e.target.value)}
-                        maxLength={500}
-                        placeholder={t('reviewPlaceholder')}
-                        className="w-full border rounded-xl p-3 text-sm resize-none h-24 outline-none focus:border-brand-accent mb-4"
-                      />
-                      <p className="text-xs text-gray-400 text-right -mt-3 mb-4">{comentarioResena.length}/500</p>
-
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => setMostrarResena(false)}
-                          className="flex-1 py-2.5 border rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50"
-                        >
-                          Cancelar
-                        </button>
-                        <button
-                          onClick={enviarResenaComprador}
-                          disabled={enviandoResena}
-                          className="flex-1 py-2.5 bg-brand-primary text-white rounded-xl text-sm font-bold hover:bg-brand-dark transition disabled:opacity-50"
-                        >
-                          {enviandoResena ? t('sending') : t('sendReview')}
-                        </button>
-                      </div>
-                    </div>
+                    )}
+                    <div ref={mensajesEndRef} />
                   </div>
-                )}
-              </>
-            )}
+
+                  <form className="inbox-chat__composer" onSubmit={(event) => { event.preventDefault(); enviarMensaje() }}>
+                    <input
+                      type="text"
+                      value={texto}
+                      onChange={event => setTexto(event.target.value)}
+                      placeholder={t('typeMessage')}
+                      aria-label={t('typeMessage')}
+                      disabled={enviando}
+                    />
+                    <button type="submit" disabled={!texto.trim() || enviando} aria-label={t('send')}>
+                      {enviando ? <span className="inbox-chat__spinner" /> : <Send size={17} aria-hidden="true" />}
+                    </button>
+                  </form>
+                </>
+              )}
+            </section>
           </div>
         </div>
+
+        {toastMsg && <div className="inbox-toast" role="status">{toastMsg}<button type="button" onClick={() => setToastMsg(null)} aria-label={t('close')}>×</button></div>}
+
+        {mostrarResena && (
+          <div className="inbox-modal-backdrop" onClick={() => setMostrarResena(false)}>
+            <section className="inbox-review-modal" role="dialog" aria-modal="true" aria-labelledby="review-title" onClick={event => event.stopPropagation()}>
+              <p className="dashboard-page__eyebrow">{t('reviewEyebrow')}</p>
+              <h2 id="review-title">{t('leaveReview')}</h2>
+              <p>{t('reviewExperience', { name: currentConversation?.otro_nombre || t('unknownUser') })}</p>
+              <div className="inbox-review-modal__stars" role="group" aria-label={t('ratingLabel')}>
+                {[1, 2, 3, 4, 5].map(value => (
+                  <button key={value} type="button" onClick={() => setRatingResena(value)} aria-label={`${value} ${t('stars')}`} aria-pressed={value === ratingResena}>
+                    <Star size={30} className={value <= ratingResena ? 'is-selected' : ''} />
+                  </button>
+                ))}
+              </div>
+              <textarea
+                value={comentarioResena}
+                onChange={event => setComentarioResena(event.target.value)}
+                maxLength={500}
+                placeholder={t('reviewPlaceholder')}
+                aria-label={t('reviewPlaceholder')}
+              />
+              <span className="inbox-review-modal__counter">{comentarioResena.length}/500</span>
+              <div className="inbox-review-modal__actions">
+                <button type="button" onClick={() => setMostrarResena(false)}>{t('cancel')}</button>
+                <button type="button" onClick={enviarResenaComprador} disabled={enviandoResena}>{enviandoResena ? t('sending') : t('sendReview')}</button>
+              </div>
+            </section>
+          </div>
+        )}
       </div>
-    </div>
+    </main>
   )
 }

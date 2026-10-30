@@ -1,26 +1,32 @@
-import { Metadata } from 'next'
+import type { Metadata } from 'next'
+import { notFound } from 'next/navigation'
 import LandingCiudad from './LandingCiudad'
 import { getCiudadBySlug, generateCityParams } from '@/lib/ubicaciones-seo'
 import Breadcrumbs from '@/components/Breadcrumbs'
+import { routing } from '@/i18n/routing'
 
 type Props = {
-  params: Promise<{ ciudad: string }>
+  params: Promise<{ locale: string; ciudad: string }>
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { ciudad } = await params
+  const { ciudad, locale } = await params
   const ciudadSEO = getCiudadBySlug(ciudad)
-  
+
   if (!ciudadSEO) {
     return {
-      title: 'Ciudad no encontrada | VendeT Inmuebles',
-      description: 'La ciudad solicitada no existe en nuestro directorio de clasificados.',
+      title: locale === 'en' ? 'City not found' : 'Ciudad no encontrada',
+      robots: { index: false, follow: false },
     }
   }
 
-  const title = ciudadSEO.titulo
-  const description = ciudadSEO.descripcion
-  const keywords = ciudadSEO.keywords.join(', ')
+  const isEnglish = locale === 'en'
+  const title = isEnglish
+    ? `Properties in ${ciudadSEO.nombre}, ${ciudadSEO.estado}`
+    : `Inmuebles en ${ciudadSEO.nombre}, ${ciudadSEO.estado}`
+  const description = isEnglish
+    ? `Explore properties for sale or rent in ${ciudadSEO.nombre}, ${ciudadSEO.estado}. Browse current real estate listings in Venezuela.`
+    : `Explora inmuebles en venta o alquiler en ${ciudadSEO.nombre}, ${ciudadSEO.estado}. Consulta anuncios inmobiliarios en Venezuela.`
 
   return {
     title,
@@ -30,10 +36,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title,
       description,
       type: 'website',
-      locale: 'es_VE',
+      locale: isEnglish ? 'en_US' : 'es_VE',
     },
     alternates: {
-      canonical: `https://venezuela-inmuebles.online/${ciudad}`,
+      canonical: `https://venezuela-inmuebles.online${isEnglish ? '/en' : ''}/${ciudad}`,
     },
     robots: {
       index: true,
@@ -44,21 +50,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 // Generar rutas estáticas para TODAS las ciudades de Venezuela
 export async function generateStaticParams() {
-  return generateCityParams()
+  return routing.locales.flatMap((locale) =>
+    generateCityParams().map((cityParams) => ({ locale, ...cityParams }))
+  )
 }
 
 export default async function CiudadPage({ params }: Props) {
-  const { ciudad } = await params
+  const { ciudad, locale } = await params
   const ciudadSEO = getCiudadBySlug(ciudad)
-  
-  if (!ciudadSEO) {
-    return (
-      <div className="container mx-auto px-4 py-16 text-center">
-        <h1 className="text-3xl font-bold mb-4">Ciudad no encontrada</h1>
-        <p className="text-gray-600">La ciudad que buscas no está disponible aún.</p>
-      </div>
-    )
-  }
+
+  if (!ciudadSEO) notFound()
 
   // Breadcrumb items
   const breadcrumbItems = [
@@ -80,7 +81,7 @@ export default async function CiudadPage({ params }: Props) {
       }
     },
     description: ciudadSEO.descripcion,
-    sameAs: `https://venezuela-inmuebles.online/${ciudad}`
+    sameAs: `https://venezuela-inmuebles.online${locale === 'en' ? '/en' : ''}/${ciudad}`
   }
 
   return (
@@ -102,3 +103,4 @@ export default async function CiudadPage({ params }: Props) {
 
 // ISR: cache city landing pages for 5 minutes
 export const revalidate = 300
+export const dynamicParams = false

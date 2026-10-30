@@ -1,99 +1,125 @@
-import Image from 'next/image';
-import Link from 'next/link';
+import Image from 'next/image'
+import Link from 'next/link'
+import { ArrowUpRight, Bath, BedDouble, MapPin, Ruler } from 'lucide-react'
 
-interface Property {
-  id: string;
-  title: string;
-  slug: string;
-  price: number;
-  operation_type: 'venta' | 'alquiler';
-  city: string;
-  state: string;
-  main_image_url: string | null;
-  bedrooms: number;
-  bathrooms: number;
-  area_size: number;
+export interface PropertyCardData {
+  id: string
+  slug?: string | null
+  title: string
+  price: number
+  currency?: string | null
+  operation_type: string
+  city?: string | null
+  state?: string | null
+  main_image_url: string | null
+  bedrooms?: number | null
+  bathrooms?: number | null
+  area_size?: number | null
+  property_type?: string | null
+  featured?: boolean
+  verified?: boolean
 }
-
-const FALLBACK_IMAGE = '/sinimagen.webp';
 
 interface PropertyCardProps {
-  property: Property;
-  locale: string;
+  property: PropertyCardData
+  locale: string
+  priority?: boolean
+  labels?: {
+    sale?: string
+    rent?: string
+    featured?: string
+    priceOnRequest?: string
+    bedroom?: string
+    bathroom?: string
+  }
 }
 
-export default function PropertyCard({ property, locale }: PropertyCardProps) {
-  const formatoPrecio = new Intl.NumberFormat('es-VE', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(property.price);
+const FALLBACK_IMAGE = '/sinimagen.webp'
 
-  // Usar imagen de fallback si no hay imagen principal
-  const imageUrl = property.main_image_url || FALLBACK_IMAGE;
+function formatPropertyType(value: string | null | undefined, locale: string) {
+  if (!value) return ''
+  const key = value.toLocaleLowerCase('es').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '')
+  const english: Record<string, string> = {
+    casa: 'House', casas: 'Houses', apartamento: 'Apartment', apartamentos: 'Apartments',
+    terreno: 'Land', terrenos: 'Land', local: 'Commercial space', locales: 'Commercial spaces', 'local comercial': 'Commercial space',
+    oficina: 'Office', oficinas: 'Offices', galpon: 'Warehouse', galpones: 'Warehouses',
+    quinta: 'Country house', townhouse: 'Townhouse', finca: 'Farm', edificio: 'Building', habitacion: 'Room', anexo: 'Annex',
+  }
+  const spanish: Record<string, string> = {
+    casa: 'Casa', casas: 'Casas', apartamento: 'Apartamento', apartamentos: 'Apartamentos',
+    terreno: 'Terreno', terrenos: 'Terrenos', local: 'Local comercial', locales: 'Locales comerciales', 'local comercial': 'Local comercial',
+    oficina: 'Oficina', oficinas: 'Oficinas', galpon: 'Galpón', galpones: 'Galpones',
+    quinta: 'Quinta', townhouse: 'Townhouse', finca: 'Finca', edificio: 'Edificio', habitacion: 'Habitación', anexo: 'Anexo',
+  }
+  return (locale === 'en' ? english[key] : spanish[key]) || value
+}
+
+export default function PropertyCard({ property, locale, priority = false, labels = {} }: PropertyCardProps) {
+  const normalizedLocale = locale === 'en' ? 'en-US' : 'es-VE'
+  const currency = property.currency || 'USD'
+  const formattedPrice = property.price > 0
+    ? new Intl.NumberFormat(normalizedLocale, {
+        style: 'currency',
+        currency,
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+      }).format(property.price)
+    : labels.priceOnRequest || (locale === 'en' ? 'Price on request' : 'Consultar precio')
+  const location = [property.city, property.state].filter(Boolean).join(', ')
+  const operationLabel = property.operation_type.toLowerCase() === 'alquiler'
+    ? labels.rent || (locale === 'en' ? 'For rent' : 'Alquiler')
+    : labels.sale || (locale === 'en' ? 'For sale' : 'En venta')
+  const href = `/${locale}/inmueble/${property.slug || property.id}`
+  const imageUrl = property.main_image_url || FALLBACK_IMAGE
 
   return (
-    <Link href={`/${locale}/inmueble/${property.id}`} className="group block">
-      <div className="bg-white rounded-xl shadow-sm border overflow-hidden hover:shadow-md transition-shadow">
-        {/* Imagen */}
-        <div className="relative h-48 w-full bg-gray-100">
+    <article className="property-card">
+      <Link href={href} className="property-card__link group" aria-label={`${property.title} · ${location || 'Venezuela'}`}>
+        <div className="property-card__media">
           <Image
             src={imageUrl}
             alt={property.title}
             fill
-            className="object-cover group-hover:scale-105 transition-transform duration-300"
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            sizes="(max-width: 640px) 92vw, (max-width: 1024px) 46vw, 31vw"
+            className="property-card__image"
+            priority={priority}
+            loading={priority ? 'eager' : 'lazy'}
+            fetchPriority={priority ? 'high' : 'auto'}
+            quality={78}
           />
-
-          {/* Badge de operación */}
-          <div className="absolute top-2 left-2">
-            <span className={`px-2 py-1 rounded text-xs font-semibold ${
-              property.operation_type === 'venta'
-                ? 'bg-green-500 text-white'
-                : 'bg-blue-500 text-white'
-            }`}>
-              {property.operation_type === 'venta' ? 'Venta' : 'Alquiler'}
-            </span>
+          <div className="property-card__badges">
+            <span className="property-card__operation">{operationLabel}</span>
+            {property.featured && (
+              <span className="property-card__featured">{labels.featured || (locale === 'en' ? 'Featured' : 'Destacada')}</span>
+            )}
           </div>
+          <span className="property-card__arrow" aria-hidden="true"><ArrowUpRight size={18} /></span>
         </div>
 
-        {/* Contenido */}
-        <div className="p-4">
-          <h3 className="font-semibold text-gray-900 truncate mb-1">{property.title}</h3>
-          <p className="text-sm text-gray-500 mb-2">{property.city}, {property.state}</p>
-
-          <p className="text-lg font-bold text-green-600 mb-3">{formatoPrecio}</p>
-
-          {/* Características */}
-          <div className="flex items-center gap-4 text-sm text-gray-600">
-            {property.bedrooms !== undefined && (
-              <div className="flex items-center gap-1">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                </svg>
-                <span>{property.bedrooms}</span>
-              </div>
+        <div className="property-card__body">
+          <p className="property-card__location">
+            <MapPin size={13} aria-hidden="true" />
+            <span>{location || 'Venezuela'}</span>
+            {property.property_type && <><span className="property-card__dot">·</span><span>{formatPropertyType(property.property_type, locale)}</span></>}
+          </p>
+          <h3 className="property-card__title">{property.title}</h3>
+          <div className="property-card__price-row">
+            <p className="property-card__price">{formattedPrice}</p>
+            {property.verified && <span className="property-card__verified">{locale === 'en' ? 'Verified' : 'Verificado'}</span>}
+          </div>
+          <div className="property-card__specs" aria-label={locale === 'en' ? 'Property details' : 'Detalles del inmueble'}>
+            {property.bedrooms != null && property.bedrooms > 0 && (
+              <span><BedDouble size={15} aria-hidden="true" /> {property.bedrooms} <span className="sr-only">{labels.bedroom || (locale === 'en' ? 'bedrooms' : 'habitaciones')}</span></span>
             )}
-            {property.bathrooms !== undefined && (
-              <div className="flex items-center gap-1">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                <span>{property.bathrooms}</span>
-              </div>
+            {property.bathrooms != null && property.bathrooms > 0 && (
+              <span><Bath size={15} aria-hidden="true" /> {property.bathrooms} <span className="sr-only">{labels.bathroom || (locale === 'en' ? 'bathrooms' : 'baños')}</span></span>
             )}
-            {property.area_size !== undefined && (
-              <div className="flex items-center gap-1">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-                </svg>
-                <span>{property.area_size} m²</span>
-              </div>
+            {property.area_size != null && property.area_size > 0 && (
+              <span><Ruler size={15} aria-hidden="true" /> {new Intl.NumberFormat(normalizedLocale, { maximumFractionDigits: 0 }).format(property.area_size)} m²</span>
             )}
           </div>
         </div>
-      </div>
-    </Link>
-  );
+      </Link>
+    </article>
+  )
 }

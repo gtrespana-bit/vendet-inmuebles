@@ -37,11 +37,11 @@ El comercio online en Venezuela crece cada día. Pero con eso también crecen la
 4. **Desconfía de "sobrepagos"** — "Te envío $100 más, devuélveme el difference" = estafa clásica.
 5. **Verifica el Pago Móvil** — Comprobar que los fondos llegaron a tu cuenta, no solo que te mandan un screenshot.
 
-### 📱 Por qué VendeT es más seguro que Facebook
+### 📱 Por qué Venezuela Inmuebles es más seguro que Facebook
 
-En **VendeT** tienes ventajas que Facebook no te da:
+En **Venezuela Inmuebles** tienes ventajas que Facebook no te da:
 
-| Función | VendeT | Facebook Marketplace |
+| Función | Venezuela Inmuebles | Facebook Marketplace |
 |---|---|---|
 | Perfiles con reputación | ✅ Reseñas verificadas | ❌ Sin sistema de reputación |
 | Verificación de identidad | ✅ Cédula verificada | ❌ Cualquier perfil fake |

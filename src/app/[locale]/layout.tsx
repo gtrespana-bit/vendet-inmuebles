@@ -14,7 +14,7 @@ import PushNotificationBanner from '@/components/PushNotificationBanner'
 import BottomTabNav from '@/components/BottomTabNav'
 
 export const viewport: Viewport = {
-  themeColor: '#008080',
+  themeColor: '#612e35',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
@@ -39,9 +39,9 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
     metadataBase,
     title: {
       default: locale === 'es' 
-        ? 'VendeT Inmuebles - Bienes Raíces en Venezuela | Casas, Apartamentos, Terrenos'
-        : 'VendeT Real Estate - Properties in Venezuela | Houses, Apartments, Land',
-      template: '%s | VendeT Inmuebles',
+        ? 'Venezuela Inmuebles | Casas, apartamentos y terrenos en venta y alquiler'
+        : 'Venezuela Inmuebles | Homes, apartments and land for sale and rent',
+      template: '%s | Venezuela Inmuebles',
     },
     description: locale === 'es'
       ? 'Explora casas, apartamentos, terrenos, locales y oficinas en venta y alquiler en Venezuela.'
@@ -49,9 +49,9 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
     keywords: locale === 'es'
       ? ['inmuebles venezuela', 'casas en venta venezuela', 'apartamentos venezuela', 'terrenos venezuela', 'alquiler venezuela', 'bienes raices venezuela', 'propiedades venezuela', 'inmobiliaria venezuela']
       : ['venezuela real estate', 'houses for sale venezuela', 'apartments venezuela', 'land venezuela', 'rent venezuela', 'properties venezuela'],
-    authors: [{ name: 'VendeT Inmuebles' }],
-    creator: 'VendeT Inmuebles',
-    publisher: 'VendeT Inmuebles',
+    authors: [{ name: 'Venezuela Inmuebles' }],
+    creator: 'Venezuela Inmuebles',
+    publisher: 'Venezuela Inmuebles',
     formatDetection: {
       email: false,
       address: false,
@@ -61,10 +61,10 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
       type: 'website',
       locale: locale === 'es' ? 'es_VE' : 'en_US',
       url: canonicalUrl,
-      siteName: 'VendeT Inmuebles',
+      siteName: 'Venezuela Inmuebles',
       title: locale === 'es'
-        ? 'VendeT Inmuebles - Bienes Raíces en Venezuela'
-        : 'VendeT Real Estate - Properties in Venezuela',
+        ? 'Venezuela Inmuebles | Propiedades en venta y alquiler'
+        : 'Venezuela Inmuebles | Properties for sale and rent',
       description: locale === 'es'
         ? 'Explora inmuebles en venta y alquiler en Venezuela y encuentra tu próximo hogar o inversión.'
         : 'Explore properties for sale and rent in Venezuela and find your next home or investment.',
@@ -72,14 +72,14 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
         url: 'https://venezuela-inmuebles.online/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'VendeT Inmuebles - Bienes Raíces Venezuela'
+        alt: 'Venezuela Inmuebles, propiedades en Venezuela'
       }],
     },
     twitter: {
       card: 'summary_large_image',
       title: locale === 'es'
-        ? 'VendeT Inmuebles - Bienes Raíces en Venezuela'
-        : 'VendeT Real Estate - Properties in Venezuela',
+        ? 'Venezuela Inmuebles | Propiedades en venta y alquiler'
+        : 'Venezuela Inmuebles | Properties for sale and rent',
       description: locale === 'es'
         ? 'Explora inmuebles en venta y alquiler en Venezuela.'
         : 'Explore properties for sale and rent in Venezuela.',
@@ -102,9 +102,6 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
         'es-VE': 'https://venezuela-inmuebles.online',
         'en-US': 'https://venezuela-inmuebles.online/en',
       },
-    },
-    verification: {
-      google: 'google-site-verification=vendet-inmuebles-verification-code',
     },
     category: 'real_estate',
   }

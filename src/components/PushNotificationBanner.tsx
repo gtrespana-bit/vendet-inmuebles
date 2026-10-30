@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/components/AuthProvider'
 import { Bell, X } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
 const VAPID_PUBLIC = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || ''
 
@@ -145,6 +146,7 @@ export default function PushNotificationBanner() {
   const { user } = useAuth()
   const { supported, enabled, enable, loading, error } = usePushNotification()
   const [visible, setVisible] = useState(false)
+  const t = useTranslations('pushBanner')
 
   useEffect(() => {
     if (!user) return
@@ -179,8 +181,9 @@ export default function PushNotificationBanner() {
         <button
           onClick={handleDismiss}
           className="absolute top-3 right-3 p-1 rounded-full hover:bg-gray-100 text-gray-400 transition"
+          aria-label={t('dismiss')}
         >
-          <X size={16} />
+          <X size={16} aria-hidden="true" />
         </button>
 
         <div className="flex items-start gap-3">
@@ -189,10 +192,8 @@ export default function PushNotificationBanner() {
           </div>
 
           <div className="flex-1">
-            <p className="font-bold text-gray-900 text-sm">No te pierdas nada</p>
-            <p className="text-xs text-gray-500 mt-0.5 mb-3">
-              Recibe notificaciones cuando te escriban, guardes un producto o aparezca algo que buscas.
-            </p>
+            <p className="font-bold text-gray-900 text-sm">{t('title')}</p>
+            <p className="text-xs text-gray-500 mt-0.5 mb-3">{t('description')}</p>
 
             <button
               onClick={handleEnable}
@@ -200,16 +201,14 @@ export default function PushNotificationBanner() {
               className="w-full bg-brand-primary text-white py-2.5 rounded-xl font-bold text-sm hover:bg-brand-dark transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Bell size={14} />
-              {loading ? 'Activando...' : 'Activar notificaciones'}
+              {loading ? t('enabling') : t('enable')}
             </button>
 
             {error && (
               <p className="text-xs text-red-500 mt-2 text-center">{error}</p>
             )}
 
-            <p className="text-[10px] text-gray-400 text-center mt-2">
-              Puedes desactivarlas cuando quieras
-            </p>
+            <p className="text-[10px] text-gray-400 text-center mt-2">{t('disableHint')}</p>
           </div>
         </div>
       </div>

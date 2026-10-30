@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Script para generar lista de URLs de VendeT para inspeccionar en Google Search Console
+# Script para generar lista de URLs de Venezuela Inmuebles para inspeccionar en Google Search Console
 # Genera URLs de landing pages por ciudad × categoría
 
 BASE_URL="https://venezuela-inmuebles.online"
@@ -34,7 +34,7 @@ CATEGORIAS=(
 )
 
 # Página 1: URLs principales + informativas
-cat > vendet_urls_part1.txt <<EOF
+cat > venezuela_inmuebles_urls_part1.txt <<EOF
 ${BASE_URL}/
 ${BASE_URL}/catalogo
 ${BASE_URL}/blog
@@ -52,18 +52,18 @@ ${BASE_URL}/politica-de-privacidad
 EOF
 
 # Página 2: Landing pages por ciudad (sin categoría)
-> vendet_urls_part2_ciudades.txt
+> venezuela_inmuebles_urls_part2_ciudades.txt
 
 for ciudad in "${CIUDADES[@]}"; do
-  echo "${BASE_URL}/${ciudad}" >> vendet_urls_part2_ciudades.txt
+  echo "${BASE_URL}/${ciudad}" >> venezuela_inmuebles_urls_part2_ciudades.txt
 done
 
 # Página 3: Landing pages ciudad × categoría (~80-100 URLs)
-> vendet_urls_part3_ciudad_categoria.txt
+> venezuela_inmuebles_urls_part3_ciudad_categoria.txt
 
 for ciudad in "${CIUDADES[@]}"; do
   for categoria in "${CATEGORIAS[@]}"; do
-    echo "${BASE_URL}/${ciudad}/${categoria}" >> vendet_urls_part3_ciudad_categoria.txt
+    echo "${BASE_URL}/${ciudad}/${categoria}" >> venezuela_inmuebles_urls_part3_ciudad_categoria.txt
   done
 done
 
@@ -72,7 +72,7 @@ TOTAL_CIUDADES=${#CIUDADES[@]}
 TOTAL_CATEGORIAS=${#CATEGORIAS[@]}
 TOTAL_CIUDAD_CATEGORIA=$((TOTAL_CIUDADES * TOTAL_CATEGORIAS))
 
-cat > vendet_urls_resumen.txt <<EOF
+cat > venezuela_inmuebles_urls_resumen.txt <<EOF
 # Resumen de URLs de venezuela-inmuebles.online para Google Search Console
 # Generado: $(date "+%Y-%m-%d %H:%M:%S")
 
@@ -90,7 +90,7 @@ TOTAL ESTIMADO: $((14 + TOTAL_CIUDADES + TOTAL_CIUDAD_CATEGORIA)) URLs
 EOF
 
 echo "✅ Archivos generados:"
-echo "   - vendet_urls_part1.txt (14 URLs principales)"
-echo "   - vendet_urls_part2_ciudades.txt ($TOTAL_CIUDADES URLs de ciudades)"
-echo "   - vendet_urls_part3_ciudad_categoria.txt ($TOTAL_CIUDAD_CATEGORIA URLs ciudad×categoría)"
-echo "   - vendet_urls_resumen.txt (este resumen)"
+echo "   - venezuela_inmuebles_urls_part1.txt (14 URLs principales)"
+echo "   - venezuela_inmuebles_urls_part2_ciudades.txt ($TOTAL_CIUDADES URLs de ciudades)"
+echo "   - venezuela_inmuebles_urls_part3_ciudad_categoria.txt ($TOTAL_CIUDAD_CATEGORIA URLs ciudad×categoría)"
+echo "   - venezuela_inmuebles_urls_resumen.txt (este resumen)"

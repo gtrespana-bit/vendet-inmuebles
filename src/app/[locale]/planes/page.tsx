@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { Check, Star, Building2, Crown } from 'lucide-react'
 
 export const metadata: Metadata = {
-  title: 'Planes y Precios | VendeT Inmuebles',
+  title: 'Planes y Precios | Venezuela Inmuebles',
   description: 'Elige el plan que mejor se adapte a tus necesidades. Publica propiedades gratis y destaca tus anuncios.',
 }
 

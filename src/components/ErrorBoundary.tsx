@@ -18,22 +18,17 @@ export const ErrorBoundary = ({ children }: ErrorBoundaryProps) => {
     };
 
     window.addEventListener('error', handleError);
-    
-    return () => {
-      window.removeEventListener('error', handleError);
-    };
+    return () => window.removeEventListener('error', handleError);
   }, []);
 
   if (hasError) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
-        <h3 className="text-red-800 font-bold mb-2">Error de carga</h3>
-        <p className="text-red-600 mb-4">
-          Hubo un problema al cargar los productos. Por favor, intenta recargar la página.
-        </p>
-        <button 
+      <div className="border border-[#e6c9c4] bg-[#fcf2f0] p-6 text-center" role="alert">
+        <h3 className="mb-2 font-bold text-[#812e35]">{t('loadingError')}</h3>
+        <p className="mb-4 text-[#8a4b4d]">{t('loadingErrorDescription')}</p>
+        <button
           onClick={() => window.location.reload()}
-          className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition"
+          className="bg-[#612e35] px-4 py-2 font-semibold text-white transition hover:bg-[#4c252b]"
         >
           {t('retry')}
         </button>

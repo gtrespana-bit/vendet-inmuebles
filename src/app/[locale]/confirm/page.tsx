@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
+import { routing } from '@/i18n/routing'
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react'
 import LocalLink from '@/components/LocalLink'
 import { supabase } from '@/lib/supabase'
@@ -10,6 +11,9 @@ import { useTranslations } from 'next-intl'
 export default function ConfirmEmailPage() {
   const t = useTranslations('auth')
   const router = useRouter()
+  const pathname = usePathname()
+  const locale = pathname === '/en' || pathname.startsWith('/en/') ? 'en' : routing.defaultLocale
+  const loginPath = locale === routing.defaultLocale ? '/login' : `/${locale}/login`
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading')
   const [errorMsg, setErrorMsg] = useState('')
 
@@ -40,7 +44,7 @@ export default function ConfirmEmailPage() {
         setStatus('success')
         // Actualizar la sesión del AuthProvider
         setTimeout(() => {
-          router.push('/login')
+          router.push(loginPath)
         }, 3000)
       }
     }
@@ -52,21 +56,21 @@ export default function ConfirmEmailPage() {
       supabase.auth.getSession().then((res: any) => { const session = res?.data?.session;
         if (session?.user?.email_confirmed_at) {
           setStatus('success')
-          setTimeout(() => router.push('/login'), 3000)
+          setTimeout(() => router.push(loginPath), 3000)
         } else {
           setStatus('error')
           setErrorMsg(t('confirmError'))
         }
       })
     }
-  }, [router, t])
+  }, [loginPath, router, t])
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <LocalLink href="/" className="text-brand-primary font-black text-3xl">
-            Vende<span className="text-brand-accent">T</span><span className="text-sm ml-1 text-gray-500">-Venezuela</span>
+          <LocalLink href="/" className="text-brand-primary font-black text-2xl">
+            Venezuela Inmuebles
           </LocalLink>
         </div>
 
@@ -97,7 +101,7 @@ export default function ConfirmEmailPage() {
                 Tu cuenta está lista. Redirigiendo al login...
               </p>
               <LocalLink
-                href="/login"
+                href={loginPath}
                 className="block w-full bg-brand-primary text-white py-3 rounded-lg font-bold hover:bg-brand-dark transition text-center"
               >
                 Ir al login ahora
@@ -119,7 +123,7 @@ export default function ConfirmEmailPage() {
                 {errorMsg || t('errorDefault')}
               </p>
               <LocalLink
-                href="/login"
+                href={loginPath}
                 className="block w-full bg-brand-primary text-white py-3 rounded-lg font-bold hover:bg-brand-dark transition text-center"
               >
                 Ir al login para reenviar

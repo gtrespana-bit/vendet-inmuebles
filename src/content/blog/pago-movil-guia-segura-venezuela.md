@@ -33,6 +33,6 @@ El Pago Móvil es el método de pago #1 en Venezuela. Si vendes o compras online
 
 ### Vender y cobrar por Pago Móvil
 
-En VendeT, la mayoría de las transacciones se cierran por Pago Móvil. Es rápido, es seguro (si verificas) y funciona en todo el país.
+En Venezuela Inmuebles, la mayoría de las transacciones se cierran por Pago Móvil. Es rápido, es seguro (si verificas) y funciona en todo el país.
 
-[Publicar gratis en VendeT](/publicar)
+[Publicar gratis en Venezuela Inmuebles](/publicar)

@@ -38,7 +38,7 @@ export default function OfflinePage() {
           </LocalLink>
         </div>
 
-        <p className="mt-8 text-xs text-gray-400">VendeT-Venezuela</p>
+        <p className="mt-8 text-xs text-gray-400">Venezuela Inmuebles</p>
       </div>
     </div>
   )

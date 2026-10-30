@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 
   return {
-    title: `${property.title} - VendeT Inmuebles`,
+    title: `${property.title} - Venezuela Inmuebles`,
     description: property.description || `Ver detalles de ${property.title}`,
     openGraph: {
       images: property.main_image_url ? [property.main_image_url] : [],

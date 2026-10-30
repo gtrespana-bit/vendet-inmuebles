@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { clientCache } from '@/lib/clientCache';
 
@@ -76,6 +76,8 @@ export const useProductLoader = (
            slug,
            activo,
            destacado,
+           destacado_hasta,
+           boosteado_en,
            visitas,
            creado_en,
            actualizado_en,
@@ -118,11 +120,13 @@ export const useProductLoader = (
         const tipoMap: Record<string, string> = {
           casas: 'Casa',
           apartamentos: 'Apartamento',
+          townhouses: 'Townhouse',
           terrenos: 'Terreno',
+          locales: 'Local comercial',
           oficinas: 'Oficina',
-          locales: 'Local',
           edificios: 'Edificio',
-          quintas: 'Quinta',
+          habitaciones: 'Habitación',
+          fincas: 'Finca',
           galpones: 'Galpón',
         };
         const tipoReal = tipoMap[catStr];
@@ -171,7 +175,10 @@ export const useProductLoader = (
         throw new Error(fetchError.message);
       }
 
-      const productosData = data || [];
+      const productosData = (data || []).map((product: any) => ({
+        ...product,
+        _isFeatured: Boolean(product.destacado && product.destacado_hasta && new Date(product.destacado_hasta).getTime() > Date.now()),
+      }));
       setProductos(productosData);
       setTotalCount(count || 0);
 
@@ -188,10 +195,6 @@ export const useProductLoader = (
       setLoading(false);
     }
   }, [initialFilters]);
-
-  useEffect(() => {
-    loadProducts();
-  }, []);
 
   return {
     productos,

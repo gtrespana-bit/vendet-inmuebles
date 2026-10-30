@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import { getTranslations } from 'next-intl/server'
 
 export const metadata: Metadata = {
-  title: 'Eliminar tu cuenta — VendeT',
-  description: 'Solicita la eliminación de tu cuenta y datos asociados en VendeT.',
+  title: 'Eliminar tu cuenta — Venezuela Inmuebles',
+  description: 'Solicita la eliminación de tu cuenta y datos asociados en Venezuela Inmuebles.',
 }
 
 export default async function EliminarCuentaPage() {
@@ -16,8 +16,8 @@ export default async function EliminarCuentaPage() {
         <section>
           <h2 className="text-2xl font-bold text-gray-800 mb-3">{t('howTitle')}</h2>
           <p className="text-gray-600 mb-4">
-            <a href="mailto:privacidad@vendet.online?subject=Solicitud%20de%20eliminaci%C3%B3n%20de%20cuenta%20%E2%80%94%20VendeT" className="text-blue-600 underline font-medium">
-              privacidad@vendet.online
+            <a href="mailto:privacidad@venezuela-inmuebles.online?subject=Solicitud%20de%20eliminaci%C3%B3n%20de%20cuenta%20%E2%80%94%20Venezuela%20Inmuebles" className="text-blue-600 underline font-medium">
+              privacidad@venezuela-inmuebles.online
             </a> — {t('howP1')}
           </p>
           <p className="text-gray-600 mb-3">{t('howBody')}</p>
@@ -44,7 +44,7 @@ export default async function EliminarCuentaPage() {
         <section className="bg-blue-50 rounded-2xl p-6 border border-blue-100">
           <h3 className="font-bold text-gray-800 mb-2">{t('contactTitle')}</h3>
           <p className="text-gray-600">
-            <a href="mailto:privacidad@vendet.online" className="text-blue-600 underline font-medium">privacidad@vendet.online</a>
+            <a href="mailto:privacidad@venezuela-inmuebles.online" className="text-blue-600 underline font-medium">privacidad@venezuela-inmuebles.online</a>
           </p>
           <p className="text-gray-500 text-sm mt-2">{t('tagline')}</p>
         </section>

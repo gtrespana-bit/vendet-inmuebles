@@ -33,13 +33,13 @@ export default function ProductStructuredData({ product, seller }: ProductStruct
     '@context': 'https://schema.org',
     '@type': 'Product',
     name: product.titulo,
-    description: product.descripcion || `${product.titulo} en venta en VendeT Marketplace Venezuela`,
+    description: product.descripcion || `${product.titulo} en venta en Venezuela | Venezuela Inmuebles`,
     image: product.imagen_url || 'https://venezuela-inmuebles.online/og-image.webp',
     url: `https://venezuela-inmuebles.online/inmueble/${product.id}`,
     sku: product.id,
     brand: {
       '@type': 'Brand',
-      name: 'VendeT'
+      name: 'Venezuela Inmuebles'
     },
     offers: {
       '@type': 'Offer',
@@ -50,11 +50,11 @@ export default function ProductStructuredData({ product, seller }: ProductStruct
       itemCondition: conditionMap[product.estado] || 'https://schema.org/UsedCondition',
       seller: seller ? {
         '@type': seller.verificado ? 'Verified' : 'Person',
-        name: seller.nombre || 'Vendedor VendeT',
+        name: seller.nombre || 'Vendedor en Venezuela Inmuebles',
         url: `https://venezuela-inmuebles.online/vendedor/${seller.id}`
       } : {
         '@type': 'Organization',
-        name: 'VendeT'
+        name: 'Venezuela Inmuebles'
       }
     },
     aggregateRating: {

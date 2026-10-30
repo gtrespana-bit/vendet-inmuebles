@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
 
     await notifyUser(auth.supabaseAdmin, userId, {
       title: '💰 Créditos recibidos',
-      body: `Recibiste ${creditos} ${creditos === 1 ? 'crédito' : 'créditos'} en tu cuenta VendeT. Nuevo balance: ${nuevoBalance}.`,
+      body: `Recibiste ${creditos} ${creditos === 1 ? 'crédito' : 'créditos'} en tu cuenta Venezuela Inmuebles. Nuevo balance: ${nuevoBalance}.`,
       tag: 'creditos',
       icon: '/icon-192.png',
       click_url: '/creditos',

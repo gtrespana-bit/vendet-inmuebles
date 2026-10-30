@@ -15,7 +15,7 @@ Aquí no vas a encontrar "hazte rico rápido". Vas a encontrar ideas reales que 
 
 **Inversión inicial**: $200-$500
 **Ganancia mensual estimada**: $100-$300
-**Dónde vender**: VendeT, WhatsApp, Instagram
+**Dónde vender**: Venezuela Inmuebles, WhatsApp, Instagram
 
 Compras iPhones o Samsung usados a buen precio, limpias, tomas buenas fotos, revendes con margen. Es el side hustle más probado.
 
@@ -47,7 +47,7 @@ Matemáticas, inglés, programación. Si sabes algo bien, puedes enseñarlo y co
 
 **Inversión inicial**: $100-$300
 **Ganancia mensual estimada**: $100-$400
-**Dónde vender**: Instagram, WhatsApp, VendeT
+**Dónde vender**: Instagram, WhatsApp, Venezuela Inmuebles
 
 Compra ropa en Shein o AliExpress, revende con margen. Sneakers, vestidos y jeans son los más rentables.
 
@@ -77,6 +77,6 @@ Muchos negocios en Venezuela saben que necesitan estar en redes pero no tienen t
 
 ### ¿Tienes algo para vender?
 
-No importa cuál elijas, siempre ayuda tener capital extra. Publica lo que no uses en VendeT.
+No importa cuál elijas, siempre ayuda tener capital extra. Publica lo que no uses en Venezuela Inmuebles.
 
 [Publicar gratis](/publicar)

@@ -604,7 +604,7 @@ function TabTransacciones({ perfiles, notify }: { perfiles: Record<string, any>;
     } else {
       notify(`✅ +${monto} créditos aprobados!`)
       // Notificar admin por Telegram
-      const mensaje = `✅ VendeT-Venezuela
+      const mensaje = `✅ Venezuela Inmuebles
 
 Se aprobaron ${monto} créditos para ${usuarioNombre}.
 Transacción procesada correctamente.`
@@ -626,7 +626,7 @@ Transacción procesada correctamente.`
             body: JSON.stringify({
               targetUserId: userId,
               titulo: '💰 Créditos recibidos',
-              cuerpo: `Se aprobaron ${monto} créditos en tu cuenta VendeT.`,
+              cuerpo: `Se aprobaron ${monto} créditos en tu cuenta Venezuela Inmuebles.`,
               click_url: '/creditos',
             }),
           }).catch(() => {})
@@ -867,7 +867,7 @@ function TabExportar() {
     const blob = new Blob([csv], { type: 'text/csv' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
-    a.href = url; a.download = `productos_vendet_${new Date().toISOString().split('T')[0]}.csv`
+    a.href = url; a.download = `propiedades_venezuela_inmuebles_${new Date().toISOString().split('T')[0]}.csv`
     a.click()
     URL.revokeObjectURL(url)
     setExportando(false)
@@ -884,7 +884,7 @@ function TabExportar() {
     const blob = new Blob([csv], { type: 'text/csv' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
-    a.href = url; a.download = `usuarios_vendet_${new Date().toISOString().split('T')[0]}.csv`
+    a.href = url; a.download = `usuarios_venezuela_inmuebles_${new Date().toISOString().split('T')[0]}.csv`
     a.click()
     URL.revokeObjectURL(url)
     setExportando(false)
@@ -901,7 +901,7 @@ function TabExportar() {
     const blob = new Blob([csv], { type: 'text/csv' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
-    a.href = url; a.download = `transacciones_vendet_${new Date().toISOString().split('T')[0]}.csv`
+    a.href = url; a.download = `transacciones_venezuela_inmuebles_${new Date().toISOString().split('T')[0]}.csv`
     a.click()
     URL.revokeObjectURL(url)
     setExportando(false)
@@ -1164,7 +1164,7 @@ export default function AdminPage() {
           <div className="bg-brand-accent p-3 rounded-xl"><Shield size={24} className="text-brand-primary" /></div>
           <div>
             <h1 className="text-3xl font-black text-gray-800">Admin Panel</h1>
-            <p className="text-gray-500">Control total de VendeT-Venezuela</p>
+            <p className="text-gray-500">Control total de Venezuela Inmuebles</p>
           </div>
         </div>
         <LocalLink href="/" className="text-sm text-brand-primary hover:underline">← Volver al sitio</LocalLink>

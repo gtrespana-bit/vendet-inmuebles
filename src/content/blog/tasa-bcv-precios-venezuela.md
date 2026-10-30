@@ -17,7 +17,7 @@ Publicar en bolívares es problemático porque la tasa cambia todos los días. P
 
 ### Cómo mostrar el precio en Bs
 
-En VendeT usamos la **tasa del BCV** del día para mostrar el precio en bolívares. Es la tasa oficial y todos la reconocen como referencia.
+En Venezuela Inmuebles usamos la **tasa del BCV** del día para mostrar el precio en bolívares. Es la tasa oficial y todos la reconocen como referencia.
 
 ### Conversión rápida
 
@@ -41,7 +41,7 @@ En VendeT usamos la **tasa del BCV** del día para mostrar el precio en bolívar
 - ✅ Binance Pay
 - ❌ No aceptes cheques ni depósitos de dudosa procedencia
 
-### Publica con precio en USD en VendeT
+### Publica con precio en USD en Venezuela Inmuebles
 
 La plataforma te permite fijar precio en dólares y muestra el equivalente en bolívares automáticamente.
 

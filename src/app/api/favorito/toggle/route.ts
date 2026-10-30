@@ -6,7 +6,7 @@ import { checkRateLimit } from '@/lib/rate-limit'
 
 if (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
   webpush.setVapidDetails(
-    'mailto:noreply@vendet.online',
+    'mailto:noreply@venezuela-inmuebles.online',
     process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
     process.env.VAPID_PRIVATE_KEY,
   )

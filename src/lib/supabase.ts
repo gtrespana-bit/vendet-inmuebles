@@ -1,7 +1,17 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+const configured = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://supabase-not-configured.invalid'
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'supabase-not-configured'
+
+// A disabled transport lets public pages render in a fresh checkout without sending
+// browser requests to localhost or a placeholder service. Real API calls still require
+// the Supabase URL and anon key to be configured.
+const unavailableFetch: typeof fetch = async () => {
+  throw new Error('Supabase is not configured for this environment.')
+}
+
+const transport = configured ? undefined : { fetch: unavailableFetch }
 
 // Patrón Singleton estricto para evitar múltiples instancias de GoTrueClient
 let globalSupabase: ReturnType<typeof createClient> | null = null
@@ -11,13 +21,14 @@ let globalSupabaseAuth: ReturnType<typeof createClient> | null = null
 export const getSupabaseClient = () => {
   if (!globalSupabase) {
     globalSupabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: transport,
       auth: {
-        persistSession: true,  // Activar persistencia para mantener sesión entre recargas
-        autoRefreshToken: true,  // Activar refresh automático para mantener sesión válida
-        detectSessionInUrl: true,  // Habilitar detección de sesión en URL para casos de OAuth
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
         storageKey: 'sb-auth-token',
-        flowType: 'pkce'
-      }
+        flowType: 'pkce',
+      },
     })
   }
   return globalSupabase
@@ -27,22 +38,20 @@ export const getSupabaseClient = () => {
 export const getSupabaseAuthClient = () => {
   if (!globalSupabaseAuth) {
     globalSupabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+      global: transport,
       auth: {
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: true,
         storageKey: 'sb-auth-token',
-        flowType: 'pkce'
-      }
+        flowType: 'pkce',
+      },
     })
   }
   return globalSupabaseAuth
 }
 
 // Exportación por defecto para compatibilidad con el código existente
-// Usamos `as any` para evitar errores de tipos estrictos en RPCs no tipados
 export const supabase = getSupabaseClient() as any
 
-export const isSupabaseConfigured = () => {
-  return !!process.env.NEXT_PUBLIC_SUPABASE_URL && !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-}
+export const isSupabaseConfigured = () => configured

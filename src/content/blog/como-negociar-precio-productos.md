@@ -32,6 +32,6 @@ Ya sea que compres o vendas, saber regatear bien es una habilidad que te ahorra 
 - ✅ "¿Cuál es tu mejor precio?" — Mejor
 - ✅ "Tengo presupuesto de $X, ¿podemos cerrar?" — **El cierre real**
 
-### Publica a precio justo en VendeT
+### Publica a precio justo en Venezuela Inmuebles
 
 0% comisión, compradores reales. [Publicar gratis](/publicar)

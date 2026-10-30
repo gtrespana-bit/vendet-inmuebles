@@ -4,7 +4,7 @@
 BASE_URL="https://venezuela-inmuebles.online"
 
 # Lista completa de URLs
-readarray -t URLs < vendet_urls_completas.txt
+readarray -t URLs < venezuela_inmuebles_urls_completas.txt
 
 TOTAL=${#URLS[@]}
 BATCH_SIZE=10

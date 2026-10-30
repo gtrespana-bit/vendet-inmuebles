@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Mail, MessageCircle, Phone, CheckCircle, AlertCircle, Send, Loader2 } from 'lucide-react'
+import { Mail, Phone, CheckCircle, AlertCircle, Send, Loader2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 const ASUNTOS = [
   'Pregunta general',
@@ -170,16 +170,7 @@ export default function ContactPage() {
                 </div>
                 <div>
                   <p className="font-medium text-gray-800">Email</p>
-                  <p className="text-sm text-gray-500">soporte@vendet.online</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center text-green-600">
-                  <MessageCircle size={20} />
-                </div>
-                <div>
-                  <p className="font-medium text-gray-800">WhatsApp / Telegram</p>
-                  <p className="text-sm text-gray-500">@VendeT-Venezuela</p>
+                  <p className="text-sm text-gray-500">soporte@venezuela-inmuebles.online</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">

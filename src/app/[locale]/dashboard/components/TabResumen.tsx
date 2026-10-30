@@ -1,107 +1,133 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
+import { useEffect, useState } from 'react'
+import { supabase, isSupabaseConfigured } from '@/lib/supabase'
 import { TrendingUp, Eye, MessageCircle, BarChart3 } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
+
+type DashboardStats = {
+  activos: number
+  totalVisitas: number
+  mensajesNoLeidos: number
+  favoritos: number
+  vendidos: number
+}
 
 export default function TabResumen({ userId }: { userId: string }) {
   const t = useTranslations('dashboard')
-  const [stats, setStats] = useState<any>(null)
+  const locale = useLocale()
+  const [stats, setStats] = useState<DashboardStats | null>(null)
+  const [hasError, setHasError] = useState(false)
 
   useEffect(() => {
+    let cancelled = false
+
     async function loadStats() {
-      const uid = userId
+      if (!isSupabaseConfigured()) {
+        setStats({ activos: 0, totalVisitas: 0, mensajesNoLeidos: 0, favoritos: 0, vendidos: 0 })
+        return
+      }
 
-      const { count: activos } = await supabase
-        .from('vw_propiedades_publicas')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', uid)
-        .eq('activo', true)
+      try {
+        const { count: activos, error: activeError } = await supabase
+          .from('vw_propiedades_publicas')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', userId)
+          .eq('activo', true)
+        if (activeError) throw activeError
 
-      const { data: productos } = await supabase
-        .from('vw_propiedades_publicas')
-        .select('visitas')
-        .eq('user_id', uid)
-        .eq('activo', true)
+        const { data: properties, error: propertiesError } = await supabase
+          .from('vw_propiedades_publicas')
+          .select('id, visitas')
+          .eq('user_id', userId)
+          .eq('activo', true)
+        if (propertiesError) throw propertiesError
 
-      const totalVisitas = productos?.reduce((sum: number, p: any) => sum + (p.visitas || 0), 0) || 0
+        const totalVisitas = (properties || []).reduce((sum: number, property: { visitas?: number | null }) => sum + (property.visitas || 0), 0)
+        const propertyIds = (properties || []).map((property: { id: string }) => property.id)
 
-      const { count: mensajesNoLeidos } = await supabase
-        .from('mensajes')
-        .select('id', { count: 'exact', head: true })
-        .eq('destinatario_id', uid)
-        .eq('leido', false)
+        const [{ count: unread, error: unreadError }, favoritesResult, { count: sold, error: soldError }] = await Promise.all([
+          supabase
+            .from('mensajes')
+            .select('id', { count: 'exact', head: true })
+            .eq('destinatario_id', userId)
+            .eq('leido', false),
+          propertyIds.length
+            ? supabase.from('favoritos').select('id', { count: 'exact', head: true }).in('producto_id', propertyIds)
+            : Promise.resolve({ count: 0, error: null }),
+          supabase
+            .from('inmuebles')
+            .select('id', { count: 'exact', head: true })
+            .eq('usuario_id', userId)
+            .eq('activo', false),
+        ])
 
-      const { count: favoritos } = await supabase
-        .from('favoritos')
-        .select('id', { count: 'exact', head: true })
-        .in('producto_id',
-          (await supabase.from('vw_propiedades_publicas').select('id').eq('user_id', uid).eq('activo', true))
-            ?.data?.map((p: any) => p.id) || []
-        )
+        if (unreadError) throw unreadError
+        if (soldError) throw soldError
+        if (cancelled) return
 
-      const { count: vendidos } = await supabase
-        .from('inmuebles')
-        .select('id', { count: 'exact', head: true })
-        .eq('usuario_id', uid)
-        .eq('activo', false)
-
-      setStats({
-        activos: activos || 0,
-        totalVisitas,
-        mensajesNoLeidos: mensajesNoLeidos || 0,
-        favoritos,
-        vendidos: vendidos || 0,
-      })
+        setStats({
+          activos: activos || 0,
+          totalVisitas,
+          mensajesNoLeidos: unread || 0,
+          favoritos: favoritesResult.count || 0,
+          vendidos: sold || 0,
+        })
+      } catch (error) {
+        console.error('[dashboard-summary] Could not load account stats:', error)
+        if (!cancelled) {
+          setHasError(true)
+          setStats({ activos: 0, totalVisitas: 0, mensajesNoLeidos: 0, favoritos: 0, vendidos: 0 })
+        }
+      }
     }
+
     loadStats()
+    return () => { cancelled = true }
   }, [userId])
+
+  const number = new Intl.NumberFormat(locale === 'en' ? 'en-US' : 'es-VE')
+  const cards = stats ? [
+    { label: t('activeListings'), value: number.format(stats.activos), icon: BarChart3, color: 'text-[#612e35]', bg: 'bg-[#f0e9df]' },
+    { label: t('totalVisits'), value: number.format(stats.totalVisitas), icon: Eye, color: 'text-[#795f3f]', bg: 'bg-[#f2ece2]' },
+    { label: t('unreadMessages'), value: number.format(stats.mensajesNoLeidos), icon: MessageCircle, color: stats.mensajesNoLeidos > 0 ? 'text-[#9a524a]' : 'text-[#8a8076]', bg: stats.mensajesNoLeidos > 0 ? 'bg-[#f8e9e6]' : 'bg-[#f1ede7]' },
+    { label: t('savedFavorites'), value: number.format(stats.favoritos), icon: TrendingUp, color: 'text-[#8b7046]', bg: 'bg-[#f2ece2]' },
+  ] : []
 
   if (!stats) {
     return (
-      <div className="animate-pulse space-y-4">
-        <div className="h-8 bg-gray-200 rounded w-1/3" />
-        <div className="grid grid-cols-2 gap-3">
-          {[...Array(4)].map((_, i) => <div key={i} className="h-24 bg-gray-100 rounded-xl" />)}
+      <div className="dashboard-panel" aria-busy="true">
+        <div className="mb-5 h-5 w-44 animate-pulse bg-[#eee8df]" />
+        <div className="dashboard-summary-cards">
+          {[1, 2, 3, 4].map((item) => <div key={item} className="h-28 animate-pulse bg-[#f4f0e9]" />)}
         </div>
       </div>
     )
   }
 
-  const tarjetas = [
-    { label: t('activeListings'), value: stats.activos, icon: BarChart3, color: 'text-brand-primary', bg: 'bg-brand-primary/10' },
-    { label: t('totalVisits'), value: new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(Number(stats.totalVisitas)), icon: Eye, color: 'text-brand-primary', bg: 'bg-brand-primary/10' },
-    { label: t('unreadMessages'), value: stats.mensajesNoLeidos, icon: MessageCircle, color: stats.mensajesNoLeidos > 0 ? 'text-red-500' : 'text-gray-400', bg: stats.mensajesNoLeidos > 0 ? 'bg-red-50' : 'bg-gray-50' },
-    { label: t('savedFavorites'), value: stats.favoritos || 0, icon: TrendingUp, color: 'text-brand-accent', bg: 'bg-brand-accent/10' },
-  ]
-
   return (
-    <div>
-      <h3 className="text-lg font-bold text-gray-900 mb-4">{t('summaryTitle')}</h3>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {tarjetas.map((item) => {
-          const Icon = item.icon
-          return (
-            <div key={item.label} className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
-              <div className={`w-10 h-10 ${item.bg} rounded-lg flex items-center justify-center mb-2`}>
-                <Icon size={20} className={item.color} />
-              </div>
-              <p className="text-2xl font-black text-gray-900">{item.value}</p>
-              <p className="text-xs text-gray-500 mt-0.5">{item.label}</p>
-            </div>
-          )
-        })}
+    <section className="dashboard-panel" aria-labelledby="dashboard-recent-title">
+      <div className="mb-4">
+        <p className="dashboard-page__eyebrow">{t('performanceEyebrow')}</p>
+        <h2 id="dashboard-recent-title" className="m-0 font-heading text-2xl font-normal text-[#302925]">{t('summaryTitle')}</h2>
+        {hasError && <p className="mt-2 text-xs text-[#8a6256]" role="status">{t('statsUnavailable')}</p>}
+      </div>
+
+      <div className="dashboard-summary-cards">
+        {cards.map(({ label, value, icon: Icon, color, bg }) => (
+          <article key={label}>
+            <div className={bg}><Icon size={17} className={color} aria-hidden="true" /></div>
+            <p>{value}</p>
+            <p>{label}</p>
+          </article>
+        ))}
       </div>
 
       {stats.vendidos > 0 && (
-        <div className="mt-3 bg-green-50 border border-green-200 rounded-xl px-4 py-3 flex items-center gap-2">
-          <span className="text-green-600 text-lg">🎉</span>
-          <p className="text-sm text-green-700 font-medium">
-            <strong>{stats.vendidos}</strong> {stats.vendidos === 1 ? 'listing sold' : 'listings sold'}
-          </p>
-        </div>
+        <p className="mt-4 flex items-center gap-2 border border-[#dbe6d9] bg-[#eff4ed] px-4 py-3 text-xs text-[#526d56]">
+          <strong>{number.format(stats.vendidos)}</strong> {t('soldPaused')}
+        </p>
       )}
-    </div>
+    </section>
   )
 }

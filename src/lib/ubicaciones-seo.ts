@@ -24,8 +24,8 @@ ESTADOS.forEach((estado) => {
       slug,
       nombre: municipio.capital,
       estado,
-      titulo: `Clasificados en ${municipio.capital}, ${estado} | VendeT Inmuebles`,
-      descripcion: `Explora anuncios de carros, casas, celulares, empleo y más en ${municipio.capital}, ${estado}. Publica gratis en VendeT Inmuebles.`,
+      titulo: `Inmuebles en ${municipio.capital}, ${estado} | Venezuela Inmuebles`,
+      descripcion: `Encuentra casas, apartamentos, terrenos y otros inmuebles en venta o alquiler en ${municipio.capital}, ${estado}.`,
       keywords: [
         `clasificados ${municipio.capital}`,
         `compra venta ${municipio.capital}`,
@@ -52,7 +52,7 @@ export function getCiudadesPorEstado(estado: string): CiudadSEO[] {
 // Helper para generar rutas estáticas
 export function generateCityParams() {
   return CIUDADES_SEO.map(ciudad => ({
-    city: ciudad.slug
+    ciudad: ciudad.slug
   }))
 }
 

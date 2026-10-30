@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import ContactForm from './ContactForm'
 
 export const metadata: Metadata = {
-  title: 'Contacto — VendeT-Venezuela',
+  title: 'Contacto — Venezuela Inmuebles',
   description: '¿Tienes dudas o sugerencias? Contáctanos',
 }
 
