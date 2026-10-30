@@ -64,15 +64,26 @@ export default function MapaClient({ products, locale }: MapaClientProps) {
       .filter((item): item is MapProperty => Boolean(item))
   }, [isDemo, products, locale])
 
+  // Las ciudades se derivan de los inmuebles que realmente se van a mostrar
+  // (base de datos o datos de ejemplo), no de la consulta original: si una ficha
+  // solo tiene estado, se ofrece el estado para que el filtro nunca quede vacío.
   const cities = useMemo(() => {
     const unique = new Map<string, string>()
-    products.forEach((product) => {
-      if (!product.ciudad) return
-      const key = normalize(product.ciudad)
-      if (!unique.has(key)) unique.set(key, product.ciudad)
+    const add = (value?: string | null) => {
+      const clean = (value || '').trim()
+      if (!clean) return
+      const key = normalize(clean)
+      if (!unique.has(key)) unique.set(key, clean)
+    }
+
+    source.forEach((item) => {
+      const [city, state] = (item.location || '').split(',').map((part) => part.trim())
+      if (city) add(city)
+      else if (state) add(state)
     })
+
     return Array.from(unique.values()).sort((a, b) => a.localeCompare(b, 'es'))
-  }, [products])
+  }, [source])
 
   const wantedCities = useMemo(() => {
     const set = new Set<string>()

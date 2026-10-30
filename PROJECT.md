@@ -234,9 +234,14 @@
 
 - Ruta pública: `/[locale]/mapa` (enlazada desde la cabecera, el pie, la portada y el catálogo).
 - Librería: **Leaflet 1.9** + **leaflet.markercluster**, sin clave de API ni coste.
-- Teselas: `tile.openstreetmap.org` con atribución visible (© OpenStreetMap). Para tráfico alto hay que respetar la
-  [política de uso de teselas](https://operations.osmfoundation.org/policies/tiles/) o contratar un proveedor de teselas
-  (MapTiler, Thunderforest, Protomaps…) manteniendo los datos OSM.
+- Teselas: `tile.openstreetmap.org` con atribución visible (© OpenStreetMap contributors) y
+  `referrerPolicy: 'strict-origin-when-cross-origin'` en la capa: la política de uso exige una Referer válida y sin ella el
+  servidor devuelve la imagen *«Access blocked»* (también cuando la página se sirve con `Referrer-Policy: no-referrer` o
+  dentro de un iframe). El proveedor se puede sustituir con `NEXT_PUBLIC_MAP_TILE_URL` sin tocar el código. Para tráfico
+  alto hay que respetar la [política de uso de teselas](https://operations.osmfoundation.org/policies/tiles/) o contratar
+  un proveedor (MapTiler, Thunderforest, Protomaps…) manteniendo los datos OSM.
+- Si el proveedor no responde, el mapa muestra un aviso discreto («Fondo del mapa no disponible») y deja los pines y la
+  lista operativos.
 - Marcadores con precio; los destacados en latón, los de ubicación aproximada con borde discontinuo. Selección
   sincronizada entre mapa y lista, agrupación de marcadores y botón «Buscar en esta zona».
 - Coordenadas: `inmuebles.latitud` / `inmuebles.longitud`. Si faltan, `src/lib/geo/venezuela.ts` resuelve el centro de la

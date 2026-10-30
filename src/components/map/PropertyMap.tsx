@@ -162,6 +162,7 @@ export default function PropertyMap({
   const onMapClickRef = useRef(onMapClick)
   const lastFitRef = useRef<string | null>(null)
   const [ready, setReady] = useState(false)
+  const [tilesFailed, setTilesFailed] = useState(false)
 
   onSelectRef.current = onSelect
   onBoundsRef.current = onBoundsChange
@@ -211,12 +212,34 @@ export default function PropertyMap({
         worldCopyJump: true,
       })
 
-      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        minZoom: 4,
-        updateWhenIdle: true,
-        keepBuffer: 2,
-      }).addTo(map)
+      // La política de uso de teselas de OpenStreetMap exige una Referer válida:
+      // sin ella el servidor devuelve la imagen «Access blocked». El atributo del
+      // elemento gana a la cabecera Referrer-Policy del documento, así que el mapa
+      // sigue funcionando aunque la página (o un iframe que la aloja) use no-referrer.
+      // El proveedor se puede cambiar por variable de entorno para uso intensivo.
+      const tiles = L.tileLayer(
+        process.env.NEXT_PUBLIC_MAP_TILE_URL || 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+        {
+          maxZoom: 19,
+          minZoom: 4,
+          updateWhenIdle: true,
+          keepBuffer: 2,
+          referrerPolicy: 'strict-origin-when-cross-origin',
+        },
+      ).addTo(map)
+
+      // Si el proveedor de teselas no responde, avisamos con discreción en lugar de
+      // dejar un lienzo vacío sin explicación. Los pines siguen siendo utilizables.
+      let tileErrors = 0
+      let tileLoads = 0
+      tiles.on('tileerror', () => {
+        tileErrors += 1
+        if (tileErrors >= 4 && tileLoads === 0) setTilesFailed(true)
+      })
+      tiles.on('tileload', () => {
+        tileLoads += 1
+        if (tileLoads === 1) setTilesFailed(false)
+      })
 
       const cluster = (L as any).markerClusterGroup({
         showCoverageOnHover: false,
@@ -238,7 +261,7 @@ export default function PropertyMap({
       L.control
         .attribution({ position: 'bottomright', prefix: false })
         .addAttribution(
-          '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a>',
+          '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap contributors</a>',
         )
         .addTo(map)
 
@@ -370,6 +393,19 @@ export default function PropertyMap({
               <path d="M2 5V2h3M12 5V2H9M2 9v3h3M12 9v3H9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
+        </div>
+      )}
+
+      {tilesFailed && (
+        <div className="vi-map__tiles-note" role="status">
+          <span>
+            {locale === 'en'
+              ? 'Map background unavailable.'
+              : 'Fondo del mapa no disponible.'}
+          </span>
+          <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">
+            OpenStreetMap
+          </a>
         </div>
       )}
 
