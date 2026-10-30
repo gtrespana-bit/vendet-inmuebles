@@ -77,7 +77,7 @@ export default function ThemeSwitcher() {
       {open && (
         <div className={styles.panel} role="group" aria-label="Elegir paleta de colores">
           <p className={styles.panelTitle}>Paleta de marca</p>
-          <p className={styles.panelHint}>Compara las tres propuestas y elige una.</p>
+          <p className={styles.panelHint}>Compara las tres y elige una.</p>
 
           <ul className={styles.list}>
             {THEMES.map((item) => (
