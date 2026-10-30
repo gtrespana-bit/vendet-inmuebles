@@ -1,6 +1,5 @@
 {
   "landing": {
-    "viewMap": "View on map",
     "metaTitle": "Properties in Venezuela for sale or rent | Venezuela Inmuebles",
     "metaDescription": "Find houses, apartments, land and commercial spaces for sale or rent. Search by location and connect directly.",
     "heroEyebrow": "VENEZUELA · SPACES FOR EVERY CHAPTER",
@@ -1534,7 +1533,8 @@
       "cardSample": "Sample",
       "cardPriceOnRequest": "Price on request",
       "cardBedrooms": "bd",
-      "cardBathrooms": "ba"
+      "cardBathrooms": "ba",
+      "viewMap": "View on map"
     },
   "map": {
     "eyebrow": "Map search",

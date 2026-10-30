@@ -1,6 +1,5 @@
 {
   "landing": {
-    "viewMap": "Ver en el mapa",
     "metaTitle": "Inmuebles en Venezuela para comprar o alquilar | Venezuela Inmuebles",
     "metaDescription": "Busca casas, apartamentos, terrenos y espacios comerciales en venta o alquiler. Filtra por ubicación y conecta directamente.",
     "heroEyebrow": "VENEZUELA · ESPACIOS PARA CADA ETAPA",
@@ -1532,7 +1531,8 @@
       "cardSample": "Ejemplo",
       "cardPriceOnRequest": "Precio a consultar",
       "cardBedrooms": "hab",
-      "cardBathrooms": "baños"
+      "cardBathrooms": "baños",
+      "viewMap": "Ver en el mapa"
     },
   "map": {
     "eyebrow": "Búsqueda por mapa",
