@@ -43,6 +43,8 @@ const LIMITS: Record<string, { max: number; windowMs: number }> = {
   'tasa-bcv': { max: 60, windowMs: 60 * 60 * 1000 },
   // Webhook Telegram: 120 por hora
   'telegram:webhook': { max: 120, windowMs: 60 * 60 * 1000 },
+  // Mejora de descripciones con IA (Gemini gratuito): 20 por hora por usuario
+  'ai-descripcion': { max: 20, windowMs: 60 * 60 * 1000 },
 }
 
 function getSupabaseClient() {

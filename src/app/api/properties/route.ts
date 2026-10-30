@@ -7,6 +7,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const {
       tipo_operacion,
+      tipo_propiedad,
       titulo,
       descripcion,
       precio,
@@ -15,6 +16,10 @@ export async function POST(req: NextRequest) {
       habitaciones,
       banos,
       area,
+      area_construida,
+      puestos_estacionamiento,
+      condicion,
+      caracteristicas,
       imagenes,
       latitud,
       longitud,
@@ -52,12 +57,15 @@ export async function POST(req: NextRequest) {
     }
 
     const operacionSlug = tipo_operacion === 'alquiler' ? 'alquiler' : 'venta'
+    const tipoSlug = typeof tipo_propiedad === 'string' && /^[a-z-]{2,40}$/.test(tipo_propiedad) ? tipo_propiedad : 'casa'
     const [{ data: operacion }, { data: tipo }] = await Promise.all([
       supabase.from('operaciones').select('id').eq('slug', operacionSlug).single(),
-      supabase.from('tipos_inmueble').select('id').eq('slug', 'casa').single(),
+      supabase.from('tipos_inmueble').select('id').eq('slug', tipoSlug).maybeSingle(),
     ])
 
-    if (!operacion || !tipo) {
+    const tipoFinal = tipo || (await supabase.from('tipos_inmueble').select('id').eq('slug', 'casa').single()).data
+
+    if (!operacion || !tipoFinal) {
       return NextResponse.json({ error: 'No están configurados los catálogos de inmuebles' }, { status: 500 })
     }
 
@@ -89,6 +97,9 @@ export async function POST(req: NextRequest) {
       Math.abs(lat) <= 90 && Math.abs(lng) <= 180 &&
       Math.abs(lat) > 0.5 && Math.abs(lng) > 0.5
 
+    const areaConstruidaNum = Number(area_construida)
+    const condicionLimpia = typeof condicion === 'string' && condicion.trim() ? condicion.trim().slice(0, 60) : null
+
     const propertyData = {
       usuario_id: user.id,
       titulo: tituloLimpio.slice(0, 160),
@@ -100,10 +111,13 @@ export async function POST(req: NextRequest) {
       ubicacion_estado_id: estadoData?.id || null,
       ubicacion_ciudad_id: ciudadId,
       operacion_id: operacion.id,
-      tipo_id: tipo.id,
+      tipo_id: tipoFinal.id,
       habitaciones: Math.max(0, Number.parseInt(habitaciones, 10) || 0),
       banos: Math.max(0, Number.parseInt(banos, 10) || 0),
       area_total: Number.isFinite(Number(area)) && Number(area) > 0 ? Number(area) : null,
+      area_construida: Number.isFinite(areaConstruidaNum) && areaConstruidaNum > 0 ? areaConstruidaNum : null,
+      puestos_estacionamiento: Math.max(0, Number.parseInt(puestos_estacionamiento, 10) || 0),
+      condicion: condicionLimpia,
       latitud: hasCoords ? Number(lat.toFixed(7)) : null,
       longitud: hasCoords ? Number(lng.toFixed(7)) : null,
       imagen_url: imageUrls[0] || null,
@@ -137,6 +151,52 @@ export async function POST(req: NextRequest) {
         await supabase.from('inmuebles').delete().eq('id', property.id)
         console.error('Error al guardar imágenes:', imagesError)
         return NextResponse.json({ error: 'No se pudieron guardar las imágenes del inmueble' }, { status: 500 })
+      }
+    }
+
+    // Características del inmueble (amueblado, electricidad, amenidades…).
+    // Se resuelven contra el catálogo `caracteristicas` por nombre (case-insensitive);
+    // las que no existen se crean. Máximo 25 por inmueble.
+    if (Array.isArray(caracteristicas) && caracteristicas.length > 0) {
+      const nombres = Array.from(new Set(
+        caracteristicas
+          .filter((c: unknown): c is string => typeof c === 'string')
+          .map((c: string) => c.trim().slice(0, 60))
+          .filter((c: string) => c.length >= 2)
+      )).slice(0, 25)
+
+      if (nombres.length > 0) {
+        const { data: todas } = await supabase.from('caracteristicas').select('id, nombre').limit(500)
+        const porNombre = new Map<string, string>()
+        ;(todas || []).forEach((c: any) => porNombre.set(String(c.nombre).toLowerCase().trim(), c.id))
+
+        const ids: string[] = []
+        for (const nombre of nombres) {
+          let id = porNombre.get(nombre.toLowerCase())
+          if (!id) {
+            const { data: creada } = await supabase
+              .from('caracteristicas')
+              .insert({ nombre })
+              .select('id')
+              .single()
+            const creadoId = creada && typeof (creada as any).id === 'string' ? String((creada as any).id) : null
+            if (creadoId) {
+              id = creadoId
+              porNombre.set(nombre.toLowerCase(), creadoId)
+            }
+          }
+          if (id) ids.push(id)
+        }
+
+        if (ids.length > 0) {
+          const { error: carError } = await supabase.from('inmueble_caracteristicas').insert(
+            ids.map((id: string) => ({ inmueble_id: property.id, caracteristica_id: id }))
+          )
+          if (carError) {
+            // No fatal: el inmueble ya existe; las características son optativas
+            console.error('Error al guardar características:', carError)
+          }
+        }
       }
     }
 
