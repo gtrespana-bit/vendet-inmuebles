@@ -1,6 +1,6 @@
 import { createClient, type SupabaseClient, type User } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
-import { ADMIN_EMAILS } from '@/lib/admin-config'
+import { isAdminEmail } from '@/lib/admin-config'
 
 type AuthenticatedContext = {
   ok: true
@@ -54,8 +54,7 @@ export async function requireAuthenticatedUser(request: NextRequest): Promise<Au
 }
 
 export function isAdminUser(user: User): boolean {
-  const email = user.email?.toLowerCase() || ''
-  return ADMIN_EMAILS.includes(email) || user.app_metadata?.role === 'admin'
+  return isAdminEmail(user.email) || user.app_metadata?.role === 'admin'
 }
 
 export async function requireAdmin(request: NextRequest): Promise<AuthorizationResult> {

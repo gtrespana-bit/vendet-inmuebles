@@ -49,19 +49,21 @@ export async function POST(req: NextRequest) {
         body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'HTML' }),
       }),
       (async () => {
-        const { data: adminProfile } = await auth.supabaseAdmin
+        // Notificar por push a todos los administradores
+        const { data: adminProfiles } = await auth.supabaseAdmin
           .from('perfiles')
           .select('id')
-          .eq('email', ADMIN_EMAILS[0])
-          .maybeSingle()
-        if (adminProfile) {
-          await notifyUser(auth.supabaseAdmin, adminProfile.id, {
-            title: '🚨 Alerta de moderación',
-            body: `${moderacion.nivel.toUpperCase()}: ${titulo} — ${auth.user.email || 'Usuario'}`,
-            tag: `mod-${moderacion.nivel}`,
-            icon: '/icon-192.png',
-            click_url: '/admin',
-          })
+          .in('email', ADMIN_EMAILS)
+        if (adminProfiles && adminProfiles.length) {
+          await Promise.all(adminProfiles.map((profile: { id: string }) =>
+            notifyUser(auth.supabaseAdmin, profile.id, {
+              title: '🚨 Alerta de moderación',
+              body: `${moderacion.nivel.toUpperCase()}: ${titulo} — ${auth.user.email || 'Usuario'}`,
+              tag: `mod-${moderacion.nivel}`,
+              icon: '/icon-192.png',
+              click_url: '/admin',
+            })
+          ))
         }
       })(),
     ])

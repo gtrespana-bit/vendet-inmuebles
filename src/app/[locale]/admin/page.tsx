@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useMemo, Suspense } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import LocalLink from '@/components/LocalLink'
 import { supabase } from '@/lib/supabase'
@@ -13,9 +13,10 @@ import {
   Megaphone, Download, Eye, Loader2, Check, X, Tag
 } from 'lucide-react'
 import VerificacionTab from './VerificacionTab'
+import MetricasTab from './MetricasTab'
 import Image from 'next/image'
 
-import { ADMIN_EMAILS } from '@/lib/admin-config'
+import { isAdminEmail } from '@/lib/admin-config'
 
 const TABS = [
   { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
@@ -36,66 +37,6 @@ interface Notifier {
   notify: (msg: string) => void
 }
 
-// ============================ METRICAS TAB ============================
-function MetricasTab() {
-  const [stats, setStats] = useState<any>(null)
-  const [cargando, setCargando] = useState(true)
-
-  useEffect(() => {
-    async function load() {
-      const [{ count: totalUsuarios }, { count: totalProductos }, { count: activos }] = await Promise.all([
-        supabase.from('perfiles').select('*', { count: 'exact', head: true }),
-        supabase.from('vw_propiedades_publicas').select('*', { count: 'exact', head: true }),
-        supabase.from('vw_propiedades_publicas').select('*', { count: 'exact', head: true }).eq('activo', true),
-      ])
-
-      const { data: trans } = await supabase
-        .from('transacciones_creditos')
-        .select('monto, estado, tipo, creado_en')
-        .limit(1000)
-
-      const ingresos = trans?.filter((t: any) => t.estado === 'aprobado' && t.tipo === 'compra').reduce((s: number, t: any) => s + t.monto, 0) || 0
-      const hoy = new Date().toISOString().split('T')[0]
-      const nuevosHoy = trans?.filter((t: any) => t.creado_en?.startsWith(hoy) && t.estado === 'aprobado').length || 0
-
-      setStats({
-        totalUsuarios: totalUsuarios || 0,
-        totalProductos: totalProductos || 0,
-        productosActivos: activos || 0,
-        ingresosUSD: ingresos,
-        nuevosHoy,
-      })
-      setCargando(false)
-    }
-    load()
-  }, [])
-
-  if (cargando) return <div className="text-center py-12 text-gray-400">Cargando métricas...</div>
-
-  const cards = [
-    { label: 'Usuarios', value: stats.totalUsuarios, icon: Users, color: 'bg-blue-50 text-blue-600' },
-    { label: 'Productos', value: stats.totalProductos, icon: Package, color: 'bg-green-50 text-green-600' },
-    { label: 'Activos', value: stats.productosActivos, icon: Zap, color: 'bg-yellow-50 text-yellow-600' },
-    { label: 'Créditos vendidos', value: new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(Number(stats.ingresosUSD)), icon: CreditCard, color: 'bg-purple-50 text-purple-600' },
-    { label: 'Ventas hoy', value: stats.nuevosHoy, icon: Star, color: 'bg-emerald-50 text-emerald-600' },
-    { label: 'Pausados', value: stats.totalProductos - stats.productosActivos, icon: Pause, color: 'bg-gray-50 text-gray-500' },
-  ]
-
-  return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-        {cards.map(c => (
-          <div key={c.label} className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-            <div className={`inline-flex p-2 rounded-lg ${c.color} mb-2`}><c.icon size={20} /></div>
-            <p className="text-2xl font-black text-gray-800">{c.value}</p>
-            <p className="text-xs text-gray-500">{c.label}</p>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
 // ============================ USUARIOS TAB ============================
 type SortField = 'nombre' | 'creado_en' | 'credito_balance' | 'verificado' | 'ultima_actividad'
 type SortDir = 'asc' | 'desc'
@@ -110,16 +51,21 @@ function UsuariosTab({ notify }: Notifier) {
   const [creditCantidad, setCreditCantidad] = useState('')
   const [creditMotivo, setCreditMotivo] = useState('')
   const [creditProcesando, setCreditProcesando] = useState(false)
+
+  // Columnas necesarias para la tabla de usuarios (una sola fuente de verdad)
+  const COLUMNAS_USUARIOS = 'id, email, nombre, telefono, estado, ciudad, credito_balance, verificado, nivel_confianza, creado_en'
   const mapProfile = (profile: any) => ({
     ...profile,
-    email_publico: profile.email_visible ? profile.email : null,
+    // En el panel admin el email siempre es visible para poder gestionar usuarios.
+    // (RLS ya permite a los administradores leer la columna email.)
+    email_publico: profile.email,
   })
 
   useEffect(() => {
     async function load() {
       const { data } = await supabase
         .from('perfiles')
-        .select('*')
+        .select(COLUMNAS_USUARIOS)
         .limit(1000)
       if (data) setUsuarios(data.map(mapProfile))
       setCargando(false)
@@ -187,7 +133,7 @@ function UsuariosTab({ notify }: Notifier) {
       setCreditCantidad('')
       setCreditMotivo('')
       // reload user list
-      await supabase.from('perfiles').select('id, email, email_visible, nombre, telefono, estado, ciudad, credito_balance, verificado, nivel_confianza, creado_en').limit(1000).then(({data}: {data: any[]}) => {
+      await supabase.from('perfiles').select(COLUMNAS_USUARIOS).limit(1000).then(({data}: {data: any[]}) => {
         if (data) setUsuarios(data.map(mapProfile))
       })
     } catch (err: any) {
@@ -230,7 +176,7 @@ function UsuariosTab({ notify }: Notifier) {
         </div>
         <button onClick={async () => {
           setCargando(true)
-          const { data } = await supabase.from('perfiles').select('id, email, email_visible, nombre, telefono, estado, ciudad, credito_balance, verificado, nivel_confianza, creado_en').limit(1000)
+          const { data } = await supabase.from('perfiles').select(COLUMNAS_USUARIOS).limit(1000)
           if (data) setUsuarios(data.map(mapProfile)); setCargando(false)
         }} className="p-2.5 rounded-xl border hover:bg-gray-50" title="Refrescar">
           <RefreshCw size={18} />
@@ -811,7 +757,11 @@ function TabCategorias({ notify }: { notify: (m: string) => void }) {
 
   async function agregarCategoria() {
     if (!nuevaCat.trim()) return
-    await supabase.from('categorias').insert([{ nombre: nuevaCat.trim().toLowerCase() }])
+    const { error } = await supabase.from('categorias').insert([{ nombre: nuevaCat.trim().toLowerCase() }])
+    if (error) {
+      notify('❌ Error añadiendo categoría: ' + error.message)
+      return
+    }
     notify('✅ Categoría añadida')
     setNuevaCat('')
     const { data } = await supabase.from('categorias').select('id, nombre, descripcion, icono, color, orden').order('id')
@@ -853,57 +803,82 @@ function TabCategorias({ notify }: { notify: (m: string) => void }) {
 
 // ============================================================
 // TAB: EXPORTAR
-function TabExportar() {
+
+// Escapado correcto para CSV (comillas dobles + campo entrecomillado)
+function csvField(v: unknown): string {
+  if (v === null || v === undefined) return '""'
+  return `"${String(v).replace(/"/g, '""')}"`
+}
+
+// Descarga completa respetando el paginado de PostgREST (bloques de 1000)
+async function fetchAll<T = any>(table: string, columns: string, orderBy = 'creado_en'): Promise<T[]> {
+  const all: T[] = []
+  const PAGE = 1000
+  let from = 0
+  for (;;) {
+    const { data, error } = await supabase
+      .from(table)
+      .select(columns)
+      .order(orderBy, { ascending: true })
+      .range(from, from + PAGE - 1)
+    if (error) throw error
+    if (data && data.length) all.push(...(data as T[]))
+    if (!data || data.length < PAGE) break
+    from += PAGE
+  }
+  return all
+}
+
+function downloadCsv(rows: Record<string, unknown>[], headers: string[], filename: string) {
+  const csv = [
+    headers.join(','),
+    ...rows.map(row => headers.map(h => csvField(row[h])).join(',')),
+  ].join('\n')
+  // BOM para que Excel reconozca acentos/UTF-8
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url; a.download = filename
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+function TabExportar({ notify }: { notify: (m: string) => void }) {
   const [exportando, setExportando] = useState(false)
 
   async function exportarProductos() {
     setExportando(true)
-    const { data } = await supabase.from('vw_propiedades_publicas').select('id, titulo, precio_usd, estado, categoria_id, subcategoria, marca, ubicacion_ciudad, activo, visitas, creado_en, user_id, imagen_url, destacado, destacado_hasta, boosteado_en, estado_moderacion')
-    if (!data) { setExportando(false); return }
-
-    const headers = ['id', 'titulo', 'precio_usd', 'estado', 'categoria_id', 'subcategoria', 'marca', 'ubicacion_ciudad', 'activo', 'visitas', 'creado_en']
-    const csv = [headers.join(','), ...data.map((p: any) => headers.map(h => `"${(p as any)[h] || ''}"`).join(','))].join('\n')
-
-    const blob = new Blob([csv], { type: 'text/csv' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url; a.download = `propiedades_venezuela_inmuebles_${new Date().toISOString().split('T')[0]}.csv`
-    a.click()
-    URL.revokeObjectURL(url)
+    try {
+      const data = await fetchAll('vw_propiedades_publicas', 'id, titulo, precio_usd, estado, categoria_id, subcategoria, marca, ubicacion_ciudad, activo, visitas, creado_en')
+      downloadCsv(data as any, ['id', 'titulo', 'precio_usd', 'estado', 'categoria_id', 'subcategoria', 'marca', 'ubicacion_ciudad', 'activo', 'visitas', 'creado_en'],
+        `propiedades_venezuela_inmuebles_${new Date().toISOString().split('T')[0]}.csv`)
+    } catch (e: any) {
+      notify('❌ Error exportando productos: ' + (e.message || 'desconocido'))
+    }
     setExportando(false)
   }
 
   async function exportarUsuarios() {
     setExportando(true)
-    const { data } = await supabase.from('perfiles').select('id, nombre, telefono, estado, ciudad, credito_balance, verificado, nivel_confianza, creado_en')
-    if (!data) { setExportando(false); return }
-
-    const headers = ['id', 'nombre', 'telefono', 'estado', 'ciudad', 'credito_balance', 'creado_en']
-    const csv = [headers.join(','), ...data.map((u: any) => headers.map(h => `"${u[h] || ''}"`).join(','))].join('\n')
-
-    const blob = new Blob([csv], { type: 'text/csv' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url; a.download = `usuarios_venezuela_inmuebles_${new Date().toISOString().split('T')[0]}.csv`
-    a.click()
-    URL.revokeObjectURL(url)
+    try {
+      const data = await fetchAll('perfiles', 'id, nombre, telefono, estado, ciudad, credito_balance, verificado, nivel_confianza, creado_en')
+      downloadCsv(data as any, ['id', 'nombre', 'telefono', 'estado', 'ciudad', 'credito_balance', 'creado_en'],
+        `usuarios_venezuela_inmuebles_${new Date().toISOString().split('T')[0]}.csv`)
+    } catch (e: any) {
+      notify('❌ Error exportando usuarios: ' + (e.message || 'desconocido'))
+    }
     setExportando(false)
   }
 
   async function exportarTransacciones() {
     setExportando(true)
-    const { data } = await supabase.from('transacciones_creditos').select('id, user_id, tipo, monto, metodo_pago, estado, creado_en, precio_usd, comprobante_url')
-    if (!data) { setExportando(false); return }
-
-    const headers = ['id', 'user_id', 'tipo', 'monto', 'metodo_pago', 'estado', 'creado_en']
-    const csv = [headers.join(','), ...data.map((t: any) => headers.map(h => `"${(t as any)[h] || ''}"`).join(','))].join('\n')
-
-    const blob = new Blob([csv], { type: 'text/csv' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url; a.download = `transacciones_venezuela_inmuebles_${new Date().toISOString().split('T')[0]}.csv`
-    a.click()
-    URL.revokeObjectURL(url)
+    try {
+      const data = await fetchAll('transacciones_creditos', 'id, user_id, tipo, monto, metodo_pago, estado, creado_en')
+      downloadCsv(data as any, ['id', 'user_id', 'tipo', 'monto', 'metodo_pago', 'estado', 'creado_en'],
+        `transacciones_venezuela_inmuebles_${new Date().toISOString().split('T')[0]}.csv`)
+    } catch (e: any) {
+      notify('❌ Error exportando transacciones: ' + (e.message || 'desconocido'))
+    }
     setExportando(false)
   }
 
@@ -1106,7 +1081,7 @@ export default function AdminPage() {
   const [toast, setToast] = useState<string | null>(null)
   const [perfiles, setPerfiles] = useState<Record<string, any>>({})
 
-  const isAdmin = ADMIN_EMAILS.includes(user?.email || '')
+  const isAdmin = isAdminEmail(user?.email)
 
   useEffect(() => {
     if (!session || !user) return
@@ -1124,7 +1099,8 @@ export default function AdminPage() {
   }, [user, session, isAdmin, searchParams, router])
 
   async function cargarPerfiles() {
-    const { data } = await supabase.from('perfiles').select('id, nombre, telefono')
+    // Límite explícito: PostgREST corta a 1000 filas por defecto.
+    const { data } = await supabase.from('perfiles').select('id, nombre, telefono').limit(10000)
     if (data) {
       const m: Record<string, any> = {}
       data.forEach((p: any) => { m[p.id] = p })
@@ -1185,7 +1161,7 @@ export default function AdminPage() {
       {/* Quick links — botones que cambian tab directamente */}
       <div className="flex gap-1.5 mb-6 flex-wrap">
         {QUICK_LINKS.map(q => (
-          <button key={q.label} onClick={() => setTab(q.target)}
+          <button key={q.label} onClick={() => { setTab(q.target); router.replace(`/admin?tab=${q.target}`) }}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-white border hover:bg-gray-50 text-gray-600 transition">
             <q.icon size={12} /> {q.label}
           </button>
@@ -1201,7 +1177,7 @@ export default function AdminPage() {
       {tab === 'transacciones' && <TabTransacciones perfiles={perfiles} notify={notify} />}
       {tab === 'anuncios' && <TabAnuncios notify={notify} />}
       {tab === 'categorias' && <TabCategorias notify={notify} />}
-      {tab === 'exportar' && <TabExportar />}
+      {tab === 'exportar' && <TabExportar notify={notify} />}
     </div>
   )
 }
