@@ -22,6 +22,9 @@ html {
 @media (display-mode: standalone) {
   html, body { overflow-y: scroll !important; }
 }
+/* Editorial landing (/) owns the full canvas — kill the white overscroll flash */
+body:has(.editorialLanding) { background: #121212; }
+
 body {
   color: var(--foreground);
   background: var(--background);
