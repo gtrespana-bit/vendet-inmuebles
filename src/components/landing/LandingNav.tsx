@@ -3,15 +3,10 @@
 import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import LocalLink from '@/components/LocalLink'
+import type { LandingCopy } from './copy'
 import styles from './landing.module.css'
 
-const LINKS = [
-  { href: '/catalogo', label: 'COLLECTION', index: '01' },
-  { href: '/propiedades', label: 'ARCHIVE', index: '02' },
-  { href: '/contacto', label: 'CONCIERGE', index: '03' },
-] as const
-
-export default function LandingNav() {
+export default function LandingNav({ copy }: { copy: LandingCopy }) {
   const [open, setOpen] = useState(false)
   const pathname = usePathname()
 
@@ -36,7 +31,7 @@ export default function LandingNav() {
   return (
     <>
       <header className={styles.nav}>
-        <LocalLink href="/" className={styles.brand} aria-label="Venezuela Inmuebles — inicio">
+        <LocalLink href="/" className={styles.brand} aria-label="Venezuela Inmuebles">
           <span className={styles.brandMark} aria-hidden="true" />
           <span className={styles.brandName}>
             <span>Venezuela</span>
@@ -44,16 +39,16 @@ export default function LandingNav() {
           </span>
         </LocalLink>
 
-        <nav className={styles.navLinks} aria-label="Colección">
-          {LINKS.map((link) => (
+        <nav className={styles.navLinks} aria-label={copy.nav.menuNote}>
+          {copy.nav.links.map((link) => (
             <LocalLink key={link.href} href={link.href} className={styles.navLink}>
               {link.label}
             </LocalLink>
           ))}
         </nav>
 
-        <LocalLink href="/contacto" className={styles.navCta}>
-          Solicitar acceso privado
+        <LocalLink href={copy.nav.ctaHref} className={styles.navCta}>
+          {copy.nav.cta}
         </LocalLink>
 
         <button
@@ -70,31 +65,26 @@ export default function LandingNav() {
       </header>
 
       {open && (
-        <div className={styles.menuPanel} id="landing-menu" role="dialog" aria-modal="true" aria-label="Menú">
+        <div className={styles.menuPanel} id="landing-menu" role="dialog" aria-modal="true" aria-label={copy.nav.menuNote}>
           <div className={styles.menuPanelHead}>
-            <span>Venezuela Inmuebles</span>
-            <button
-              type="button"
-              className={styles.menuClose}
-              aria-label="Cerrar menú"
-              onClick={() => setOpen(false)}
-            >
+            <span>{copy.nav.menuTitle}</span>
+            <button type="button" className={styles.menuClose} aria-label="Cerrar menú" onClick={() => setOpen(false)}>
               <span aria-hidden="true" />
               <span aria-hidden="true" />
             </button>
           </div>
 
-          <nav className={styles.menuPanelLinks} aria-label="Menú principal">
-            {LINKS.map((link) => (
+          <nav className={styles.menuPanelLinks} aria-label={copy.nav.menuNote}>
+            {copy.nav.links.map((link, index) => (
               <LocalLink key={link.href} href={link.href} className={styles.menuPanelLink}>
-                <small aria-hidden="true">{link.index}</small>
+                <small aria-hidden="true">{String(index + 1).padStart(2, '0')}</small>
                 {link.label}
               </LocalLink>
             ))}
           </nav>
 
-          <LocalLink href="/contacto" className={styles.menuPanelCta}>
-            Solicitar acceso privado
+          <LocalLink href={copy.nav.ctaHref} className={styles.menuPanelCta}>
+            {copy.nav.menuCta}
           </LocalLink>
         </div>
       )}
