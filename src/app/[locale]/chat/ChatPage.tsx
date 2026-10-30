@@ -423,7 +423,7 @@ export default function ChatPageClient() {
           <header className="inbox-page__heading"><p>{t('title')}</p><h1>{t('title')}</h1></header>
           <div className="inbox-shell inbox-shell--loading">
             <div className="text-center text-[#897f75]">
-              <div className="mx-auto mb-3 h-10 w-10 animate-spin rounded-full border-2 border-[#d8c6a6] border-t-[#612e35]" />
+              <div className="mx-auto mb-3 h-10 w-10 animate-spin rounded-full border-2 border-[#D8CDB4] border-t-[#0E3B33]" />
               <p>{t('loadingConversations')}</p>
             </div>
           </div>

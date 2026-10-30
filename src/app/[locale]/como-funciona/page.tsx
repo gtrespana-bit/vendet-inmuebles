@@ -86,7 +86,7 @@ export default async function ComoFuncionaPage() {
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <article className="bg-[#fffdfa] border border-[#e8dfd2] p-6 md:p-7">
-                <h3 className="font-bold text-[#612e35] text-lg mb-4">{t('platformTitle')}</h3>
+                <h3 className="font-bold text-[#0E3B33] text-lg mb-4">{t('platformTitle')}</h3>
                 <ul className="space-y-3 text-sm text-[#61584e]">
                   {platformItems.map(k => (
                     <li key={k} className="flex items-start gap-2.5">

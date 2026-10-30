@@ -254,7 +254,7 @@ export default function TabProductos({
           <p className="dashboard-page__eyebrow">{t('tabListings')}</p>
           <h2 id="dashboard-properties-title" className="m-0 font-heading text-2xl font-normal text-[#302925]">{t('propertiesTitle')}</h2>
         </div>
-        <LocalLink href="/publicar-inmueble" className="text-xs font-bold text-[#612e35] no-underline">
+        <LocalLink href="/publicar-inmueble" className="text-xs font-bold text-[#0E3B33] no-underline">
           + {t('publishPropertyAction')}
         </LocalLink>
       </div>

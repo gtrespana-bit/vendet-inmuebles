@@ -29,7 +29,7 @@ export function Footer() {
       <div className="site-footer__main">
         <div className="site-footer__brand-column">
           <LocalLink href="/" className="site-brand site-brand--footer" aria-label="Venezuela Inmuebles, inicio">
-            <Image src="/brand-mark.svg" alt="" width={40} height={40} />
+            <Image src="/brand-mark.svg" alt="" width={40} height={40} unoptimized />
             <span className="site-brand__name"><strong>Venezuela</strong><span>Inmuebles</span></span>
           </LocalLink>
           <p>{t('footer.description')}</p>

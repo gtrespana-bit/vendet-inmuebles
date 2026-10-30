@@ -14,7 +14,7 @@ import PushNotificationBanner from '@/components/PushNotificationBanner'
 import BottomTabNav from '@/components/BottomTabNav'
 
 export const viewport: Viewport = {
-  themeColor: '#612e35',
+  themeColor: '#0E3B33',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,

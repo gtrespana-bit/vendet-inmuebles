@@ -1,23 +1,24 @@
 /* ==========================================================================
    VENEZUELA INMUEBLES · LANDING
-   Quiet luxury + practical portal. Warm ivory, oxblood and champagne.
+   Quiet luxury + practical portal. Ivory paper, deep emerald and brass.
    Flat surfaces, hairline rules, generous air, 4px radii.
    Scoped module: nothing here leaks to the rest of the site.
    ========================================================================== */
 
 .page {
-  --paper: #f7f3ed;
-  --surface: #fffefb;
-  --surface-2: #f1ebe2;
-  --ink: #15110e;
-  --ink-2: #6a625b;
-  --ink-3: #9a8f84;
-  --line: #e6dccd;
-  --line-soft: #f0e8dc;
-  --brand: #4a2a2e;
-  --brand-deep: #331a1e;
-  --gold: #b7985b;
-  --gold-soft: #e9dcc0;
+  --paper: #F6F1E6;
+  --surface: #FFFDF8;
+  --surface-2: #EAE4D5;
+  --ink: #0A1D19;
+  --ink-2: #55635C;
+  --ink-3: #6B736C;
+  --line: #DFD7C5;
+  --line-soft: #EFE8DA;
+  --brand: #0E3B33;
+  --brand-deep: #07241E;
+  --gold: #B07C2E;
+  --gold-text: #96702A;
+  --gold-soft: #EBD5A9;
   --display: 'Fraunces Variable', 'Iowan Old Style', Georgia, Cambria, serif;
   --sans: 'Inter Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
@@ -104,7 +105,7 @@
 
 .display em {
   font-style: italic;
-  color: var(--gold);
+  color: var(--gold-text);
   font-variation-settings: 'opsz' 96, 'SOFT' 40;
 }
 
@@ -207,7 +208,7 @@
 }
 
 .buttonGold {
-  color: #2b2115;
+  color: #14231D;
   background: var(--gold);
   border-color: var(--gold);
 }
@@ -239,7 +240,7 @@
   position: relative;
   padding: 52px 0 78px;
   background:
-    radial-gradient(1100px 460px at 82% -8%, rgba(183, 152, 91, 0.14), transparent 62%),
+    radial-gradient(1100px 470px at 82% -8%, rgba(190, 138, 60, 0.17), transparent 62%),
     var(--paper);
 }
 
@@ -269,7 +270,7 @@
 
 .heroTitle em {
   font-style: italic;
-  color: var(--gold);
+  color: var(--gold-text);
   font-variation-settings: 'opsz' 120, 'SOFT' 44;
 }
 
@@ -531,7 +532,7 @@
 }
 
 .searchField:focus-within {
-  background: #fdfaf4;
+  background: #FBF7EC;
 }
 
 .searchSubmit {
@@ -582,7 +583,7 @@
 .searchChip:hover {
   color: var(--brand);
   border-color: var(--gold);
-  background: #fdf8ee;
+  background: #FBF5E7;
 }
 
 /* --------------------------------------------------------------------------
@@ -619,7 +620,7 @@
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: #f1e8d7;
+  background: #EDE4D0;
   color: var(--brand);
 }
 
@@ -671,7 +672,7 @@
 }
 
 .card:hover {
-  border-color: #d9c9ab;
+  border-color: #CFC09C;
   box-shadow: 0 22px 44px -34px rgba(45, 30, 24, 0.55);
   transform: translateY(-2px);
 }
@@ -717,7 +718,7 @@
 
 .badgeGold {
   background: var(--gold);
-  color: #2b2115;
+  color: #14231D;
 }
 
 .badgeGhost {
@@ -818,9 +819,9 @@
   gap: 12px;
   margin-bottom: 18px;
   padding: 12px 16px;
-  border: 1px dashed #ddcdae;
+  border: 1px dashed #DCCFAC;
   border-radius: 6px;
-  background: #fdf8ef;
+  background: #FBF5E7;
   font-size: 12.5px;
   color: var(--ink-2);
 }
@@ -862,7 +863,7 @@
 
 .typeTile:hover {
   border-color: var(--gold);
-  background: #fdf9f1;
+  background: #FBF6EA;
   transform: translateY(-2px);
 }
 
@@ -925,7 +926,7 @@
 
 .cityLink:hover {
   border-color: var(--gold);
-  background: #fdf9f1;
+  background: #FBF6EA;
 }
 
 .cityLink:hover svg {
@@ -1057,7 +1058,7 @@
 
 .planFeatured {
   border-color: var(--gold);
-  background: #fdf8ee;
+  background: #FBF5E7;
 }
 
 .planHead {
@@ -1083,6 +1084,7 @@
   letter-spacing: -0.03em;
   color: var(--ink);
 }
+
 
 .planPrice small {
   margin-left: 5px;
@@ -1125,8 +1127,8 @@
 .closing {
   margin-top: 80px;
   padding: 54px 0;
-  background: linear-gradient(180deg, #efe4cf, #f3ead9);
-  border-top: 1px solid #e2d3b8;
+  background: linear-gradient(180deg, #EAE2CD, #F2EBDA);
+  border-top: 1px solid #D9CCAE;
 }
 
 .closingInner {
@@ -1144,15 +1146,15 @@
   font-variation-settings: 'opsz' 48;
   letter-spacing: -0.03em;
   line-height: 1.12;
-  color: #2b2118;
+  color: #0B2B26;
 }
 
 .closingEyebrow {
-  color: #7d6531;
+  color: #7A5A24;
 }
 
 .closingEyebrow::before {
-  background: #a98f52;
+  background: #A9813F;
 }
 
 /* --------------------------------------------------------------------------

@@ -32,7 +32,7 @@ export function Header() {
     <header className="site-header">
       <div className="site-header__inner">
         <LocalLink href="/" className="site-brand" aria-label="Venezuela Inmuebles, inicio">
-          <Image src="/brand-mark.svg" alt="" width={38} height={38} priority />
+          <Image src="/brand-mark.svg" alt="" width={38} height={38} priority unoptimized />
           <span className="site-brand__name"><strong>Venezuela</strong><span>Inmuebles</span></span>
         </LocalLink>
 
