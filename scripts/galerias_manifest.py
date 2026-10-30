@@ -15,6 +15,16 @@ ficha describan siempre la misma vivienda:
   D  alto / lujo              mármol, maderas oscuras, iluminación cálida
   E  casa familiar            ambientes amplios, jardín o patio
   F  townhouse                escalera interior, family room, patio pequeño
+
+Cómo se generan las fotos (procedimiento fijado en la sesión del 30/10/2026):
+  1. Las peticiones sin `offer_options` fallan con 403 del proveedor de imagen.
+     Hay que usar `offer_options: true` y que el usuario elija entre las dos
+     propuestas; así entra el modelo que sí responde.
+  2. Dentro de una misma ficha, la fachada se genera primero y las demás fotos
+     la pasan como imagen de referencia; la sala se usa como referencia para
+     cocina, habitación y baño. Eso mantiene piso, paredes y tonos de madera.
+  3. Después se normaliza con ImageMagick a 1400 px de ancho (recortando a 4:3
+     las que vengan cuadradas) para que pesen como el resto de la galería.
 """
 
 # prop: (tipo, nivel, ciudad, hab, m2, piso, notas de estilo)
@@ -115,8 +125,8 @@ def habitaciones(prop: int) -> list[str]:
             f'Patio pequeño de {base} Plantas en macetas, piso de cerámica, pared de bloque. {ESTILO_FOTO}',
         ]
     return [
-        f'Fachada del edificio donde está {base} Torre residencial venezolana de {planta.split()[0] if piso else "varias"} '
-        f'plantas, entrada con vigilancia, jardineras y árboles. {ESTILO_FOTO}',
+        f'Fachada del edificio donde está {base} Torre residencial venezolana de varias plantas, entrada con '
+        f'vigilancia, jardineras y árboles. {ESTILO_FOTO}',
         f'Sala-comedor de {base} {planta}. {ESTILO_FOTO}',
         f'Cocina de {base} {planta}. {ESTILO_FOTO}',
         f'Habitación principal de {base} {planta}. {ESTILO_FOTO}',
