@@ -1,146 +1,69 @@
 import Image from 'next/image'
 import type { Metadata } from 'next'
-import { getLocale } from 'next-intl/server'
+import { getLocale, getTranslations } from 'next-intl/server'
+import { ArrowRight, ArrowUpRight, Building2, Home, MapPin, Store, TreePine } from 'lucide-react'
 import LocalLink from '@/components/LocalLink'
-import LandingNav from '@/components/landing/LandingNav'
-import PortalSearch from '@/components/landing/PortalSearch'
-import PropertyTile, { type LandingListing } from '@/components/landing/PropertyTile'
-import { landingCopy } from '@/components/landing/copy'
-import styles from '@/components/landing/landing.module.css'
-
-// Self-hosted typefaces (no external request, no layout shift)
-import '@fontsource/playfair-display/400.css'
-import '@fontsource/playfair-display/400-italic.css'
-import '@fontsource/inter/200.css'
-import '@fontsource/inter/300.css'
-import '@fontsource/inter/400.css'
-import '@fontsource/roboto-mono/300.css'
-import '@fontsource/roboto-mono/400.css'
+import PropertySearch from '@/components/PropertySearch'
+import PropertyCard, { type PropertyCardData } from '@/components/PropertyCard'
 
 const SITE_URL = 'https://venezuela-inmuebles.online'
-const LISTING_COLUMNS =
-  'id, slug, titulo, precio, moneda, operacion_slug, operacion_nombre, tipo_nombre, ciudad, estado, main_image_url, habitaciones, banos, area_total, destacado, destacado_hasta, vendedor_verificado, creado_en'
+const LISTING_COLUMNS = 'id, slug, titulo, precio, moneda, operacion_slug, tipo_nombre, ciudad, estado, main_image_url, habitaciones, banos, area_total, destacado, destacado_hasta, vendedor_verificado, creado_en'
 
-async function getLandingListings(): Promise<{ listings: LandingListing[]; total: number | null }> {
+async function getHomeListings(limit: number, featuredOnly = false): Promise<PropertyCardData[]> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if (!url || !key) return { listings: [], total: null }
+  if (!url || !key) return []
 
   try {
     const { createClient } = await import('@supabase/supabase-js')
     const supabase = createClient(url, key, {
       auth: { autoRefreshToken: false, persistSession: false },
     })
+    let query = supabase
+      .from('vw_propiedades_publicas')
+      .select(LISTING_COLUMNS)
+      .eq('activo', true)
+      .order('creado_en', { ascending: false })
 
-    const [recentResult, countResult] = await Promise.all([
-      supabase
-        .from('vw_propiedades_publicas')
-        .select(LISTING_COLUMNS)
-        .eq('activo', true)
-        .order('destacado', { ascending: false })
-        .order('creado_en', { ascending: false })
-        .limit(6),
-      supabase.from('vw_propiedades_publicas').select('id', { count: 'exact', head: true }).eq('activo', true),
-    ])
+    if (featuredOnly) query = query.eq('destacado', true)
+
+    const { data, error } = await query.limit(limit)
+    if (error || !data) return []
 
     const now = Date.now()
-    const rows = (recentResult.data || []) as any[]
-    const listings = rows.map(
-      (row): LandingListing => ({
-        id: String(row.id),
-        slug: row.slug || null,
-        title: row.titulo || 'Inmueble',
-        price: Number(row.precio) || 0,
-        currency: row.moneda || 'USD',
-        operation: row.operacion_slug || row.operacion_nombre || null,
-        type: row.tipo_nombre || null,
-        city: row.ciudad || null,
-        state: row.estado || null,
-        image: row.main_image_url || null,
-        bedrooms: row.habitaciones == null ? null : Number(row.habitaciones),
-        bathrooms: row.banos == null ? null : Number(row.banos),
-        area: row.area_total == null ? null : Number(row.area_total),
-        featured: Boolean(row.destacado && row.destacado_hasta && new Date(row.destacado_hasta).getTime() > now),
-        verified: Boolean(row.vendedor_verificado),
-      }),
-    )
+    const listings = data.map((row: any): PropertyCardData => ({
+      id: row.id,
+      slug: row.slug || null,
+      title: row.titulo || 'Inmueble',
+      price: Number(row.precio) || 0,
+      currency: row.moneda || 'USD',
+      operation_type: row.operacion_slug || 'venta',
+      city: row.ciudad || null,
+      state: row.estado || null,
+      main_image_url: row.main_image_url || null,
+      bedrooms: row.habitaciones == null ? null : Number(row.habitaciones),
+      bathrooms: row.banos == null ? null : Number(row.banos),
+      area_size: row.area_total == null ? null : Number(row.area_total),
+      property_type: row.tipo_nombre || null,
+      featured: Boolean(row.destacado && row.destacado_hasta && new Date(row.destacado_hasta).getTime() > now),
+      verified: Boolean(row.vendedor_verificado),
+    }))
 
-    return {
-      listings: listings.slice(0, 3),
-      total: typeof countResult.count === 'number' ? countResult.count : null,
-    }
+    return featuredOnly ? listings.filter((listing) => listing.featured) : listings
   } catch {
-    return { listings: [], total: null }
+    return []
   }
 }
 
-const SPECIMEN: LandingListing = {
-  id: 'ejemplo',
-  slug: null,
-  title: 'Penthouse con terraza, Las Mercedes',
-  price: 2500000,
-  currency: 'USD',
-  operation: 'Venta',
-  type: 'Apartamento',
-  city: 'Caracas',
-  state: 'Miranda',
-  image: '/landing/hero-penthouse.jpg',
-  bedrooms: 4,
-  bathrooms: 4,
-  area: 650,
-  featured: false,
-  verified: true,
-}
-
-function listingSchema(listings: LandingListing[], locale: string) {
-  const prefix = locale === 'en' ? '/en' : ''
-  return {
-    '@context': 'https://schema.org',
-    '@graph': [
-      {
-        '@type': 'WebSite',
-        '@id': `${SITE_URL}/#website`,
-        url: SITE_URL,
-        name: 'Venezuela Inmuebles',
-        inLanguage: locale,
-        potentialAction: {
-          '@type': 'SearchAction',
-          target: `${SITE_URL}${prefix}/catalogo?q={search_term_string}`,
-          'query-input': 'required name=search_term_string',
-        },
-      },
-      ...(listings.length
-        ? [
-            {
-              '@type': 'ItemList',
-              name: locale === 'en' ? 'Featured listings' : 'Inmuebles destacados',
-              numberOfItems: listings.length,
-              itemListElement: listings.map((listing, index) => ({
-                '@type': 'ListItem',
-                position: index + 1,
-                url: `${SITE_URL}${prefix}/inmueble/${listing.slug || listing.id}`,
-                name: listing.title,
-              })),
-            },
-          ]
-        : []),
-    ],
-  }
-}
-
-export async function generateMetadata(): Promise<Metadata> {
-  const locale = await getLocale()
-  const isEnglish = locale === 'en'
+export async function generateMetadata({ params }: { params: { locale: string } }): Promise<Metadata> {
+  const t = await getTranslations({ locale: params.locale, namespace: 'landing' })
+  const localePrefix = params.locale === 'es' ? '' : `/${params.locale}`
 
   return {
-    title: isEnglish
-      ? 'Venezuela Inmuebles | Houses, apartments and land for sale and rent'
-      : 'Venezuela Inmuebles | Casas, apartamentos y terrenos en venta y alquiler',
-    description: isEnglish
-      ? 'Buy, sell or rent property in Venezuela. Houses, apartments, land, retail and offices with verified advertisers and direct contact.'
-      : 'Compra, vende o alquila inmuebles en Venezuela. Casas, apartamentos, terrenos, locales y oficinas con anunciantes verificados y contacto directo.',
+    title: t('metaTitle'),
+    description: t('metaDescription'),
     alternates: {
-      canonical: isEnglish ? `${SITE_URL}/en` : SITE_URL,
+      canonical: `${SITE_URL}${localePrefix || '/'}`,
       languages: {
         'es-VE': SITE_URL,
         'en-US': `${SITE_URL}/en`,
@@ -148,297 +71,270 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     openGraph: {
       type: 'website',
-      locale: isEnglish ? 'en_US' : 'es_VE',
-      url: isEnglish ? `${SITE_URL}/en` : SITE_URL,
+      locale: params.locale === 'es' ? 'es_VE' : 'en_US',
+      url: `${SITE_URL}${localePrefix || '/'}`,
       siteName: 'Venezuela Inmuebles',
-      title: isEnglish
-        ? 'Venezuela Inmuebles | Property for sale and rent'
-        : 'Venezuela Inmuebles | Inmuebles en venta y alquiler',
-      description: isEnglish
-        ? 'Buy, sell or rent property in Venezuela with verified advertisers.'
-        : 'Compra, vende o alquila inmuebles en Venezuela con anunciantes verificados.',
-      images: [{ url: `${SITE_URL}/landing/hero-penthouse.jpg`, width: 1672, height: 941 }],
+      title: t('metaTitle'),
+      description: t('metaDescription'),
+      images: [{
+        url: `${SITE_URL}/home-hero-caracas.jpg`,
+        width: 1600,
+        height: 1067,
+        alt: 'Venezuela Inmuebles',
+      }],
     },
   }
 }
 
-export default async function LandingPage() {
+function listingSchema(properties: PropertyCardData[], locale: string) {
+  if (!properties.length) return null
+  const prefix = locale === 'es' ? '' : `/${locale}`
+
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    numberOfItems: properties.length,
+    itemListElement: properties.map((property, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      url: `${SITE_URL}${prefix}/inmueble/${property.slug || property.id}`,
+      name: property.title,
+      image: property.main_image_url || `${SITE_URL}/sinimagen.webp`,
+      offers: {
+        '@type': 'Offer',
+        price: property.price,
+        priceCurrency: property.currency || 'USD',
+        availability: 'https://schema.org/InStock',
+      },
+    })),
+  }
+}
+
+export default async function HomePage() {
   const locale = await getLocale()
-  const copy = landingCopy[locale] ?? landingCopy.es
-  const { listings, total } = await getLandingListings()
-  const schema = listingSchema(listings, locale)
-  const totalLabel = total == null ? '—' : total.toLocaleString(locale === 'en' ? 'en-US' : 'es-VE')
+  const t = await getTranslations('landing')
+  const [featuredListings, recentListings] = await Promise.all([
+    getHomeListings(6, true),
+    getHomeListings(8),
+  ])
+  const featuredIds = new Set(featuredListings.map((listing) => listing.id))
+  const recent = recentListings.filter((listing) => !featuredIds.has(listing.id)).slice(0, 4)
+  const schema = listingSchema([...featuredListings, ...recent].slice(0, 10), locale)
+
+  const categories = [
+    { slug: 'casas', number: '01', title: t('typeHouse'), description: t('typeHouseNote'), icon: Home },
+    { slug: 'apartamentos', number: '02', title: t('typeApartment'), description: t('typeApartmentNote'), icon: Building2 },
+    { slug: 'terrenos', number: '03', title: t('typeLand'), description: t('typeLandNote'), icon: TreePine },
+    { slug: 'locales', number: '04', title: t('typeCommercial'), description: t('typeCommercialNote'), icon: Store },
+  ]
+
+  const states = ['Distrito Capital', 'Miranda', 'Zulia', 'Carabobo', 'Lara', 'Nueva Esparta']
+  const cardLabels = {
+    sale: t('cardSale'),
+    rent: t('cardRent'),
+    featured: t('cardFeatured'),
+    priceOnRequest: t('cardPriceOnRequest'),
+    bedroom: t('cardBedrooms'),
+    bathroom: t('cardBathrooms'),
+  }
 
   return (
-    <div className={`editorialLanding ${styles.page}`}>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
+    <div className="home-page">
+      {schema && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />}
 
-      <div className={styles.guides} aria-hidden="true">
-        <span />
-        <span />
-        <span />
-        <span />
-        <span />
-        <span />
-      </div>
-
-      <LandingNav copy={copy} />
-
-      {/* ---------------------------------------------------------------- Hero */}
-      <section className={styles.hero} aria-labelledby="hero-title">
-        <div className={styles.watermark} aria-hidden="true">
-          01
+      <section className="home-hero">
+        <Image
+          src="/home-hero-caracas.jpg"
+          alt=""
+          fill
+          priority
+          sizes="100vw"
+          className="home-hero__image"
+        />
+        <div className="home-hero__scrim" aria-hidden="true" />
+        <div className="home-shell home-hero__inner">
+          <div className="home-hero__copy">
+            <p className="home-eyebrow home-hero__eyebrow"><span />{t('heroEyebrow')}</p>
+            <h1>{t('heroTitle')}<br /><em>{t('heroAccent')}</em></h1>
+            <p className="home-hero__description">{t('heroDescription')}</p>
+            <div className="home-hero__actions">
+              <LocalLink href="/catalogo" className="home-button home-button--gold">
+                {t('heroBrowse')} <ArrowRight size={17} aria-hidden="true" />
+              </LocalLink>
+              <LocalLink href="/publicar-inmueble" className="home-hero__text-link">
+                {t('heroPublish')} <ArrowUpRight size={16} aria-hidden="true" />
+              </LocalLink>
+            </div>
+          </div>
+          <p className="home-hero__caption"><span>01</span>{t('heroCaption')}</p>
         </div>
+      </section>
 
-        <p className={styles.kicker}>{copy.hero.kicker}</p>
+      <section className="home-search-band" aria-label={t('searchEyebrow')}>
+        <div className="home-shell">
+          <PropertySearch locale={locale} />
+        </div>
+      </section>
 
-        <div className={styles.heroCopy}>
-          <div className={styles.heroIntro}>
-            <h1 className={styles.headline} id="hero-title">
-              {copy.hero.title.map((line, index) => (
-                <span key={line} className={index === copy.hero.title.length - 1 ? styles.headlineLast : undefined}>
-                  {line}
-                </span>
+      <section className="home-trust home-shell" aria-label={t('trustHeading')}>
+        <div className="home-trust__item">
+          <span className="home-trust__index">01</span>
+          <div><h2>{t('trustSearchTitle')}</h2><p>{t('trustSearchText')}</p></div>
+        </div>
+        <div className="home-trust__item">
+          <span className="home-trust__index">02</span>
+          <div><h2>{t('trustContactTitle')}</h2><p>{t('trustContactText')}</p></div>
+        </div>
+        <div className="home-trust__item">
+          <span className="home-trust__index">03</span>
+          <div><h2>{t('trustPublishTitle')}</h2><p>{t('trustPublishText')}</p></div>
+        </div>
+      </section>
+
+      <section className="home-section home-section--featured">
+        <div className="home-shell">
+          <header className="home-section__heading">
+            <div>
+              <p className="home-eyebrow">{t('featuredEyebrow')}</p>
+              <h2>{t('featuredTitle')}</h2>
+              <p className="home-section__description">{t('featuredDescription')}</p>
+            </div>
+            <LocalLink href="/catalogo" className="home-section__link">
+              {t('viewAll')} <ArrowUpRight size={17} aria-hidden="true" />
+            </LocalLink>
+          </header>
+
+          {featuredListings.length ? (
+            <div className="property-grid property-grid--featured">
+              {featuredListings.slice(0, 3).map((property, index) => (
+                <PropertyCard
+                  key={property.id}
+                  property={property}
+                  locale={locale}
+                  priority={index === 0}
+                  labels={cardLabels}
+                />
               ))}
-            </h1>
-            <p className={styles.heroLead}>{copy.hero.lead}</p>
-          </div>
-
-          <ul className={styles.heroFacts}>
-            {copy.hero.facts.map((fact) => (
-              <li key={fact.title}>
-                <span className={styles.heroFactTitle}>{fact.title}</span>
-                <span className={styles.heroFactBody}>{fact.body}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <figure className={styles.figure}>
-          <div className={styles.figureFrame}>
-            <Image
-              src="/landing/hero-penthouse.jpg"
-              alt={copy.hero.figureCaption}
-              fill
-              priority
-              sizes="(max-width: 960px) 100vw, 42vw"
-            />
-          </div>
-
-          <PortalSearch copy={copy} locale={locale} />
-
-          <figcaption className={styles.caption}>
-            <span>{copy.hero.figureCaption}</span>
-            <span>{copy.hero.figureNote}</span>
-          </figcaption>
-        </figure>
-
-        <div className={styles.rail}>
-          <LocalLink href="/catalogo" className={styles.scrollCue}>
-            {copy.featured.seeAll} <span aria-hidden="true">↗</span>
-          </LocalLink>
-          <div className={styles.railMeta}>
-            <span>{total == null ? copy.hero.railStates : `${totalLabel} ${copy.hero.railSuffix}`}</span>
-            <span>{copy.hero.railOps}</span>
-          </div>
+            </div>
+          ) : (
+            <div className="home-empty-note">
+              <span className="home-empty-note__mark"><Home size={20} aria-hidden="true" /></span>
+              <p>{t('featuredEmpty')}</p>
+              <LocalLink href="/publicar-inmueble">{t('publishFirst')} <ArrowRight size={15} aria-hidden="true" /></LocalLink>
+            </div>
+          )}
         </div>
       </section>
 
-      {/* ------------------------------------------------------------ Featured */}
-      <section className={styles.featured} aria-labelledby="featured-title">
-        <div className={styles.sectionRow}>
-          <span className={styles.sectionIndex}>{copy.featured.label}</span>
-          <LocalLink href="/catalogo" className={styles.sectionLink}>
-            {copy.featured.seeAll} <span aria-hidden="true">↗</span>
-          </LocalLink>
-        </div>
-
-        <h2 className={styles.sectionTitle} id="featured-title">
-          {copy.featured.title}
-        </h2>
-
-        {listings.length > 0 ? (
-          <div className={styles.tileGrid}>
-            {listings.map((listing) => (
-              <PropertyTile key={listing.id} listing={listing} copy={copy} locale={locale} />
+      <section className="home-section home-section--types">
+        <div className="home-shell">
+          <header className="home-section__heading home-section__heading--types">
+            <div>
+              <p className="home-eyebrow">{t('typesEyebrow')}</p>
+              <h2>{t('typesTitle')}</h2>
+            </div>
+            <p className="home-section__description">{t('typesDescription')}</p>
+          </header>
+          <div className="home-category-grid">
+            {categories.map(({ slug, number, title, description, icon: Icon }) => (
+              <LocalLink key={slug} href={`/catalogo?categoria=${slug}`} className="home-category">
+                <div className="home-category__top"><span>{number}</span><Icon size={22} strokeWidth={1.5} aria-hidden="true" /></div>
+                <div className="home-category__bottom">
+                  <div><h3>{title}</h3><p>{description}</p></div>
+                  <ArrowUpRight size={18} aria-hidden="true" />
+                </div>
+              </LocalLink>
             ))}
           </div>
-        ) : (
-          <>
-            <div className={styles.emptyState}>
-              <div className={styles.emptyCopy}>
-                <h3>{copy.featured.emptyTitle}</h3>
-                <p className={styles.emptyBody}>{copy.featured.emptyBody}</p>
-                <LocalLink href="/publicar-inmueble" className={styles.emptyCta}>
-                  {copy.featured.emptyCta} <span aria-hidden="true">↗</span>
-                </LocalLink>
-              </div>
-              <div className={styles.emptySpecimen}>
-                <PropertyTile listing={SPECIMEN} copy={copy} locale={locale} specimen />
-              </div>
-            </div>
-          </>
-        )}
+          <div className="home-types-more">
+            <LocalLink href="/catalogo?categoria=oficinas">{t('typeOffice')}</LocalLink>
+            <span>·</span>
+            <LocalLink href="/catalogo?categoria=galpones">{t('typeWarehouse')}</LocalLink>
+            <span>·</span>
+            <LocalLink href="/catalogo">{t('viewAllTypes')}</LocalLink>
+          </div>
+        </div>
       </section>
 
-      {/* --------------------------------------------------------------- Types */}
-      <section className={styles.types} aria-labelledby="types-title">
-        <div className={styles.sectionRow}>
-          <span className={styles.sectionIndex}>{copy.types.label}</span>
-          <LocalLink href="/catalogo" className={styles.sectionLink}>
-            {copy.featured.seeAll} <span aria-hidden="true">↗</span>
-          </LocalLink>
-        </div>
-
-        <h2 className={styles.sectionTitle} id="types-title">
-          {copy.types.title}
-        </h2>
-
-        <ul className={styles.rows}>
-          {copy.types.items.map((item, index) => (
-            <li key={item.href}>
-              <LocalLink href={item.href} className={styles.row}>
-                <span className={styles.rowNum}>{String(index + 1).padStart(2, '0')}</span>
-                <span className={styles.rowName}>{item.name}</span>
-                <span className={styles.rowPlace}>{item.note}</span>
-                <span className={styles.rowArrow} aria-hidden="true">
-                  ↗
-                </span>
+      <section className="home-section home-section--states">
+        <div className="home-shell home-states-layout">
+          <div>
+            <p className="home-eyebrow">{t('statesEyebrow')}</p>
+            <h2>{t('statesTitle')}</h2>
+            <p className="home-section__description">{t('statesDescription')}</p>
+          </div>
+          <div className="home-state-list">
+            {states.map((state) => (
+              <LocalLink key={state} href={`/catalogo?estado=${encodeURIComponent(state)}`}>
+                <MapPin size={14} aria-hidden="true" />{state}<ArrowUpRight size={14} aria-hidden="true" />
               </LocalLink>
-            </li>
-          ))}
-        </ul>
+            ))}
+          </div>
+        </div>
       </section>
 
-      {/* -------------------------------------------------------------- Cities */}
-      <section className={styles.cities} aria-labelledby="cities-title">
-        <div className={styles.sectionRow}>
-          <span className={styles.sectionIndex}>{copy.cities.label}</span>
-          <span className={styles.sectionNote}>{copy.cities.note}</span>
-        </div>
-
-        <h2 className={styles.sectionTitle} id="cities-title">
-          {copy.cities.title}
-        </h2>
-
-        <ul className={styles.cityList}>
-          {copy.cities.items.map((city) => (
-            <li key={city}>
-              <LocalLink href={`/catalogo?ciudad=${encodeURIComponent(city)}`} className={styles.cityChip}>
-                {city}
-              </LocalLink>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      {/* --------------------------------------------------------------- Trust */}
-      <section className={styles.trust} aria-labelledby="trust-title">
-        <div className={styles.sectionRow}>
-          <span className={styles.sectionIndex}>{copy.trust.label}</span>
-          <span className={styles.sectionNote}>Venezuela Inmuebles</span>
-        </div>
-
-        <h2 className={styles.trustTitle} id="trust-title">
-          {copy.trust.title}
-        </h2>
-
-        <ol className={styles.steps}>
-          {copy.trust.steps.map((step) => (
-            <li key={step.index} className={styles.step}>
-              <span className={styles.stepIndex}>{step.index}</span>
-              <h3>{step.title}</h3>
-              <p>{step.body}</p>
-            </li>
-          ))}
-        </ol>
-      </section>
-
-      {/* --------------------------------------------------------------- Plans */}
-      <section className={styles.plans} aria-labelledby="plans-title">
-        <div className={styles.sectionRow}>
-          <span className={styles.sectionIndex}>{copy.plans.label}</span>
-          <LocalLink href="/planes" className={styles.sectionLink}>
-            {copy.plans.cta} <span aria-hidden="true">↗</span>
-          </LocalLink>
-        </div>
-
-        <h2 className={styles.sectionTitle} id="plans-title">
-          {copy.plans.title}
-        </h2>
-
-        <div className={styles.planGrid}>
-          {copy.plans.items.map((plan) => (
-            <div key={plan.name} className={styles.plan}>
-              <div className={styles.planHead}>
-                <span className={styles.planName}>{plan.name}</span>
-                <span className={styles.planPrice}>
-                  {plan.price}
-                  <small>{plan.period}</small>
-                </span>
-              </div>
-              <ul className={styles.planFeatures}>
-                {plan.features.map((feature) => (
-                  <li key={feature}>{feature}</li>
-                ))}
-              </ul>
+      <section className="home-section home-section--recent">
+        <div className="home-shell">
+          <header className="home-section__heading">
+            <div>
+              <p className="home-eyebrow">{t('recentEyebrow')}</p>
+              <h2>{t('recentTitle')}</h2>
+              <p className="home-section__description">{t('recentDescription')}</p>
             </div>
-          ))}
-        </div>
-
-        <p className={styles.plansNote}>{copy.plans.note}</p>
-      </section>
-
-      {/* ------------------------------------------------------------- Closing */}
-      <section className={styles.closing} aria-labelledby="closing-title">
-        <h2 className={styles.closingTitle} id="closing-title">
-          {copy.closing.title}
-        </h2>
-        <p className={styles.closingBody}>{copy.closing.body}</p>
-        <div className={styles.closingActions}>
-          <LocalLink href="/publicar-inmueble" className={styles.closingPrimary}>
-            {copy.closing.primary} <span aria-hidden="true">↗</span>
-          </LocalLink>
-          <LocalLink href="/catalogo" className={styles.closingSecondary}>
-            {copy.closing.secondary}
-          </LocalLink>
-        </div>
-      </section>
-
-      {/* -------------------------------------------------------------- Footer */}
-      <footer className={styles.footer}>
-        <div className={styles.footerBrand}>
-          <span className={styles.brandName}>
-            <span>Venezuela</span>
-            <span>Inmuebles</span>
-          </span>
-          <p>{copy.footer.note}</p>
-          <a href="mailto:contacto@venezuelainmuebles.online" className={styles.footerMail}>
-            contacto@venezuelainmuebles.online
-          </a>
-        </div>
-
-        <div className={styles.footerColumns}>
-          {copy.footer.columns.map((column) => (
-            <div key={column.title} className={styles.footerColumn}>
-              <span className={styles.footerColumnTitle}>{column.title}</span>
-              <ul>
-                {column.links.map((link) => (
-                  <li key={link.href}>
-                    <LocalLink href={link.href}>{link.label}</LocalLink>
-                  </li>
-                ))}
-              </ul>
+            <LocalLink href="/catalogo" className="home-section__link">
+              {t('viewAll')} <ArrowUpRight size={17} aria-hidden="true" />
+            </LocalLink>
+          </header>
+          {recent.length ? (
+            <div className="property-grid">
+              {recent.map((property, index) => (
+                <PropertyCard
+                  key={property.id}
+                  property={property}
+                  locale={locale}
+                  priority={index === 0}
+                  labels={cardLabels}
+                />
+              ))}
             </div>
-          ))}
+          ) : (
+            <div className="home-empty-note home-empty-note--wide">
+              <span className="home-empty-note__mark"><MapPin size={20} aria-hidden="true" /></span>
+              <div><strong>{t('recentEmptyTitle')}</strong><p>{t('recentEmptyText')}</p></div>
+              <LocalLink href="/publicar-inmueble">{t('publishFirst')} <ArrowRight size={15} aria-hidden="true" /></LocalLink>
+            </div>
+          )}
         </div>
+      </section>
 
-        <div className={styles.colophon}>
-          <span>{copy.footer.rightsPrefix} {new Date().getFullYear()} Venezuela Inmuebles</span>
-          <span>Caracas · Maracaibo · Valencia · Lechería</span>
-          <span>{copy.footer.coords}</span>
+      <section className="home-owner-section">
+        <div className="home-shell home-owner-layout">
+          <div className="home-owner-intro">
+            <p className="home-eyebrow">{t('ownerEyebrow')}</p>
+            <h2>{t('ownerTitle')}</h2>
+            <p>{t('ownerDescription')}</p>
+            <LocalLink href="/publicar-inmueble" className="home-button home-button--light">
+              {t('ownerCta')} <ArrowRight size={17} aria-hidden="true" />
+            </LocalLink>
+          </div>
+          <div className="home-owner-steps">
+            <article><span>01</span><div><h3>{t('ownerStepOneTitle')}</h3><p>{t('ownerStepOneText')}</p></div></article>
+            <article><span>02</span><div><h3>{t('ownerStepTwoTitle')}</h3><p>{t('ownerStepTwoText')}</p></div></article>
+            <article><span>03</span><div><h3>{t('ownerStepThreeTitle')}</h3><p>{t('ownerStepThreeText')}</p></div></article>
+          </div>
         </div>
-      </footer>
+      </section>
+
+      <section className="home-closing">
+        <div className="home-shell home-closing__inner">
+          <div><p className="home-eyebrow">{t('closingEyebrow')}</p><h2>{t('closingTitle')}</h2></div>
+          <LocalLink href="/catalogo" className="home-button home-button--gold">
+            {t('closingCta')} <ArrowRight size={17} aria-hidden="true" />
+          </LocalLink>
+        </div>
+      </section>
     </div>
   )
 }
+
+export const revalidate = 120

@@ -12,7 +12,6 @@ import { ServiceWorkerRegistration } from '@/components/ServiceWorkerRegistratio
 import PWAInstallBanner from '@/components/PWAInstallBanner'
 import PushNotificationBanner from '@/components/PushNotificationBanner'
 import BottomTabNav from '@/components/BottomTabNav'
-import SiteChrome from '@/components/SiteChrome'
 
 export const viewport: Viewport = {
   themeColor: '#612e35',
@@ -130,19 +129,12 @@ export default async function LocaleLayout({
       </a>
       <NextIntlClientProvider locale={locale} messages={messages}>
         <AuthProvider>
-          <SiteChrome
-            header={<Header />}
-            footer={
-              <>
-                <Footer />
-                <PWAInstallBanner />
-                <PushNotificationBanner />
-                <BottomTabNav />
-              </>
-            }
-          >
-            {children}
-          </SiteChrome>
+          <Header />
+          <main id="main-content" className="min-h-screen bg-white">{children}</main>
+          <Footer />
+          <PWAInstallBanner />
+          <PushNotificationBanner />
+          <BottomTabNav />
         </AuthProvider>
         <Analytics />
         <SpeedInsights />
