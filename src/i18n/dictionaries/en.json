@@ -1,5 +1,6 @@
 {
   "landing": {
+    "viewMap": "View on map",
     "metaTitle": "Properties in Venezuela for sale or rent | Venezuela Inmuebles",
     "metaDescription": "Find houses, apartments, land and commercial spaces for sale or rent. Search by location and connect directly.",
     "heroEyebrow": "VENEZUELA · SPACES FOR EVERY CHAPTER",
@@ -333,6 +334,7 @@
     }
   },
   "header": {
+    "map": "Map",
     "searchPlaceholder": "Search by location, property type or keyword",
     "searchAria": "Search properties",
     "backAria": "Go back",
@@ -1361,6 +1363,15 @@
     }
   },
   "publishProperty": {
+    "mapTitle": "Location on the map",
+    "mapOptional": "Optional",
+    "mapHint": "Click on the map to drop the pin for your property.",
+    "mapClear": "Remove pin",
+    "mapEmpty": "No pin · the city centre will be used",
+    "mapPlace": "Property location",
+    "mapDescription": "With a pin, your listing appears in map search and buyers see the exact area. You can leave it empty and the city will be shown.",
+    "mapApproximate": "Approximate location",
+    "mapExact": "Exact location",
     "title": "List your property",
     "eyebrow": "LIST · CONNECT · MOVE FORWARD",
     "intro": "Tell people what makes this space special. Fields marked with * are required.",
@@ -1524,5 +1535,40 @@
       "cardPriceOnRequest": "Price on request",
       "cardBedrooms": "bd",
       "cardBathrooms": "ba"
-    }
+    },
+  "map": {
+    "eyebrow": "Map search",
+    "title": "Find your next home on the map",
+    "subtitle": "Browse listings by city and fine-tune the area right on the map. OpenStreetMap cartography: free, open and no sign-up.",
+    "viewList": "View as list",
+    "viewMap": "View on map",
+    "operation": "Listing type",
+    "allOperations": "All",
+    "sale": "For sale",
+    "rent": "For rent",
+    "city": "City",
+    "allCities": "Whole country",
+    "search": "Search",
+    "searchPlaceholder": "City, area or keyword",
+    "resultsInMap": "{count, plural, =0 {No properties on the map} one {# property on the map} other {# properties on the map}}",
+    "searchArea": "Search this area",
+    "searchAreaHint": "Move the map and press “Search this area” to narrow the results.",
+    "clearArea": "Show all",
+    "areaActive": "{count, plural, one {Map area · # property} other {Map area · # properties}}",
+    "noResultsInArea": "No properties in this area. Zoom out or change the filters.",
+    "approximate": "Approximate location",
+    "exact": "Exact location",
+    "viewListing": "View listing",
+    "bedrooms": "bed",
+    "bathrooms": "bath",
+    "area": "sq ft",
+    "empty": "There are no properties placed on the map yet.",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "resetView": "See all results",
+    "sampleData": "Sample data",
+    "openOsm": "Open in OpenStreetMap",
+    "approxNote": "The exact location is arranged with the owner.",
+    "locationTitle": "Location on the map"
+  }
 }

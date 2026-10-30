@@ -1,5 +1,6 @@
 {
   "landing": {
+    "viewMap": "Ver en el mapa",
     "metaTitle": "Inmuebles en Venezuela para comprar o alquilar | Venezuela Inmuebles",
     "metaDescription": "Busca casas, apartamentos, terrenos y espacios comerciales en venta o alquiler. Filtra por ubicación y conecta directamente.",
     "heroEyebrow": "VENEZUELA · ESPACIOS PARA CADA ETAPA",
@@ -331,6 +332,7 @@
     }
   },
   "header": {
+    "map": "Mapa",
     "searchPlaceholder": "Buscar por ubicación, tipo o palabra clave",
     "searchAria": "Buscar inmuebles",
     "backAria": "Volver atrás",
@@ -1359,6 +1361,15 @@
     }
   },
   "publishProperty": {
+    "mapTitle": "Ubicación en el mapa",
+    "mapOptional": "Opcional",
+    "mapHint": "Haz clic en el mapa para colocar el pin de tu inmueble.",
+    "mapClear": "Quitar pin",
+    "mapEmpty": "Sin pin · se usará el centro de la ciudad",
+    "mapPlace": "Ubicación del inmueble",
+    "mapDescription": "Con el pin, tu ficha aparece en la búsqueda por mapa y los interesados ven la zona exacta. Puedes dejarlo vacío y se mostrará la ciudad.",
+    "mapApproximate": "Ubicación aproximada",
+    "mapExact": "Ubicación exacta",
     "title": "Publica tu inmueble",
     "eyebrow": "PUBLICA · CONECTA · AVANZA",
     "intro": "Cuéntales a las personas interesadas qué hace especial a este espacio. Los campos marcados con * son obligatorios.",
@@ -1522,5 +1533,40 @@
       "cardPriceOnRequest": "Precio a consultar",
       "cardBedrooms": "hab",
       "cardBathrooms": "baños"
-    }
+    },
+  "map": {
+    "eyebrow": "Búsqueda por mapa",
+    "title": "Encuentra tu próximo inmueble en el mapa",
+    "subtitle": "Explora las fichas por ciudad y ajusta la zona directamente sobre el mapa. Cartografía de OpenStreetMap: gratuita, abierta y sin registro.",
+    "viewList": "Ver en lista",
+    "viewMap": "Ver en mapa",
+    "operation": "Operación",
+    "allOperations": "Todas",
+    "sale": "Venta",
+    "rent": "Alquiler",
+    "city": "Ciudad",
+    "allCities": "Todo el país",
+    "search": "Buscar",
+    "searchPlaceholder": "Ciudad, zona o palabra clave",
+    "resultsInMap": "{count, plural, =0 {Ningún inmueble en el mapa} one {# inmueble en el mapa} other {# inmuebles en el mapa}}",
+    "searchArea": "Buscar en esta zona",
+    "searchAreaHint": "Mueve el mapa y pulsa «Buscar en esta zona» para acotar los resultados.",
+    "clearArea": "Ver todo",
+    "areaActive": "{count, plural, one {Zona del mapa · # inmueble} other {Zona del mapa · # inmuebles}}",
+    "noResultsInArea": "No hay inmuebles en esta zona. Amplía el mapa o cambia los filtros.",
+    "approximate": "Ubicación aproximada",
+    "exact": "Ubicación exacta",
+    "viewListing": "Ver ficha",
+    "bedrooms": "hab.",
+    "bathrooms": "baños",
+    "area": "m²",
+    "empty": "Todavía no hay inmuebles ubicados en el mapa.",
+    "zoomIn": "Acercar",
+    "zoomOut": "Alejar",
+    "resetView": "Ver todos los resultados",
+    "sampleData": "Datos de ejemplo",
+    "openOsm": "Abrir en OpenStreetMap",
+    "approxNote": "La ubicación exacta se coordina con el propietario.",
+    "locationTitle": "Ubicación en el mapa"
+  }
 }

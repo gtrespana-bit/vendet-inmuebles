@@ -40,6 +40,7 @@ export function Header() {
           <LocalLink href="/catalogo?operacion=Venta">{t('header.buy')}</LocalLink>
           <LocalLink href="/catalogo?operacion=Alquiler">{t('header.rent')}</LocalLink>
           <LocalLink href="/catalogo">{t('header.explore')}</LocalLink>
+          <LocalLink href="/mapa">{t('header.map')}</LocalLink>
         </nav>
 
         <form action={catalogAction} method="get" className="site-header__search">
@@ -101,6 +102,7 @@ export function Header() {
             <LocalLink href="/catalogo?operacion=Venta" onClick={closeMenu}>{t('header.buy')}</LocalLink>
             <LocalLink href="/catalogo?operacion=Alquiler" onClick={closeMenu}>{t('header.rent')}</LocalLink>
             <LocalLink href="/catalogo" onClick={closeMenu}>{t('header.explore')}</LocalLink>
+            <LocalLink href="/mapa" onClick={closeMenu}>{t('header.map')}</LocalLink>
             {user && <LocalLink href="/dashboard" onClick={closeMenu}>{t('header.myPanel')}</LocalLink>}
             <a href={alternateLocaleHref} onClick={closeMenu} lang={isEnglish ? 'es' : 'en'}>{isEnglish ? 'Español' : 'English'}</a>
             {!user && <LocalLink href="/login" onClick={closeMenu}>{t('header.signIn')}</LocalLink>}

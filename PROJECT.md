@@ -230,6 +230,21 @@
 - `NEXT_PUBLIC_VAPID_PUBLIC_KEY` y `VAPID_PRIVATE_KEY` (notificaciones push)
 - `SENTRY_AUTH_TOKEN` (Source Maps, opcional)
 
+## Búsqueda por mapa (OpenStreetMap)
+
+- Ruta pública: `/[locale]/mapa` (enlazada desde la cabecera, el pie, la portada y el catálogo).
+- Librería: **Leaflet 1.9** + **leaflet.markercluster**, sin clave de API ni coste.
+- Teselas: `tile.openstreetmap.org` con atribución visible (© OpenStreetMap). Para tráfico alto hay que respetar la
+  [política de uso de teselas](https://operations.osmfoundation.org/policies/tiles/) o contratar un proveedor de teselas
+  (MapTiler, Thunderforest, Protomaps…) manteniendo los datos OSM.
+- Marcadores con precio; los destacados en latón, los de ubicación aproximada con borde discontinuo. Selección
+  sincronizada entre mapa y lista, agrupación de marcadores y botón «Buscar en esta zona».
+- Coordenadas: `inmuebles.latitud` / `inmuebles.longitud`. Si faltan, `src/lib/geo/venezuela.ts` resuelve el centro de la
+  ciudad/estado (con desplazamiento determinista) y la ficha se marca como *ubicación aproximada*.
+- Alta de inmuebles: el formulario de publicación incluye un selector de pin opcional que guarda `latitud`/`longitud`.
+- La demo pública usa `src/lib/demo/demo-listings.ts` cuando la base de datos no devuelve inmuebles y lo indica con la
+  etiqueta «Datos de ejemplo».
+
 ## Notas de Diseño
 - BottomTabNav: siempre visible, no remover
 - Colores: brand-primary `#16294B`, accent `#B08542` (azul noche + latón)

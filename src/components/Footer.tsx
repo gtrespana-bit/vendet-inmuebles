@@ -42,6 +42,7 @@ export function Footer() {
           <h2>{t('footer.categories')}</h2>
           <LocalLink href="/catalogo?operacion=Venta">{t('header.buy')}</LocalLink>
           <LocalLink href="/catalogo?operacion=Alquiler">{t('header.rent')}</LocalLink>
+          <LocalLink href="/mapa">{t('header.map')}</LocalLink>
           {categoryLinks.map((link) => <LocalLink key={link.href} href={link.href}>{link.label}</LocalLink>)}
         </nav>
 

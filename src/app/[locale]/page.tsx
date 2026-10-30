@@ -380,10 +380,16 @@ export default async function HomePage() {
               <h2>{t('featuredTitle')}</h2>
               <p className={styles.sectionLead}>{hasInventory ? t('featuredLead') : t('featuredEmptyText')}</p>
             </div>
-            <LocalLink href="/catalogo" className={styles.sectionLink}>
-              {t('viewAll')}
-              <ArrowUpRight size={16} aria-hidden="true" />
-            </LocalLink>
+            <div className={styles.sectionActions}>
+              <LocalLink href="/mapa" className={styles.sectionLink}>
+                <MapPin size={15} aria-hidden="true" />
+                {t('viewMap')}
+              </LocalLink>
+              <LocalLink href="/catalogo" className={styles.sectionLink}>
+                {t('viewAll')}
+                <ArrowUpRight size={16} aria-hidden="true" />
+              </LocalLink>
+            </div>
           </div>
 
           {!hasInventory && (

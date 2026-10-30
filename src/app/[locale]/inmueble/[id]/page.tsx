@@ -20,6 +20,8 @@ import {
 import { createServerClient } from '@/lib/supabase-server'
 import PropertyGallery from '@/components/PropertyGallery'
 import PropertyDetailActions from '@/components/PropertyDetailActions'
+import PropertyLocationMap from '@/components/map/PropertyLocationMap'
+import { jitterPoint, resolveListingGeo } from '@/lib/geo/venezuela'
 
 interface PageProps {
   params: Promise<{ id: string; locale: string }>
@@ -195,6 +197,56 @@ export default async function PropertyDetailPage({ params }: PageProps) {
     ? `${property.latitud},${property.longitud}`
     : null
 
+  const geo = resolveListingGeo({
+    latitud: property.latitud,
+    longitud: property.longitud,
+    ciudad: property.ciudad,
+    municipio: property.municipio,
+    estado: property.estado,
+    zona: property.zona,
+  })
+  const mapPoint = geo.point
+    ? geo.approximate
+      ? jitterPoint(geo.point, propertyId)
+      : geo.point
+    : null
+  const mapItem = mapPoint
+    ? {
+        id: propertyId,
+        title,
+        price: Number(property.precio) || 0,
+        currency: currencyCode,
+        operation: operationLabel,
+        location,
+        image: images[0] || property.main_image_url || null,
+        href: `/${isEnglish ? 'en/' : ''}inmueble/${property.slug || propertyId}`,
+        bedrooms: property.habitaciones == null ? null : Number(property.habitaciones),
+        bathrooms: property.banos == null ? null : Number(property.banos),
+        area: property.area_total == null ? null : Number(property.area_total),
+        lat: mapPoint.lat,
+        lng: mapPoint.lng,
+        approximate: geo.approximate,
+        featured: Boolean(property.destacado),
+      }
+    : null
+  const mapLabels = {
+    approximate: isEnglish ? 'Approximate location' : 'Ubicación aproximada',
+    exact: isEnglish ? 'Exact location' : 'Ubicación exacta',
+    viewListing: isEnglish ? 'View listing' : 'Ver ficha',
+    bedrooms: isEnglish ? 'bed' : 'hab.',
+    bathrooms: isEnglish ? 'bath' : 'baños',
+    area: isEnglish ? 'sq ft' : 'm²',
+    empty: isEnglish ? 'No location available.' : 'Sin ubicación disponible.',
+    zoomIn: isEnglish ? 'Zoom in' : 'Acercar',
+    zoomOut: isEnglish ? 'Zoom out' : 'Alejar',
+    resetView: isEnglish ? 'Reset view' : 'Centrar',
+  }
+  const osmHref = mapPoint
+    ? `https://www.openstreetmap.org/?mlat=${mapPoint.lat.toFixed(5)}&mlon=${mapPoint.lng.toFixed(5)}#map=15/${mapPoint.lat.toFixed(5)}/${mapPoint.lng.toFixed(5)}`
+    : coordinates
+      ? `https://www.openstreetmap.org/search?query=${encodeURIComponent(coordinates)}`
+      : 'https://www.openstreetmap.org/'
+
   const labels = {
     save: isEnglish ? 'Save' : 'Guardar',
     saved: isEnglish ? 'Saved' : 'Guardado',
@@ -315,17 +367,24 @@ export default async function PropertyDetailPage({ params }: PageProps) {
               </div>
               <p className="property-detail__location-name">{location || (isEnglish ? 'Venezuela' : 'Venezuela')}</p>
               {property.direccion && <p className="property-detail__muted">{String(property.direccion)}</p>}
-              {coordinates && (
-                <a
-                  className="property-detail__map-link"
-                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(coordinates)}`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  {isEnglish ? 'Open map' : 'Abrir mapa'} <ArrowUpRight size={15} aria-hidden="true" />
-                </a>
+              {mapItem && (
+                <PropertyLocationMap
+                  item={mapItem}
+                  labels={mapLabels}
+                  locale={locale}
+                  osmHref={osmHref}
+                  openLabel={isEnglish ? 'Open in OpenStreetMap' : 'Abrir en OpenStreetMap'}
+                  approximateLabel={isEnglish ? 'Approximate area shown' : 'Se muestra la zona aproximada'}
+                  note={
+                    geo.approximate
+                      ? isEnglish
+                        ? 'The pin marks the city area; the exact address is shared by the owner.'
+                        : 'El pin marca la zona de la ciudad; la dirección exacta la comparte el propietario.'
+                      : undefined
+                  }
+                />
               )}
-              {!coordinates && <p className="property-detail__muted">{isEnglish ? 'The exact location is shared by the owner.' : 'La ubicación exacta se coordina directamente con el propietario.'}</p>}
+              {!mapItem && <p className="property-detail__muted">{isEnglish ? 'The exact location is shared by the owner.' : 'La ubicación exacta se coordina directamente con el propietario.'}</p>}
             </section>
           </div>
 

@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import { usePathname } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import LocalLink from '@/components/LocalLink'
-import { Search, ChevronRight } from 'lucide-react'
+import { Search, ChevronRight, Map as MapIcon, LayoutList } from 'lucide-react'
 import { categoriasData } from '@/lib/categorias'
 import UbicacionSelector from '@/components/UbicacionSelector'
 import { Pagination } from '@/components/Pagination'
@@ -26,6 +26,7 @@ export default function CatalogoClient({ initialProducts = [], initialCount = 0 
   const tc = useTranslations('catalog')
   const tp = useTranslations('product')
   const tcm = useTranslations('common')
+  const tm = useTranslations('map')
   // Universal translator function (supports any namespace with variables)
   const t = (key: string, vars?: Record<string, string | number>) => {
     const parts = key.split('.')
@@ -34,6 +35,7 @@ export default function CatalogoClient({ initialProducts = [], initialCount = 0 
     if (ns === 'catalog') return tc(rest, vars as any)
     if (ns === 'product') return tp(rest, vars as any)
     if (ns === 'common') return tcm(rest, vars as any)
+    if (ns === 'map') return tm(rest, vars as any)
     return key
   }
   const searchParams = useSearchParams()
@@ -76,6 +78,13 @@ export default function CatalogoClient({ initialProducts = [], initialCount = 0 
   const cat = categoriasData[categoria]
   const subs = cat ? cat.subs : []
   const allMarcas = subs.flatMap(s => s.marcas || []).filter((v, i, a) => a.indexOf(v) === i).sort()
+
+  const mapHref = (() => {
+    const params = new URLSearchParams(searchParams.toString())
+    params.delete('page')
+    const query = params.toString()
+    return `/mapa${query ? `?${query}` : ''}`
+  })()
 
   const setParam = (key: string, value: string) => {
     const params = new URLSearchParams(searchParams.toString())
@@ -229,12 +238,25 @@ export default function CatalogoClient({ initialProducts = [], initialCount = 0 
                   {loading ? t('common.loading') : t('catalog.results', { count: totalCountToUse || 0 })}
                 </p>
               </div>
-              <form action={pathname.startsWith('/en') ? '/en/catalogo' : '/catalogo'} method="GET" className="catalog-search">
-                {operacion && <input type="hidden" name="operacion" value={operacion} />}
-                {categoria && <input type="hidden" name="categoria" value={categoria} />}
-                <input name="q" defaultValue={q} placeholder={`${t('common.search')}...`} aria-label={t('common.search')} />
-                <button type="submit" aria-label={t('common.search')}><Search size={17} /></button>
-              </form>
+              <div className="catalog-head-tools">
+                <div className="catalog-view-toggle" role="group" aria-label={tm('viewMap')}>
+                  <span className="is-active" aria-current="true">
+                    <LayoutList size={14} aria-hidden="true" />
+                    {tm('viewList')}
+                  </span>
+                  <LocalLink href={mapHref}>
+                    <MapIcon size={14} aria-hidden="true" />
+                    {tm('viewMap')}
+                  </LocalLink>
+                </div>
+
+                <form action={pathname.startsWith('/en') ? '/en/catalogo' : '/catalogo'} method="GET" className="catalog-search">
+                  {operacion && <input type="hidden" name="operacion" value={operacion} />}
+                  {categoria && <input type="hidden" name="categoria" value={categoria} />}
+                  <input name="q" defaultValue={q} placeholder={`${t('common.search')}...`} aria-label={t('common.search')} />
+                  <button type="submit" aria-label={t('common.search')}><Search size={17} /></button>
+                </form>
+              </div>
             </div>
           </div>
 

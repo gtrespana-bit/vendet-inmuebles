@@ -8,6 +8,8 @@ import Image from 'next/image';
 import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '@/lib/supabase';
 import { ESTADOS, MUNICIPIOS_POR_ESTADO } from '@/lib/ubicaciones';
+import LocationPicker from '@/components/map/LocationPicker';
+import { resolveListingGeo } from '@/lib/geo/venezuela';
 
 interface ImagePreview {
   file: File;
@@ -55,6 +57,7 @@ export default function PublicarInmueblePage() {
   const [banos, setBanos] = useState(1);
   const [area, setArea] = useState('');
   const [imagenes, setImagenes] = useState<ImagePreview[]>([]);
+  const [pin, setPin] = useState<{ lat: number; lng: number } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -168,6 +171,8 @@ export default function PublicarInmueblePage() {
           banos,
           area: area ? parseFloat(area) : null,
           imagenes: imageUrls,
+          latitud: pin?.lat ?? null,
+          longitud: pin?.lng ?? null,
         }),
       });
 
@@ -360,6 +365,41 @@ export default function PublicarInmueblePage() {
                 ))}
               </select>
             </div>
+          </div>
+
+          {/* Ubicación exacta en el mapa (opcional) */}
+          <div>
+            <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
+              <label className="block text-sm font-medium text-gray-700">
+                {tPublish('mapTitle')}
+              </label>
+              <span className="text-xs text-gray-500">{tPublish('mapOptional')}</span>
+            </div>
+            <LocationPicker
+              value={pin}
+              center={(() => {
+                const geo = resolveListingGeo({ ciudad, estado });
+                return geo.point ?? { lat: 8.6, lng: -66.2 };
+              })()}
+              onChange={setPin}
+              labels={{
+                approximate: tPublish('mapApproximate'),
+                exact: tPublish('mapExact'),
+                viewListing: '',
+                bedrooms: '',
+                bathrooms: '',
+                area: '',
+                empty: '',
+                zoomIn: '',
+                zoomOut: '',
+                resetView: '',
+              }}
+              hint={tPublish('mapHint')}
+              clearLabel={tPublish('mapClear')}
+              emptyLabel={tPublish('mapEmpty')}
+              placeLabel={tPublish('mapPlace')}
+            />
+            <p className="mt-2 text-xs text-gray-500">{tPublish('mapDescription')}</p>
           </div>
 
           {/* Características */}

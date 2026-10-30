@@ -146,6 +146,13 @@
   color: var(--ink-2);
 }
 
+.sectionActions {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
 .sectionLink {
   display: inline-flex;
   align-items: center;
