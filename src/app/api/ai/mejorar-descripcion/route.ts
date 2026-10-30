@@ -6,7 +6,30 @@ import { checkRateLimit } from '@/lib/rate-limit'
 // Requiere GEMINI_API_KEY (https://aistudio.google.com — tier gratuito, sin tarjeta).
 // Sin clave configurada la ruta devuelve 503 y el botón de IA no funciona.
 
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash'
+// Nota (oct 2026): gemini-2.0-flash fue apagado por Google el 2026-06-01.
+// Usamos modelos vigentes del tier gratuito; si el configurado falla con
+// 404/400 (retirado), probamos la cadena de respaldo en orden.
+const DEFAULT_MODEL = 'gemini-3.6-flash'
+const FALLBACK_MODELS = ['gemini-3.6-flash', 'gemini-3.5-flash-lite', 'gemini-2.5-flash']
+
+function modelCandidates(): string[] {
+  const configured = process.env.GEMINI_MODEL?.trim() || DEFAULT_MODEL
+  return [configured, ...FALLBACK_MODELS.filter((m) => m !== configured)]
+}
+
+async function callGemini(apiKey: string, model: string, prompt: string): Promise<Response> {
+  return fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.7, maxOutputTokens: 600 },
+      }),
+    }
+  )
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -71,21 +94,31 @@ ${detalles}
 Borrador del usuario:
 ${descripcion.slice(0, 4000)}`
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.7, maxOutputTokens: 600 },
-        }),
+    // Probamos el modelo configurado y, si está retirado (404/400), la cadena de respaldo
+    const candidates = modelCandidates()
+    let response: Response | null = null
+    let lastStatus = 0
+    let lastBody = ''
+    for (const model of candidates) {
+      response = await callGemini(apiKey, model, prompt)
+      lastStatus = response.status
+      if (response.ok) break
+      lastBody = await response.text().catch(() => '')
+      // 404 = modelo inexistente; 400 con "model" = nombre inválido → probar siguiente
+      const modelGone = response.status === 404 ||
+        (response.status === 400 && /model|not found|deprecated/i.test(lastBody))
+      if (!modelGone) break
+      console.error(`Gemini: modelo "${model}" no disponible (${response.status}), probando siguiente…`)
+      response = null
+    }
+    if (!response || !response.ok) {
+      console.error('Gemini API error:', lastStatus, lastBody.slice(0, 500))
+      if (lastStatus === 429) {
+        return NextResponse.json(
+          { error: 'La IA está temporalmente saturada, intenta en un minuto' },
+          { status: 429 }
+        )
       }
-    )
-
-    if (!response.ok) {
-      const errText = await response.text()
-      console.error('Gemini API error:', response.status, errText.slice(0, 500))
       return NextResponse.json({ error: 'El servicio de IA no respondió' }, { status: 502 })
     }
 

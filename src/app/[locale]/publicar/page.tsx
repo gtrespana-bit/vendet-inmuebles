@@ -10,6 +10,7 @@ import { categoriasData } from '@/lib/categorias'
 import { ESTADOS, getMunicipiosNombres } from '@/lib/ubicaciones'
 import { Camera, X, UploadCloud, AlertCircle, Phone, Mail, MapPin, MessageSquare, ChevronLeft, ChevronRight } from 'lucide-react'
 import { verificarContenido, formatearAlertaModeracion } from '@/lib/moderacion'
+import { compressImage } from '@/lib/image-compress'
 import { emailProductoPublicado } from '@/lib/server-email'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
@@ -190,9 +191,11 @@ export default function PublicarPage() {
       const key = `${userId}/${Date.now()}_${i}.${ext}`.replace(/\s+/g, '_')
 
       try {
+        // Comprimir en cliente: Vercel rechaza con 413 los bodies > 4.5 MB
+        const fileToUpload = await compressImage(img.file)
         const formData = new FormData()
         formData.append('key', key)
-        formData.append('file', img.file)
+        formData.append('file', fileToUpload)
 
         const res = await fetch('/api/r2-upload', {
           method: 'POST',
@@ -730,7 +733,7 @@ export default function PublicarPage() {
               {imagenes.length < maxFotos && (
                 <label className="aspect-square rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:border-brand-accent hover:bg-yellow-50 transition">
                   <Camera size={24} className="text-gray-400" /><span className="text-xs text-gray-500 mt-1">{t('add')}</span>
-                  <input type="file" accept="image/*" multiple onChange={handleImageUpload} className="hidden" />
+                  <input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={handleImageUpload} className="hidden" />
                 </label>
               )}
             </div>

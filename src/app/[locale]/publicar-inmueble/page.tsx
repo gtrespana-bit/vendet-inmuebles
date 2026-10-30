@@ -11,6 +11,7 @@ import { getSupabaseAuthHeaders } from '@/lib/supabase-auth-headers';
 import { ESTADOS, MUNICIPIOS_POR_ESTADO } from '@/lib/ubicaciones';
 import LocationPicker from '@/components/map/LocationPicker';
 import { resolveListingGeo } from '@/lib/geo/venezuela';
+import { compressImage } from '@/lib/image-compress';
 import { Sparkles, Loader2 } from 'lucide-react';
 
 interface ImagePreview {
@@ -142,6 +143,7 @@ export default function PublicarInmueblePage() {
 
   const [loading, setLoading] = useState(false);
   const [subiendoFotos, setSubiendoFotos] = useState(0); // 0 = no subiendo
+  const [aiError, setAiError] = useState<string | null>(null); // error visible junto al botón de IA
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
@@ -244,6 +246,7 @@ export default function PublicarInmueblePage() {
   // Descripción con IA (solo si GEMINI_API_KEY está configurada — plan gratuito de Gemini)
   const mejorarDescripcion = async () => {
     setMejorandoIA(true);
+    setAiError(null);
     try {
       const headers = await getSupabaseAuthHeaders();
       const res = await fetch('/api/ai/mejorar-descripcion', {
@@ -267,8 +270,10 @@ export default function PublicarInmueblePage() {
       if (!res.ok) throw new Error(data.error || 'IA');
       setDescripcion(data.descripcion);
     } catch (err: any) {
-      setError(tPublish('aiUnavailable') + (err.message ? ` (${err.message})` : ''));
-      setTimeout(() => setError(null), 5000);
+      // Error visible junto al botón (el banner de arriba queda fuera de vista)
+      setAiError(err.message && err.message !== 'IA'
+        ? err.message
+        : tPublish('aiUnavailable'));
     } finally {
       setMejorandoIA(false);
     }
@@ -304,9 +309,11 @@ export default function PublicarInmueblePage() {
         const safeFileName = img.file.name.normalize('NFKD').replace(/[^a-zA-Z0-9._-]+/g, '_').slice(0, 100);
         const fileName = `${user.id}/inmuebles/${Date.now()}-${safeFileName}`;
 
+        // Comprimir en cliente: Vercel rechaza con 413 los bodies > 4.5 MB
+        const fileToUpload = await compressImage(img.file);
         const formData = new FormData();
         formData.append('key', fileName);
-        formData.append('file', img.file);
+        formData.append('file', fileToUpload);
 
         const uploadRes = await fetch('/api/r2-upload', {
           method: 'POST',
@@ -314,7 +321,11 @@ export default function PublicarInmueblePage() {
           body: formData,
         });
         if (!uploadRes.ok) {
-          throw new Error(tPublish('uploadError'));
+          const detail = await uploadRes.json().catch(() => null);
+          if (uploadRes.status === 413) {
+            throw new Error(tPublish('uploadTooLarge'));
+          }
+          throw new Error(detail?.error || tPublish('uploadError'));
         }
         const { publicUrl } = await uploadRes.json();
         imageUrls.push(publicUrl);
@@ -515,6 +526,11 @@ export default function PublicarInmueblePage() {
                     {tPublish('aiImprove')}
                   </button>
                 </div>
+                {aiError && (
+                  <p role="alert" className="mt-2 text-xs text-red-600">
+                    {aiError}
+                  </p>
+                )}
                 <textarea
                   id="descripcion"
                   value={descripcion}
@@ -807,7 +823,7 @@ export default function PublicarInmueblePage() {
               id="listing-images"
               ref={fileInputRef}
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/png,image/webp"
               multiple
               onChange={handleImageSelect}
               className="hidden"
