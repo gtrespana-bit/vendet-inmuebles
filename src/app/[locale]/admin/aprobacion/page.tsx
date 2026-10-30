@@ -7,8 +7,7 @@ import { getSupabaseAuthHeaders } from '@/lib/supabase-auth-headers'
 import { useAuth } from '@/components/AuthProvider'
 import { Check, X, Loader2, RefreshCw, Shield } from 'lucide-react'
 import LocalLink from '@/components/LocalLink'
-
-const ADMIN_EMAILS = ['gtrespana@gmail.com']
+import { isAdminEmail } from '@/lib/admin-config'
 
 export default function AprobacionPage() {
   const { user, session } = useAuth()
@@ -18,7 +17,7 @@ export default function AprobacionPage() {
   const [procesando, setProcesando] = useState<string | null>(null)
   const [cargando, setCargando] = useState(true)
 
-  const isAdmin = ADMIN_EMAILS.includes(user?.email || '')
+  const isAdmin = isAdminEmail(user?.email)
 
   useEffect(() => {
     if (!session || !user) return
