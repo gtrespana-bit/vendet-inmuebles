@@ -72,3 +72,6 @@ supabase/.temp/
 supabase/cache/
 supabase/functions/**
 !supabase/functions/**/*
+
+# Directorio de compilación aislado usado por los demos
+.next-dev/
