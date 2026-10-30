@@ -9,7 +9,7 @@ import BadgeVerificado from '@/components/BadgeVerificado'
 import Avatar from '@/components/Avatar'
 import SellerReputation from '@/components/SellerReputation'
 import { supabase, isSupabaseConfigured } from '@/lib/supabase'
-import { ArrowLeft, ArrowUpRight, Mail, MapPin, MessageSquare, Phone, ShieldCheck, Star } from 'lucide-react'
+import { ArrowLeft, ArrowUpRight, Mail, MapPin, MessageSquare, Phone, Shield, ShieldCheck, Star } from 'lucide-react'
 
 type SellerProfile = {
   id: string
@@ -184,7 +184,10 @@ export default function VendedorPage() {
         <section className="seller-profile-card" aria-labelledby="seller-name">
           <div className="seller-profile-card__topline">
             <p className="seller-page__eyebrow">{t('publicProfile')}</p>
-            {seller.verificado && <span className="seller-profile-card__verified"><ShieldCheck size={14} /> {t('verified')}</span>}
+            <span className={`seller-profile-card__verification ${seller.verificado ? 'seller-profile-card__verified' : 'seller-profile-card__unverified'}`} aria-label={seller.verificado ? t('verified') : t('notVerified')}>
+              {seller.verificado ? <ShieldCheck size={14} aria-hidden="true" /> : <Shield size={14} aria-hidden="true" />}
+              {seller.verificado ? t('verified') : t('notVerified')}
+            </span>
           </div>
           <div className="seller-profile-card__body">
             <Avatar nombre={sellerName} fotoUrl={seller.foto_perfil_url} size="xl" />
