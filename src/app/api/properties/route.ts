@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase-server'
+import { checkPlanLimits } from '@/lib/plans'
 
 export async function POST(req: NextRequest) {
   try {
@@ -28,6 +29,14 @@ export async function POST(req: NextRequest) {
     const user = authData.user
     if (authError || !user || (userId && userId !== user.id)) {
       return NextResponse.json({ error: 'Sesión inválida' }, { status: 401 })
+    }
+
+    const planData = await checkPlanLimits(user.id)
+    if (!planData.canPublish) {
+      return NextResponse.json(
+        { error: `Límite de publicaciones alcanzado para el plan ${planData.plan}` },
+        { status: 403 }
+      )
     }
 
     const tituloLimpio = typeof titulo === 'string' ? titulo.trim() : ''
@@ -68,7 +77,7 @@ export async function POST(req: NextRequest) {
     }
 
     const imageUrls = Array.isArray(imagenes)
-      ? imagenes.filter((url: unknown): url is string => typeof url === 'string' && url.startsWith('https://')).slice(0, 20)
+      ? imagenes.filter((url: unknown): url is string => typeof url === 'string' && url.startsWith('https://')).slice(0, planData.limits.maxFotos)
       : []
 
     const propertyData = {

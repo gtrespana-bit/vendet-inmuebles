@@ -21,6 +21,8 @@ export default function ContactPage() {
   const [email, setEmail] = useState('')
   const [asunto, setAsunto] = useState(subjects[0])
   const [mensaje, setMensaje] = useState('')
+  const [telefono, setTelefono] = useState('')
+  const [solicitarLlamada, setSolicitarLlamada] = useState(false)
   const [enviando, setEnviando] = useState(false)
   const [estado, setEstado] = useState<'idle' | 'success' | 'error'>('idle')
   const [errorText, setErrorText] = useState('')
@@ -36,7 +38,7 @@ export default function ContactPage() {
       const response = await fetch('/api/contacto', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nombre, email, asunto, mensaje }),
+        body: JSON.stringify({ nombre, email, asunto, mensaje, telefono: solicitarLlamada ? telefono : undefined, solicitarLlamada }),
       })
       const data = await response.json()
 
@@ -107,9 +109,37 @@ export default function ContactPage() {
                 <div className="mb-7 border-b border-[#e8e1d7] pb-5">
                   <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-[#8d6f3d]">{t('title')}</p>
                   <h2 id="contact-form-title" className="font-heading text-2xl text-brand-dark sm:text-3xl">{t('sendMessage')}</h2>
-                </div>
+                  </div>
 
-                {estado === 'error' && (
+                  <div className="flex items-start gap-2 pt-2">
+                    <input
+                      type="checkbox"
+                      id="solicitarLlamada"
+                      checked={solicitarLlamada}
+                      onChange={e => setSolicitarLlamada(e.target.checked)}
+                      className="mt-1"
+                    />
+                    <label htmlFor="solicitarLlamada" className="text-sm text-[#51463f]">
+                      Solicitar devolución de llamada telefónica (Exclusivo para usuarios del plan Agencia)
+                    </label>
+                  </div>
+                  
+                  {solicitarLlamada && (
+                    <div className="pt-2 animate-fadeIn">
+                      <label htmlFor="contact-phone" className="mb-1.5 block text-sm font-semibold text-[#51463f]">Teléfono</label>
+                      <input
+                        type="tel"
+                        id="contact-phone"
+                        value={telefono}
+                        onChange={e => setTelefono(e.target.value)}
+                        required={solicitarLlamada}
+                        placeholder="+58 412 1234567"
+                        className="w-full border border-[#dcd4c8] bg-[#fffdfa] px-4 py-3 text-sm leading-6 text-brand-dark outline-none transition placeholder:text-[#9c938a] focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/15"
+                      />
+                    </div>
+                  )}
+
+                  {estado === 'error' && (
                   <div role="alert" className="mb-5 flex items-start gap-2 border border-red-200 bg-red-50 p-3 text-sm text-red-700">
                     <AlertCircle size={18} className="mt-0.5 shrink-0" aria-hidden="true" />
                     <span>{errorText}</span>

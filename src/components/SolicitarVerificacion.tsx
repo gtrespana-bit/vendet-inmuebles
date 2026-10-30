@@ -21,9 +21,8 @@ export default function SolicitarVerificacion() {
   const [rechazoMotivo, setRechazoMotivo] = useState('')
 
   // Form
-  const [pagoMovilTelefono, setPagoMovilTelefono] = useState('')
-  const [pagoMovilCedula, setPagoMovilCedula] = useState('')
-  const [pagoMovilBanco, setPagoMovilBanco] = useState('')
+  const [cedulaNumero, setCedulaNumero] = useState('')
+  const [tipoVerificacion, setTipoVerificacion] = useState<'particular' | 'profesional' | 'agencia'>('particular')
   const [frenteFile, setFrenteFile] = useState<File | null>(null)
   const [dorsoFile, setDorsoFile] = useState<File | null>(null)
   const [frentePreview, setFrentePreview] = useState('')
@@ -36,22 +35,22 @@ export default function SolicitarVerificacion() {
   const [exito, setExito] = useState(false)
 
   const cargarEstadoVerificacion = useCallback(async () => {
-    // Ver perfil (columnas verificado)
     const { data: perfil } = await supabase
       .from('perfiles')
-      .select('verificado, verificado_desde, cedula_foto_url, cedula_numero, pago_movil_telefono, pago_movil_cedula, pago_movil_banco')
+      .select('verificado, verificado_desde, cedula_foto_url, cedula_numero, tipo_cuenta')
       .eq('id', user?.id)
       .single()
 
     if (perfil?.verificado) {
       setEstado('aprobada')
+      if (perfil.tipo_cuenta) setTipoVerificacion(perfil.tipo_cuenta as any)
       return
     }
 
     // Ver solicitud activa
     const { data: sol } = await supabase
       .from('solicitudes_verificacion')
-      .select('id, user_id, pago_movil_telefono, pago_movil_cedula, pago_movil_banco, mensaje, estado, creada_en')
+      .select('id, user_id, mensaje, estado, creada_en')
       .eq('user_id', user?.id)
       .eq('estado', 'pendiente')
       .single()
@@ -65,7 +64,7 @@ export default function SolicitarVerificacion() {
     // Ver solicitud rechazada
     const { data: solRech } = await supabase
       .from('solicitudes_verificacion')
-      .select('id, user_id, pago_movil_telefono, pago_movil_cedula, pago_movil_banco, mensaje, estado, creada_en, rechazo_motivo')
+      .select('id, user_id, mensaje, estado, creada_en, rechazo_motivo')
       .eq('user_id', user?.id)
       .eq('estado', 'rechazada')
       .order('creada_en', { ascending: false })
@@ -105,8 +104,8 @@ export default function SolicitarVerificacion() {
     setError('')
     setEnviando(true)
 
-    if (!pagoMovilTelefono || !pagoMovilCedula || !pagoMovilBanco) {
-      setError('Completa los datos de Pago Movil')
+    if (!cedulaNumero) {
+      setError('Ingresa el número de cédula')
       setEnviando(false)
       return
     }
@@ -138,12 +137,10 @@ export default function SolicitarVerificacion() {
 
       const { error: dbError } = await supabase.from('solicitudes_verificacion').insert({
         user_id: userId,
-        pago_movil_telefono: pagoMovilTelefono,
-        pago_movil_cedula: pagoMovilCedula,
-        pago_movil_banco: pagoMovilBanco,
         cedula_foto_frente_url: upF.data?.path || '',
         cedula_foto_dorso_url: upD.data?.path || '',
         mensaje: mensaje.trim() || null,
+        tipo_cuenta: tipoVerificacion,
       })
 
       if (dbError) throw dbError
@@ -214,9 +211,7 @@ export default function SolicitarVerificacion() {
         <div className="p-6">
           <p className="text-gray-600 mb-4">Tu solicitud fue enviada correctamente. Recibiras una notificacion cuando sea revisada.</p>
           <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-500 space-y-1">
-            <p><strong>Telefono:</strong> {solicitudActual?.pago_movil_telefono}</p>
-            <p><strong>Cedula:</strong> {solicitudActual?.pago_movil_cedula}</p>
-            <p><strong>Banco:</strong> {solicitudActual?.pago_movil_banco}</p>
+            <p><strong>Tipo de Cuenta:</strong> {solicitudActual?.tipo_cuenta}</p>
             <p><strong>Enviada:</strong> {new Date(solicitudActual?.creada_en).toLocaleDateString('es-ES')}</p>
           </div>
         </div>
@@ -252,20 +247,17 @@ export default function SolicitarVerificacion() {
           </h3>
 
           <form onSubmit={(e) => { e.preventDefault(); handleEnviar() }} className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Telefono Pago Movil</label>
-                <input type="tel" value={pagoMovilTelefono} onChange={e => setPagoMovilTelefono(e.target.value)} placeholder="0412-1234567" className="w-full border rounded-lg px-3 py-2" />
+                <label className="block text-sm font-medium text-gray-700 mb-1">Cédula (sin guiones)</label>
+                <input type="text" value={cedulaNumero} onChange={e => setCedulaNumero(e.target.value)} placeholder="V12345678" className="w-full border rounded-lg px-3 py-2" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Cedula (sin guiones)</label>
-                <input type="text" value={pagoMovilCedula} onChange={e => setPagoMovilCedula(e.target.value)} placeholder="V12345678" className="w-full border rounded-lg px-3 py-2" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Banco</label>
-                <select value={pagoMovilBanco} onChange={e => setPagoMovilBanco(e.target.value)} className="w-full border rounded-lg px-3 py-2">
-                  <option value="">Seleccionar...</option>
-                  {bancos.map(b => <option key={b} value={b}>{b}</option>)}
+                <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de Cuenta</label>
+                <select value={tipoVerificacion} onChange={e => setTipoVerificacion(e.target.value as any)} className="w-full border rounded-lg px-3 py-2">
+                  <option value="particular">Particular</option>
+                  <option value="profesional">Profesional (Agente)</option>
+                  <option value="agencia">Agencia Inmobiliaria</option>
                 </select>
               </div>
             </div>
@@ -304,7 +296,7 @@ export default function SolicitarVerificacion() {
 
             <button
               type="submit"
-              disabled={subiendo || enviando || !pagoMovilTelefono || !pagoMovilCedula || !pagoMovilBanco || !frenteFile || !dorsoFile}
+              disabled={subiendo || enviando || !cedulaNumero || !frenteFile || !dorsoFile}
               className="bg-brand-primary text-white px-6 py-2.5 rounded-lg font-bold hover:bg-brand-dark transition disabled:opacity-50 flex items-center gap-2"
             >
               {subiendo ? <><Upload size={16} /> Subiendo fotos...</> : enviando ? <><CheckCircle2 size={16} /> Enviando...</> : <><BadgeCheck size={16} /> Solicitar verificacion</>}
@@ -349,25 +341,22 @@ export default function SolicitarVerificacion() {
         </h3>
 
         <form onSubmit={(e) => { e.preventDefault(); handleEnviar() }} className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Telefono Pago Movil</label>
-              <input type="tel" value={pagoMovilTelefono} onChange={e => setPagoMovilTelefono(e.target.value)} placeholder="0412-1234567" className="w-full border rounded-lg px-3 py-2" />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Cédula (sin guiones)</label>
+              <input type="text" value={cedulaNumero} onChange={e => setCedulaNumero(e.target.value)} placeholder="V12345678" className="w-full border rounded-lg px-3 py-2" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Cedula (sin guiones)</label>
-              <input type="text" value={pagoMovilCedula} onChange={e => setPagoMovilCedula(e.target.value)} placeholder="V12345678" className="w-full border rounded-lg px-3 py-2" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Banco</label>
-              <select value={pagoMovilBanco} onChange={e => setPagoMovilBanco(e.target.value)} className="w-full border rounded-lg px-3 py-2">
-                <option value="">Seleccionar...</option>
-                {bancos.map(b => <option key={b} value={b}>{b}</option>)}
+              <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de Cuenta</label>
+              <select value={tipoVerificacion} onChange={e => setTipoVerificacion(e.target.value as any)} className="w-full border rounded-lg px-3 py-2">
+                <option value="particular">Particular</option>
+                <option value="profesional">Profesional (Agente)</option>
+                <option value="agencia">Agencia Inmobiliaria</option>
               </select>
             </div>
           </div>
 
-          <p className="text-xs text-gray-500 italic">Usamos estos datos para confirmar que el Pago Movil con el que compraste creditos coincide con tu identificacion.</p>
+          
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
@@ -403,7 +392,7 @@ export default function SolicitarVerificacion() {
 
           <button
             type="submit"
-            disabled={subiendo || enviando || !pagoMovilTelefono || !pagoMovilCedula || !pagoMovilBanco || !frenteFile || !dorsoFile}
+            disabled={subiendo || enviando || !cedulaNumero || !frenteFile || !dorsoFile}
             className="bg-brand-primary text-white px-6 py-2.5 rounded-lg font-bold hover:bg-brand-dark transition disabled:opacity-50 flex items-center gap-2"
           >
             {subiendo ? <><Upload size={16} /> Subiendo fotos...</> : enviando ? <><CheckCircle2 size={16} /> Enviando...</> : <><BadgeCheck size={16} /> Solicitar verificacion</>}
