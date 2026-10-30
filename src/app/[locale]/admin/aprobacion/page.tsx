@@ -104,7 +104,7 @@ export default function AprobacionPage() {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="bg-brand-accent p-2 rounded-xl">
-            <Shield size={20} className="text-brand-primary" />
+            <Shield size={20} className="text-[var(--on-gold)]" />
           </div>
           <div>
             <h1 className="text-2xl font-black text-gray-800">Aprobación rápida</h1>

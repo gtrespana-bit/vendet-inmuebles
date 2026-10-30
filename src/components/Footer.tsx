@@ -1,8 +1,8 @@
 'use client'
 
-import Image from 'next/image'
 import { ArrowUpRight } from 'lucide-react'
 import LocalLink from '@/components/LocalLink'
+import { BrandMark } from '@/components/BrandMark'
 import { useLocalizedMessages } from '@/hooks/useLocalizedMessages'
 
 export function Footer() {
@@ -29,7 +29,7 @@ export function Footer() {
       <div className="site-footer__main">
         <div className="site-footer__brand-column">
           <LocalLink href="/" className="site-brand site-brand--footer" aria-label="Venezuela Inmuebles, inicio">
-            <Image src="/brand-mark.svg" alt="" width={40} height={40} />
+            <BrandMark size={40} />
             <span className="site-brand__name"><strong>Venezuela</strong><span>Inmuebles</span></span>
           </LocalLink>
           <p>{t('footer.description')}</p>
@@ -42,6 +42,7 @@ export function Footer() {
           <h2>{t('footer.categories')}</h2>
           <LocalLink href="/catalogo?operacion=Venta">{t('header.buy')}</LocalLink>
           <LocalLink href="/catalogo?operacion=Alquiler">{t('header.rent')}</LocalLink>
+          <LocalLink href="/mapa">{t('header.map')}</LocalLink>
           {categoryLinks.map((link) => <LocalLink key={link.href} href={link.href}>{link.label}</LocalLink>)}
         </nav>
 

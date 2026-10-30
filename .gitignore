@@ -72,3 +72,10 @@ supabase/.temp/
 supabase/cache/
 supabase/functions/**
 !supabase/functions/**/*
+
+# Directorio de compilación aislado usado por los demos
+.next-dev/
+.next-build/
+
+# Búsqueda de imágenes sin procesar (material de trabajo, no se publica)
+image-search/

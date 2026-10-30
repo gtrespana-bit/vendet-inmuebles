@@ -37,10 +37,10 @@ async function enviar(to: string, subject: string, html: string): Promise<boolea
 // ─── Email Layout ──────────────────────────────────────────
 
 const COLORS = {
-  primary: '#7B2D3B',
-  primaryHover: '#5C1E2B',
-  accent: '#C9A84C',
-  bg: '#F5F7FA',
+  primary: '#16294B',
+  primaryHover: '#0B1730',
+  accent: '#B08542',
+  bg: '#F4F1E9',
   white: '#FFFFFF',
   dark: '#1E293B',
   gray: '#64748B',

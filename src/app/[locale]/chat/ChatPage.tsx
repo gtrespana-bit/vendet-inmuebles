@@ -423,7 +423,7 @@ export default function ChatPageClient() {
           <header className="inbox-page__heading"><p>{t('title')}</p><h1>{t('title')}</h1></header>
           <div className="inbox-shell inbox-shell--loading">
             <div className="text-center text-[#897f75]">
-              <div className="mx-auto mb-3 h-10 w-10 animate-spin rounded-full border-2 border-[#d8c6a6] border-t-[#612e35]" />
+              <div className="mx-auto mb-3 h-10 w-10 animate-spin rounded-full border-2 border-[var(--line)] border-t-[var(--burgundy)]" />
               <p>{t('loadingConversations')}</p>
             </div>
           </div>
@@ -468,8 +468,8 @@ export default function ChatPageClient() {
                   <div className="p-4 space-y-4 animate-pulse" aria-label={t('loadingConversations')}>
                     {[1, 2, 3, 4].map(index => (
                       <div key={index} className="flex items-start gap-3">
-                        <div className="h-10 w-10 rounded-full bg-[#eee8df]" />
-                        <div className="flex-1 space-y-2"><div className="h-3 w-3/4 bg-[#eee8df]" /><div className="h-3 w-1/2 bg-[#f3eee7]" /></div>
+                        <div className="h-10 w-10 rounded-full bg-[#EAE6DC]" />
+                        <div className="flex-1 space-y-2"><div className="h-3 w-3/4 bg-[#EAE6DC]" /><div className="h-3 w-1/2 bg-[#f3eee7]" /></div>
                       </div>
                     ))}
                   </div>

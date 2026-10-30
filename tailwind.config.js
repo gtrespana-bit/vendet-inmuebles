@@ -9,11 +9,11 @@ module.exports = {
     extend: {
       colors: {
         brand: {
-          primary: '#612e35',
-          dark: '#352326',
-          accent: '#c7a765',
-          gray: '#faf8f4',
-          darkNav: '#282322',
+          primary: 'rgb(var(--brand-primary-rgb) / <alpha-value>)',
+          dark: 'rgb(var(--brand-dark-rgb) / <alpha-value>)',
+          accent: 'rgb(var(--brand-accent-rgb) / <alpha-value>)',
+          gray: 'rgb(var(--brand-gray-rgb) / <alpha-value>)',
+          darkNav: 'rgb(var(--brand-darknav-rgb) / <alpha-value>)',
         },
       },
       fontFamily: {

@@ -32,7 +32,7 @@ export default function TabFavoritos({ favoritos }: { favoritos: any[] }) {
   if (favoritos.length === 0) {
     return (
       <section className="dashboard-empty-state" aria-labelledby="dashboard-favorites-title">
-        <Heart size={36} className="mx-auto mb-4 text-[#9b8053]" aria-hidden="true" />
+        <Heart size={36} className="mx-auto mb-4 text-[#8C6526]" aria-hidden="true" />
         <p className="dashboard-page__eyebrow">{t('tabFavorites')}</p>
         <h2 id="dashboard-favorites-title">{t('favoritesEmptyTitle')}</h2>
         <p>{t('favoritesEmptyDescription')}</p>
@@ -46,7 +46,7 @@ export default function TabFavoritos({ favoritos }: { favoritos: any[] }) {
       <div className="mb-4 flex items-end justify-between gap-4">
         <div>
           <p className="dashboard-page__eyebrow">{t('tabFavorites')}</p>
-          <h2 id="dashboard-favorites-title" className="m-0 font-heading text-2xl font-normal text-[#302925]">{t('favoritesTitle')}</h2>
+          <h2 id="dashboard-favorites-title" className="m-0 font-heading text-2xl font-normal text-[#1A2333]">{t('favoritesTitle')}</h2>
         </div>
         <span className="text-xs text-[#81776d]">{favoritos.length}</span>
       </div>

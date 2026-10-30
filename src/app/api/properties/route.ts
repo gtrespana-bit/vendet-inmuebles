@@ -16,6 +16,8 @@ export async function POST(req: NextRequest) {
       banos,
       area,
       imagenes,
+      latitud,
+      longitud,
       userId,
     } = body
 
@@ -80,6 +82,13 @@ export async function POST(req: NextRequest) {
       ? imagenes.filter((url: unknown): url is string => typeof url === 'string' && url.startsWith('https://')).slice(0, planData.limits.maxFotos)
       : []
 
+    const lat = Number(latitud)
+    const lng = Number(longitud)
+    const hasCoords =
+      Number.isFinite(lat) && Number.isFinite(lng) &&
+      Math.abs(lat) <= 90 && Math.abs(lng) <= 180 &&
+      Math.abs(lat) > 0.5 && Math.abs(lng) > 0.5
+
     const propertyData = {
       usuario_id: user.id,
       titulo: tituloLimpio.slice(0, 160),
@@ -95,6 +104,8 @@ export async function POST(req: NextRequest) {
       habitaciones: Math.max(0, Number.parseInt(habitaciones, 10) || 0),
       banos: Math.max(0, Number.parseInt(banos, 10) || 0),
       area_total: Number.isFinite(Number(area)) && Number(area) > 0 ? Number(area) : null,
+      latitud: hasCoords ? Number(lat.toFixed(7)) : null,
+      longitud: hasCoords ? Number(lng.toFixed(7)) : null,
       imagen_url: imageUrls[0] || null,
       activo: true,
       estado_moderacion: 'aprobado',

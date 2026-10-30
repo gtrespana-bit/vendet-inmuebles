@@ -32,7 +32,7 @@ export default async function NotFound() {
           <p className="text-gray-400 text-sm mb-4">{t('publishPrompt')}</p>
           <LocalLink
             href="/publicar-inmueble"
-            className="inline-flex items-center gap-2 bg-brand-accent text-brand-primary px-6 py-3 rounded-lg font-bold hover:bg-accent/90 transition"
+            className="inline-flex items-center gap-2 bg-brand-accent text-[var(--on-gold)] px-6 py-3 rounded-lg font-bold hover:bg-accent/90 transition"
           >
             <PlusCircle size={18} /> {t('publishButton')}
           </LocalLink>

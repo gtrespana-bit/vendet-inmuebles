@@ -122,7 +122,7 @@ export default function VendedorPage() {
       <main className="seller-page" aria-busy="true">
         <div className="seller-page__inner seller-page__loading">
           <div className="seller-page__skeleton-avatar" />
-          <div className="h-7 w-48 animate-pulse bg-[#eee8df]" />
+          <div className="h-7 w-48 animate-pulse bg-[#EAE6DC]" />
           <div className="h-4 w-64 max-w-full animate-pulse bg-[#f0ebe4]" />
         </div>
       </main>

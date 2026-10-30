@@ -13,10 +13,10 @@ export function FloatingChat() {
     <div className="floating-chat">
       {open && (
         <section
-          className="floating-chat__panel bg-white border border-[#e5ddd2] shadow-2xl mb-4 overflow-hidden"
+          className="floating-chat__panel bg-white border border-[#DCD6C6] shadow-2xl mb-4 overflow-hidden"
           aria-label={t('title')}
         >
-          <div className="bg-[#612e35] text-white p-4 flex items-center justify-between">
+          <div className="bg-[var(--burgundy)] text-white p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <span className="w-10 h-10 bg-white/10 flex items-center justify-center" aria-hidden="true">
                 <MessageCircle size={19} />
@@ -35,11 +35,11 @@ export function FloatingChat() {
               <X size={18} aria-hidden="true" />
             </button>
           </div>
-          <div className="p-4 bg-[#faf8f4]">
+          <div className="p-4 bg-[#FBF9F3]">
             <p className="text-[#5e554c] text-sm leading-relaxed">{t('greeting')}</p>
             <LocalLink
               href="/contacto"
-              className="inline-flex items-center gap-2 mt-4 min-h-10 px-4 bg-[#612e35] text-white text-sm font-semibold no-underline hover:bg-[#4c252b] transition"
+              className="inline-flex items-center gap-2 mt-4 min-h-10 px-4 bg-[var(--burgundy)] text-white text-sm font-semibold no-underline hover:bg-[var(--burgundy-dark)] transition"
             >
               {t('contact')} <ArrowRight size={15} aria-hidden="true" />
             </LocalLink>
@@ -49,7 +49,7 @@ export function FloatingChat() {
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="w-14 h-14 bg-[#612e35] text-white shadow-lg hover:bg-[#4c252b] transition flex items-center justify-center"
+        className="w-14 h-14 bg-[var(--burgundy)] text-white shadow-lg hover:bg-[var(--burgundy-dark)] transition flex items-center justify-center"
         aria-expanded={open}
         aria-label={open ? t('close') : t('open')}
       >

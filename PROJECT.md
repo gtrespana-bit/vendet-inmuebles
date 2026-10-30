@@ -178,7 +178,7 @@
 ## Configuración
 - `next.config.js` — images: webp/avif, remotePatterns: supabase.co + unsplash.com, Sentry
 - `tailwind.config.js` — content: `./src/**/*.{js,ts,jsx,tsx,mdx}`
-- Colores brand: primary `#7B2D3B`, dark `#5C1E2B`, accent `#C9A84C`, gray `#F5F5F5`, darkNav `#1a1a2e`
+- Colores brand (paleta Marino): primary `#16294B`, dark `#0B1730`, accent `#B08542`, gray `#F4F1E9`, darkNav `#0B1730`
 - Font: Inter (Google, display:swap, variable CSS)
 
 ## Optimizaciones Implementadas
@@ -230,12 +230,56 @@
 - `NEXT_PUBLIC_VAPID_PUBLIC_KEY` y `VAPID_PRIVATE_KEY` (notificaciones push)
 - `SENTRY_AUTH_TOKEN` (Source Maps, opcional)
 
+## Búsqueda por mapa (OpenStreetMap)
+
+- Ruta pública: `/[locale]/mapa` (enlazada desde la cabecera, el pie, la portada y el catálogo).
+- Librería: **Leaflet 1.9** + **leaflet.markercluster**, sin clave de API ni coste.
+- Teselas: `tile.openstreetmap.org` con atribución visible (© OpenStreetMap contributors) y
+  `referrerPolicy: 'strict-origin-when-cross-origin'` en la capa: la política de uso exige una Referer válida y sin ella el
+  servidor devuelve la imagen *«Access blocked»* (también cuando la página se sirve con `Referrer-Policy: no-referrer` o
+  dentro de un iframe). El proveedor se puede sustituir con `NEXT_PUBLIC_MAP_TILE_URL` sin tocar el código. Para tráfico
+  alto hay que respetar la [política de uso de teselas](https://operations.osmfoundation.org/policies/tiles/) o contratar
+  un proveedor (MapTiler, Thunderforest, Protomaps…) manteniendo los datos OSM.
+- Si el proveedor no responde, el mapa muestra un aviso discreto («Fondo del mapa no disponible») y deja los pines y la
+  lista operativos.
+- Marcadores con precio; los destacados en latón, los de ubicación aproximada con borde discontinuo. Selección
+  sincronizada entre mapa y lista, agrupación de marcadores y botón «Buscar en esta zona».
+- Coordenadas: `inmuebles.latitud` / `inmuebles.longitud`. Si faltan, `src/lib/geo/venezuela.ts` resuelve el centro de la
+  ciudad/estado (con desplazamiento determinista) y la ficha se marca como *ubicación aproximada*.
+- Alta de inmuebles: el formulario de publicación incluye un selector de pin opcional que guarda `latitud`/`longitud`.
+- La demo pública usa `src/lib/demo/demo-listings.ts` cuando la base de datos no devuelve inmuebles y lo indica con la
+  etiqueta «Datos de ejemplo».
+
+## Datos de demostración (50 fichas)
+
+El catálogo arranca con 50 inmuebles reales de mercado (no datos de ejemplo) en **Valencia**, **San Diego
+(Carabobo)** y **Caracas**, con venta y alquiler, precios dentro de los rangos de mercado 2026 y fotos reales
+de portales inmobiliarios venezolanos.
+
+- Generador: `scripts/seed_propiedades_demo.py`. Vuelve a producir las 50 portadas en
+  `public/propiedades/prop-01..50.jpg` y el SQL `supabase/seeds/2026-10-30_propiedades_demo.sql`
+  (`begin` → `insert into public.inmuebles` → portada en `public.inmueble_imagenes` → `commit`).
+  El script valida que haya 50 fichas y que ninguna portada se repita.
+- Cuenta dueña de todas las fichas: agencia **TuInmueble** (`tipo_cuenta = 'agencia'`,
+  `empresa_nombre = 'TuInmueble'`, perfil verificado, plan **agencia** = publicaciones ilimitadas y 20 créditos/mes).
+  El alta es reproducible con `supabase/seeds/2026-10-30_cuenta_agencia_tuinmueble.sql`, que crea el usuario
+  en `auth.users` + `auth.identities` (contraseña por variable `:'pw'`, nunca en el repositorio), la fila en
+  `public.agencias`, la membresía `admin` y la suscripción, y reasigna las 50 fichas
+  (`usuario_id`, `agencia_id`, `agente_asignado_id`).
+- Las fichas nacen con `activo = true`, `vendido = false` y `estado_moderacion = 'aprobado'`, así que aparecen
+  de inmediato en `vw_propiedades_publicas`, en el catálogo, en el mapa y en la portada. `slug`, `creado_en` y
+  `publicado_en` los genera la base de datos.
+- Cada ficha tiene una sola foto (portada); las galerías múltiples quedan pendientes hasta ampliar el banco de
+  imágenes con interiores propios.
+- Las portadas provienen de anuncios públicos de portales venezolanos y se usan como material de demostración:
+  hay que sustituirlas por fotos propias o con licencia antes de un lanzamiento comercial.
+
 ## Notas de Diseño
 - BottomTabNav: siempre visible, no remover
-- Colores: brand-primary `#7B2D3B`, accent `#C9A84C`
+- Colores: brand-primary `#16294B`, accent `#B08542` (azul noche + latón)
 - Tipografía: Inter variable
 - Formato de precios: `$X.XXX` (USD) + Bs. con tasa BCV
-- PWA: standalone, theme-color `#7B2D3B`, black-translucent status bar
+- PWA: standalone, theme-color `#16294B`, black-translucent status bar
 
 ## Reglas de Trabajo (desde 2026-05-05)
 - **NO push a `main` sin aprobación explícita de Ruben**

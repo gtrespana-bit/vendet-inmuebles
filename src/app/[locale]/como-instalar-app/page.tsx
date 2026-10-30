@@ -20,7 +20,7 @@ export default async function ComoInstalarAppPage() {
       {/* Header */}
       <div className="text-center mb-8">
         <div className="w-20 h-20 bg-brand-primary rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-          <Smartphone size={36} className="text-brand-accent" />
+          <Smartphone size={36} className="text-[var(--gold-text)]" />
         </div>
         <h1 className="text-3xl font-black text-gray-900 mb-2">{t('title')}</h1>
         <p className="text-gray-600 max-w-md mx-auto">
@@ -170,7 +170,7 @@ export default async function ComoInstalarAppPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="bg-gradient-to-br from-brand-primary/5 to-brand-accent/5 rounded-xl p-5 border border-brand-primary/10">
             <div className="w-8 h-8 bg-brand-primary rounded-lg flex items-center justify-center mb-3">
-              <Smartphone size={16} className="text-brand-accent" />
+              <Smartphone size={16} className="text-[var(--gold-text)]" />
             </div>
             <p className="font-bold text-gray-900 text-sm">{t('why1')}</p>
             <p className="text-xs text-gray-500 mt-1">{t('why1desc')}</p>

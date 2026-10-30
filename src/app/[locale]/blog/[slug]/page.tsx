@@ -273,7 +273,7 @@ export default async function BlogPost(props: { params: Promise<{ slug: string }
           </LocalLink>
           <div className="flex items-center gap-2 mb-4">
             <span className="text-lg">{categoryIcons[post.category] || '📝'}</span>
-            <span className="text-sm font-semibold text-brand-accent bg-brand-accent/20 px-3 py-1 rounded-full">{post.category}</span>
+            <span className="text-sm font-semibold text-[var(--gold-text)] bg-brand-accent/20 px-3 py-1 rounded-full">{post.category}</span>
           </div>
           <h1 className="text-2xl md:text-4xl font-black text-white mb-4 leading-tight">{post.title}</h1>
           <p className="text-lg text-blue-200 mb-6">{post.excerpt}</p>
@@ -310,7 +310,7 @@ export default async function BlogPost(props: { params: Promise<{ slug: string }
         <div className="max-w-4xl mx-auto px-4 text-center">
           <h2 className="text-2xl font-black text-white mb-3">{t('haveSomething')}</h2>
           <p className="text-gray-400 mb-6">{t('publishFreeDesc')}</p>
-          <LocalLink href="/publicar" className="inline-flex items-center gap-2 bg-brand-accent text-brand-primary px-8 py-3 rounded-xl font-bold text-lg hover:bg-accent/90 transition shadow-lg">
+          <LocalLink href="/publicar" className="inline-flex items-center gap-2 bg-brand-accent text-[var(--on-gold)] px-8 py-3 rounded-xl font-bold text-lg hover:bg-accent/90 transition shadow-lg">
             {t('publishFree')} <ArrowRight size={20} />
           </LocalLink>
         </div>

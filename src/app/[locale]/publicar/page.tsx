@@ -657,7 +657,7 @@ export default function PublicarPage() {
               {imagenes.map((img, i) => (
                 <div key={i} className="aspect-square relative rounded-lg overflow-hidden group border border-gray-200">
                   <Image src={img.preview} alt="" className="w-full h-full object-cover" fill sizes="100px" unoptimized />
-                  {i === 0 && img.uploadedUrl && <span className="absolute top-1 left-1 bg-brand-accent text-brand-primary text-[10px] font-bold px-1.5 py-0.5 rounded">{t('cover')}</span>}
+                  {i === 0 && img.uploadedUrl && <span className="absolute top-1 left-1 bg-brand-accent text-[var(--on-gold)] text-[10px] font-bold px-1.5 py-0.5 rounded">{t('cover')}</span>}
                   {img.uploading && (
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                       <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -795,7 +795,7 @@ export default function PublicarPage() {
 
             <div className="flex gap-3">
               <button onClick={() => setStep(3)} className="px-6 py-3 rounded-lg font-medium border border-gray-200 hover:bg-gray-50">{t('edit')}</button>
-              <button onClick={handleSubmit} disabled={loading} className="flex-1 bg-brand-accent text-brand-primary py-3 rounded-lg font-bold hover:bg-accent/90 transition disabled:opacity-50">{loading ? t('publishing') : t('publishFree')}</button>
+              <button onClick={handleSubmit} disabled={loading} className="flex-1 bg-brand-accent text-[var(--on-gold)] py-3 rounded-lg font-bold hover:bg-accent/90 transition disabled:opacity-50">{loading ? t('publishing') : t('publishFree')}</button>
             </div>
           </div>
         )}

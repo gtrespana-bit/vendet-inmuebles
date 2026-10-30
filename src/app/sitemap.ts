@@ -9,6 +9,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const sharedPaths = [
     ['', 1],
     ['/catalogo', 0.9],
+    ['/mapa', 0.9],
     ['/propiedades/venta', 0.8],
     ['/propiedades/alquiler', 0.8],
     ['/publicar-inmueble', 0.7],

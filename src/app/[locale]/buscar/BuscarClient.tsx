@@ -422,7 +422,7 @@ export default function BuscarClient({ searchParams: searchParamsPromise }: { se
                 />
                 <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               </div>
-              <button type="submit" className="bg-brand-accent text-brand-primary px-6 rounded-lg font-bold hover:bg-accent/90 transition shrink-0">Buscar</button>
+              <button type="submit" className="bg-brand-accent text-[var(--on-gold)] px-6 rounded-lg font-bold hover:bg-accent/90 transition shrink-0">Buscar</button>
             </form>
           </div>
 

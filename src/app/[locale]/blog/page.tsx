@@ -86,7 +86,7 @@ export default async function BlogPage() {
       <section className="bg-gradient-to-br from-brand-primary to-brand-dark py-12 md:py-16">
         <div className="max-w-4xl mx-auto px-4 text-center">
           <h1 className="text-3xl md:text-5xl font-black text-white mb-4">
-            {t('title')} <span className="text-brand-accent">Venezuela Inmuebles</span>
+            {t('title')} <span className="text-[var(--gold-text)]">Venezuela Inmuebles</span>
           </h1>
           <p className="text-lg text-blue-200 max-w-2xl mx-auto">
             {t('subtitle')}
@@ -156,7 +156,7 @@ export default async function BlogPage() {
         <div className="max-w-4xl mx-auto px-4 text-center">
           <h2 className="text-2xl font-black text-white mb-3">{t('ctaTitle')}</h2>
           <p className="text-gray-400 mb-6">{t('ctaDesc')}</p>
-          <LocalLink href="/publicar" className="inline-flex items-center gap-2 bg-brand-accent text-brand-primary px-8 py-3 rounded-xl font-bold text-lg hover:bg-accent/90 transition shadow-lg">
+          <LocalLink href="/publicar" className="inline-flex items-center gap-2 bg-brand-accent text-[var(--on-gold)] px-8 py-3 rounded-xl font-bold text-lg hover:bg-accent/90 transition shadow-lg">
             {t('ctaButton')} <ArrowRight size={20} />
           </LocalLink>
         </div>

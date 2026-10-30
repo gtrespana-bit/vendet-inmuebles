@@ -88,18 +88,18 @@ export default function TabResumen({ userId }: { userId: string }) {
 
   const number = new Intl.NumberFormat(locale === 'en' ? 'en-US' : 'es-VE')
   const cards = stats ? [
-    { label: t('activeListings'), value: number.format(stats.activos), icon: BarChart3, color: 'text-[#612e35]', bg: 'bg-[#f0e9df]' },
-    { label: t('totalVisits'), value: number.format(stats.totalVisitas), icon: Eye, color: 'text-[#795f3f]', bg: 'bg-[#f2ece2]' },
+    { label: t('activeListings'), value: number.format(stats.activos), icon: BarChart3, color: 'text-[var(--burgundy)]', bg: 'bg-[var(--paper-deep)]' },
+    { label: t('totalVisits'), value: number.format(stats.totalVisitas), icon: Eye, color: 'text-[#795f3f]', bg: 'bg-[#F1EDE2]' },
     { label: t('unreadMessages'), value: number.format(stats.mensajesNoLeidos), icon: MessageCircle, color: stats.mensajesNoLeidos > 0 ? 'text-[#9a524a]' : 'text-[#8a8076]', bg: stats.mensajesNoLeidos > 0 ? 'bg-[#f8e9e6]' : 'bg-[#f1ede7]' },
-    { label: t('savedFavorites'), value: number.format(stats.favoritos), icon: TrendingUp, color: 'text-[#8b7046]', bg: 'bg-[#f2ece2]' },
+    { label: t('savedFavorites'), value: number.format(stats.favoritos), icon: TrendingUp, color: 'text-[#8b7046]', bg: 'bg-[#F1EDE2]' },
   ] : []
 
   if (!stats) {
     return (
       <div className="dashboard-panel" aria-busy="true">
-        <div className="mb-5 h-5 w-44 animate-pulse bg-[#eee8df]" />
+        <div className="mb-5 h-5 w-44 animate-pulse bg-[#EAE6DC]" />
         <div className="dashboard-summary-cards">
-          {[1, 2, 3, 4].map((item) => <div key={item} className="h-28 animate-pulse bg-[#f4f0e9]" />)}
+          {[1, 2, 3, 4].map((item) => <div key={item} className="h-28 animate-pulse bg-[#F4F1E9]" />)}
         </div>
       </div>
     )
@@ -109,7 +109,7 @@ export default function TabResumen({ userId }: { userId: string }) {
     <section className="dashboard-panel" aria-labelledby="dashboard-recent-title">
       <div className="mb-4">
         <p className="dashboard-page__eyebrow">{t('performanceEyebrow')}</p>
-        <h2 id="dashboard-recent-title" className="m-0 font-heading text-2xl font-normal text-[#302925]">{t('summaryTitle')}</h2>
+        <h2 id="dashboard-recent-title" className="m-0 font-heading text-2xl font-normal text-[#1A2333]">{t('summaryTitle')}</h2>
         {hasError && <p className="mt-2 text-xs text-[#8a6256]" role="status">{t('statsUnavailable')}</p>}
       </div>
 

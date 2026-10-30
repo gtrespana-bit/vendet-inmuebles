@@ -4,6 +4,10 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/request-config.ts');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = withNextIntl({
+  // Permite aislar el directorio de compilación (p. ej. `NEXT_DIST_DIR=.next-dev npm run dev`)
+  // para que `next build` no sobrescriba los artefactos de un servidor de desarrollo en marcha.
+  distDir: process.env.NEXT_DIST_DIR || '.next',
+
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production' ? {
       exclude: ['error', 'warn'],

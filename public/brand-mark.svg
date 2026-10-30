@@ -1,8 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title">
   <title id="title">Venezuela Inmuebles</title>
-  <rect width="128" height="128" rx="28" fill="#7B2D3B"/>
-  <path d="M22 61 64 25l42 36" fill="none" stroke="#C9A84C" stroke-linecap="round" stroke-linejoin="round" stroke-width="10"/>
+  <rect width="128" height="128" rx="28" fill="#16294B"/>
+  <path d="M22 61 64 25l42 36" fill="none" stroke="#B08542" stroke-linecap="round" stroke-linejoin="round" stroke-width="10"/>
   <path d="M34 57v48h60V57L64 31 34 57Z" fill="#fff"/>
-  <path d="M56 78h16v27H56z" fill="#7B2D3B"/>
-  <path d="M43 67h10v10H43zM75 67h10v10H75z" fill="#C9A84C"/>
+  <path d="M56 78h16v27H56z" fill="#16294B"/>
+  <path d="M43 67h10v10H43zM75 67h10v10H75z" fill="#B08542"/>
 </svg>
