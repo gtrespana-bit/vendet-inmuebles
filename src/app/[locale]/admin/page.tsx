@@ -538,7 +538,7 @@ function PublicacionesTab({ notify }: Notifier) {
                   {p.activo ? <Pause size={14} /> : <Play size={14} />}
                 </button>
                 <button onClick={() => toggleDestacado(p.id, !p.destacado)} disabled={procesando === p.id}
-                  className={`p-2 rounded-lg transition ${p.destacado ? 'bg-brand-accent/20 text-brand-accent' : 'hover:bg-gray-100 text-yellow-500'}`}
+                  className={`p-2 rounded-lg transition ${p.destacado ? 'bg-brand-accent/20 text-[var(--gold-text)]' : 'hover:bg-gray-100 text-yellow-500'}`}
                   title={p.destacado ? 'Quitar destacado' : 'Destacar 48h'}>
                   <Star size={14} />
                 </button>

@@ -233,7 +233,7 @@ export default function CreditosPage() {
   return (
     <div className="max-w-5xl mx-auto px-4 py-12">
       <div className="text-center mb-12">
-        <h1 className="text-3xl md:text-4xl font-black text-gray-800 mb-4">{t('title1')} <span className="text-brand-accent">{t('title2')}</span></h1>
+        <h1 className="text-3xl md:text-4xl font-black text-gray-800 mb-4">{t('title1')} <span className="text-[var(--gold-text)]">{t('title2')}</span></h1>
         <p className="text-lg text-gray-500 max-w-2xl mx-auto" dangerouslySetInnerHTML={{ __html: t('subtitle') }}></p>
       </div>
 
@@ -243,7 +243,7 @@ export default function CreditosPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="border border-gray-200 rounded-xl p-6 hover:border-brand-accent transition">
             <div className="flex items-start gap-4">
-              <div className="p-3 rounded-xl bg-yellow-50 text-brand-accent"><Zap size={28} /></div>
+              <div className="p-3 rounded-xl bg-yellow-50 text-[var(--gold-text)]"><Zap size={28} /></div>
               <div>
                 <h3 className="font-bold text-gray-800 text-lg mb-1">{t('boostTitle')}</h3>
                 <p className="text-sm text-gray-500 mb-3" dangerouslySetInnerHTML={{ __html: t('boostDesc') }}></p>

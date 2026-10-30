@@ -234,7 +234,7 @@ export default function TabProductos({
   if (productos.length === 0) {
     return (
       <section className="dashboard-empty-state" aria-labelledby="dashboard-properties-empty-title">
-        <Package size={36} className="mx-auto mb-4 text-[#9b8053]" aria-hidden="true" />
+        <Package size={36} className="mx-auto mb-4 text-[#8C6526]" aria-hidden="true" />
         <p className="dashboard-page__eyebrow">{t('tabListings')}</p>
         <h2 id="dashboard-properties-empty-title">{t('emptyPropertiesTitle')}</h2>
         <p>{t('emptyPropertiesDescription')}</p>
@@ -252,7 +252,7 @@ export default function TabProductos({
       <div className="mb-4 flex items-end justify-between gap-4">
         <div>
           <p className="dashboard-page__eyebrow">{t('tabListings')}</p>
-          <h2 id="dashboard-properties-title" className="m-0 font-heading text-2xl font-normal text-[#302925]">{t('propertiesTitle')}</h2>
+          <h2 id="dashboard-properties-title" className="m-0 font-heading text-2xl font-normal text-[#1A2333]">{t('propertiesTitle')}</h2>
         </div>
         <LocalLink href="/publicar-inmueble" className="text-xs font-bold text-[var(--burgundy)] no-underline">
           + {t('publishPropertyAction')}

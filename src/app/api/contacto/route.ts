@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
   try {
     const html = `
       <div style="font-family:sans-serif;max-width:600px;padding:24px">
-        <h2 style="color:#0E3B33">📩 Nuevo mensaje de contacto</h2>
+        <h2 style="color:#16294B">📩 Nuevo mensaje de contacto</h2>
         <table style="width:100%;border-collapse:collapse;margin:16px 0">
           <tr><td style="padding:8px 0;font-weight:bold;color:#333">Nombre</td><td style="padding:8px 0">${nombreClean}</td></tr>
           <tr><td style="padding:8px 0;font-weight:bold;color:#333">Email</td><td style="padding:8px 0"><a href="mailto:${emailClean}">${emailClean}</a></td></tr>

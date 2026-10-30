@@ -63,19 +63,19 @@ export default function ContactPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#faf8f4]">
+    <main className="min-h-screen bg-[#FBF9F3]">
       <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8 lg:py-16">
         <div className="grid gap-6 lg:grid-cols-[0.82fr_1.18fr] lg:gap-8">
           <section className="flex flex-col justify-between bg-brand-dark p-7 text-white sm:p-10">
             <div>
-              <p className="mb-5 text-xs font-bold uppercase tracking-[0.18em] text-brand-accent">{t('otherContact')}</p>
+              <p className="mb-5 text-xs font-bold uppercase tracking-[0.18em] text-[var(--gold-text)]">{t('otherContact')}</p>
               <h1 className="max-w-md font-heading text-4xl leading-[1.08] sm:text-5xl">{t('title')}</h1>
               <p className="mt-5 max-w-md text-sm leading-7 text-white/75 sm:text-base">{t('desc')}</p>
             </div>
 
             <div className="mt-12 border-t border-white/20 pt-6">
               <div className="flex items-start gap-4">
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center border border-white/20 text-brand-accent">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center border border-white/20 text-[var(--gold-text)]">
                   <Mail size={20} aria-hidden="true" />
                 </span>
                 <div className="min-w-0">
@@ -119,14 +119,14 @@ export default function ContactPage() {
                       onChange={e => setSolicitarLlamada(e.target.checked)}
                       className="mt-1"
                     />
-                    <label htmlFor="solicitarLlamada" className="text-sm text-[#51463f]">
+                    <label htmlFor="solicitarLlamada" className="text-sm text-[#333D4C]">
                       Solicitar devolución de llamada telefónica (Exclusivo para usuarios del plan Agencia)
                     </label>
                   </div>
                   
                   {solicitarLlamada && (
                     <div className="pt-2 animate-fadeIn">
-                      <label htmlFor="contact-phone" className="mb-1.5 block text-sm font-semibold text-[#51463f]">Teléfono</label>
+                      <label htmlFor="contact-phone" className="mb-1.5 block text-sm font-semibold text-[#333D4C]">Teléfono</label>
                       <input
                         type="tel"
                         id="contact-phone"
@@ -134,7 +134,7 @@ export default function ContactPage() {
                         onChange={e => setTelefono(e.target.value)}
                         required={solicitarLlamada}
                         placeholder="+58 412 1234567"
-                        className="w-full border border-[#dcd4c8] bg-[#fffdfa] px-4 py-3 text-sm leading-6 text-brand-dark outline-none transition placeholder:text-[#9c938a] focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/15"
+                        className="w-full border border-[#DCD6C6] bg-[#fffdfa] px-4 py-3 text-sm leading-6 text-brand-dark outline-none transition placeholder:text-[#6E7684] focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/15"
                       />
                     </div>
                   )}
@@ -149,7 +149,7 @@ export default function ContactPage() {
                 <form className="space-y-5" onSubmit={handleSubmit}>
                   <div className="grid gap-5 sm:grid-cols-2">
                     <div>
-                      <label htmlFor="contact-name" className="mb-1.5 block text-sm font-semibold text-[#51463f]">{t('name')}</label>
+                      <label htmlFor="contact-name" className="mb-1.5 block text-sm font-semibold text-[#333D4C]">{t('name')}</label>
                       <input
                         id="contact-name"
                         type="text"
@@ -158,11 +158,11 @@ export default function ContactPage() {
                         required
                         autoComplete="name"
                         placeholder={t('namePlaceholder')}
-                        className="min-h-12 w-full border border-[#dcd4c8] bg-[#fffdfa] px-4 py-3 text-sm text-brand-dark outline-none transition placeholder:text-[#9c938a] focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/15"
+                        className="min-h-12 w-full border border-[#DCD6C6] bg-[#fffdfa] px-4 py-3 text-sm text-brand-dark outline-none transition placeholder:text-[#6E7684] focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/15"
                       />
                     </div>
                     <div>
-                      <label htmlFor="contact-email" className="mb-1.5 block text-sm font-semibold text-[#51463f]">{t('email')}</label>
+                      <label htmlFor="contact-email" className="mb-1.5 block text-sm font-semibold text-[#333D4C]">{t('email')}</label>
                       <input
                         id="contact-email"
                         type="email"
@@ -171,25 +171,25 @@ export default function ContactPage() {
                         required
                         autoComplete="email"
                         placeholder={t('emailPlaceholder')}
-                        className="min-h-12 w-full border border-[#dcd4c8] bg-[#fffdfa] px-4 py-3 text-sm text-brand-dark outline-none transition placeholder:text-[#9c938a] focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/15"
+                        className="min-h-12 w-full border border-[#DCD6C6] bg-[#fffdfa] px-4 py-3 text-sm text-brand-dark outline-none transition placeholder:text-[#6E7684] focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/15"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label htmlFor="contact-subject" className="mb-1.5 block text-sm font-semibold text-[#51463f]">{t('subject')}</label>
+                    <label htmlFor="contact-subject" className="mb-1.5 block text-sm font-semibold text-[#333D4C]">{t('subject')}</label>
                     <select
                       id="contact-subject"
                       value={asunto}
                       onChange={event => setAsunto(event.target.value)}
-                      className="min-h-12 w-full border border-[#dcd4c8] bg-[#fffdfa] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/15"
+                      className="min-h-12 w-full border border-[#DCD6C6] bg-[#fffdfa] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/15"
                     >
                       {subjects.map(subject => <option key={subject} value={subject}>{subject}</option>)}
                     </select>
                   </div>
 
                   <div>
-                    <label htmlFor="contact-message" className="mb-1.5 block text-sm font-semibold text-[#51463f]">{t('message')}</label>
+                    <label htmlFor="contact-message" className="mb-1.5 block text-sm font-semibold text-[#333D4C]">{t('message')}</label>
                     <textarea
                       id="contact-message"
                       rows={6}
@@ -197,7 +197,7 @@ export default function ContactPage() {
                       onChange={event => setMensaje(event.target.value)}
                       required
                       placeholder={t('messagePlaceholder')}
-                      className="w-full resize-y border border-[#dcd4c8] bg-[#fffdfa] px-4 py-3 text-sm leading-6 text-brand-dark outline-none transition placeholder:text-[#9c938a] focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/15"
+                      className="w-full resize-y border border-[#DCD6C6] bg-[#fffdfa] px-4 py-3 text-sm leading-6 text-brand-dark outline-none transition placeholder:text-[#6E7684] focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/15"
                     />
                   </div>
 

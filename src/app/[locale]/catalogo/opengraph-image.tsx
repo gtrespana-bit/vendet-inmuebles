@@ -15,7 +15,7 @@ export default async function Image({ params }: { params: { locale: string } }, 
     hogar: { name: 'Hogar', icon: '🛋️', color: '#55EFC4' },
     herramientas: { name: 'Herramientas', icon: '🔧', color: '#F1C40F' },
     otros: { name: 'Otros', icon: '📦', color: '#95A5A6' },
-    todos: { name: 'Todos los productos', icon: '🛍️', color: '#0E3B33' }
+    todos: { name: 'Todos los productos', icon: '🛍️', color: '#16294B' }
   }
 
   const cat = categorias[categoria] || categorias.todos

@@ -213,7 +213,7 @@ export default function PublicarInmueblePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f4f0e9] py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#F4F1E9] py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
         <header className="mb-8">
           <p className="home-eyebrow">{tPublish('eyebrow')}</p>
@@ -247,7 +247,7 @@ export default function PublicarInmueblePage() {
                 className={`flex-1 py-3 px-4 rounded-lg border ${
                   tipoOperacion === 'venta'
                     ? 'bg-brand-primary text-white border-brand-primary'
-                    : 'bg-white text-gray-700 border-[#ddd6cc] hover:bg-[#f8f5ef]'
+                    : 'bg-white text-gray-700 border-[#DCD6C6] hover:bg-[#F7F4EC]'
                 }`}
               >
                 {tPublish('sale')}
@@ -259,7 +259,7 @@ export default function PublicarInmueblePage() {
                 className={`flex-1 py-3 px-4 rounded-lg border ${
                   tipoOperacion === 'alquiler'
                     ? 'bg-brand-primary text-white border-brand-primary'
-                    : 'bg-white text-gray-700 border-[#ddd6cc] hover:bg-[#f8f5ef]'
+                    : 'bg-white text-gray-700 border-[#DCD6C6] hover:bg-[#F7F4EC]'
                 }`}
               >
                 {tPublish('rent')}

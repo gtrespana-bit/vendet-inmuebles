@@ -8,7 +8,7 @@ export const contentType = 'image/png'
 export default async function Image() {
   return new ImageResponse(
     (
-      <div style={{ height: '100%', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: '#0E3B33', backgroundImage: 'radial-gradient(circle at 25% 25%, #BE8A3C 0%, transparent 40%), radial-gradient(circle at 75% 75%, #07241E 0%, transparent 40%)', padding: '40px', color: 'white', fontFamily: 'Inter, sans-serif' }}>
+      <div style={{ height: '100%', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: '#16294B', backgroundImage: 'radial-gradient(circle at 25% 25%, #B08542 0%, transparent 40%), radial-gradient(circle at 75% 75%, #0B1730 0%, transparent 40%)', padding: '40px', color: 'white', fontFamily: 'Inter, sans-serif' }}>
         <div style={{ fontSize: '120px', marginBottom: '20px' }}>📝</div>
         <h1 style={{ fontSize: '60px', fontWeight: 'bold', textAlign: 'center', textShadow: '2px 2px 4px rgba(0,0,0,0.5)', lineHeight: 1.2 }}>Publica Gratis</h1>
         <p style={{ fontSize: '36px', marginTop: '20px', textAlign: 'center', opacity: 0.9 }}>Vende tus productos en Venezuela</p>

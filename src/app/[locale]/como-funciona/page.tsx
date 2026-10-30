@@ -31,10 +31,10 @@ export default async function ComoFuncionaPage() {
   }
 
   const pasos = [
-    { icon: <Camera className="text-brand-accent" size={32} />, titulo: t('step1Title'), desc: t('step1Desc') },
-    { icon: <Eye className="text-brand-accent" size={32} />, titulo: t('step2Title'), desc: t('step2Desc') },
-    { icon: <MessageCircle className="text-brand-accent" size={32} />, titulo: t('step3Title'), desc: t('step3Desc') },
-    { icon: <Shield className="text-brand-accent" size={32} />, titulo: t('step4Title'), desc: t('step4Desc') },
+    { icon: <Camera className="text-[var(--gold-text)]" size={32} />, titulo: t('step1Title'), desc: t('step1Desc') },
+    { icon: <Eye className="text-[var(--gold-text)]" size={32} />, titulo: t('step2Title'), desc: t('step2Desc') },
+    { icon: <MessageCircle className="text-[var(--gold-text)]" size={32} />, titulo: t('step3Title'), desc: t('step3Desc') },
+    { icon: <Shield className="text-[var(--gold-text)]" size={32} />, titulo: t('step4Title'), desc: t('step4Desc') },
   ]
 
   const faqs = [
@@ -76,18 +76,18 @@ export default async function ComoFuncionaPage() {
           </div>
         </div>
 
-        <section className="bg-[#f7f3ed] border-y border-[#e8dfd2] py-12 px-4">
+        <section className="bg-[#f7f3ed] border-y border-[#E6E2D6] py-12 px-4">
           <div className="max-w-4xl mx-auto">
-            <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#9a8053] mb-2">
+            <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#8C6526] mb-2">
               {t('journeyEyebrow')}
             </p>
             <h2 className="text-2xl md:text-3xl font-normal text-[#342d28] mb-7 text-center font-serif">
               {t('vsTitle')}
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <article className="bg-[#fffdfa] border border-[#e8dfd2] p-6 md:p-7">
+              <article className="bg-[#fffdfa] border border-[#E6E2D6] p-6 md:p-7">
                 <h3 className="font-bold text-[var(--burgundy)] text-lg mb-4">{t('platformTitle')}</h3>
-                <ul className="space-y-3 text-sm text-[#61584e]">
+                <ul className="space-y-3 text-sm text-[#414B59]">
                   {platformItems.map(k => (
                     <li key={k} className="flex items-start gap-2.5">
                       <CheckCircle size={15} className="mt-0.5 shrink-0 text-[#65816a]" aria-hidden="true" />
@@ -98,10 +98,10 @@ export default async function ComoFuncionaPage() {
               </article>
               <article className="bg-[#eee7dc] border border-[#e1d6c5] p-6 md:p-7">
                 <h3 className="font-bold text-[#5e503d] text-lg mb-4">{t('othersTitle')}</h3>
-                <ul className="space-y-3 text-sm text-[#61584e]">
+                <ul className="space-y-3 text-sm text-[#414B59]">
                   {othersItems.map(k => (
                     <li key={k} className="flex items-start gap-2.5">
-                      <Shield size={15} className="mt-0.5 shrink-0 text-[#9a8053]" aria-hidden="true" />
+                      <Shield size={15} className="mt-0.5 shrink-0 text-[#8C6526]" aria-hidden="true" />
                       <span>{t(k)}</span>
                     </li>
                   ))}
@@ -118,7 +118,7 @@ export default async function ComoFuncionaPage() {
               <details key={i} className="bg-white rounded-xl border border-gray-100 group">
                 <summary className="cursor-pointer p-5 font-semibold text-gray-900 flex justify-between items-center list-none">
                   {faq.pregunta}
-                  <span className="text-brand-accent group-open:rotate-45 transition-transform text-xl">+</span>
+                  <span className="text-[var(--gold-text)] group-open:rotate-45 transition-transform text-xl">+</span>
                 </summary>
                 <div className="px-5 pb-5 text-gray-600 leading-relaxed">{faq.respuesta}</div>
               </details>

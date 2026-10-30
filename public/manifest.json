@@ -4,8 +4,8 @@
   "description": "Plataforma de compra y venta de inmuebles",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#0E3B33",
+  "background_color": "#FBF9F3",
+  "theme_color": "#16294B",
   "icons": [
     {
       "src": "/icon-192.png",

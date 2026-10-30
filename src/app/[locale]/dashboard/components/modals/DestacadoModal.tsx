@@ -14,8 +14,8 @@ export default function DestacadoModal({ titulo, creditos, onDestacar, onClose }
         <p className="text-sm text-gray-500 mb-4"><strong>{titulo}</strong></p>
         <p className="text-sm text-gray-600 mb-4">Tu publicación aparecerá:</p>
         <ul className="text-sm text-gray-600 space-y-1 mb-6">
-          <li className="flex items-center gap-2"><Star size={14} className="text-brand-accent" /> En la <strong>página principal</strong> como destacado</li>
-          <li className="flex items-center gap-2"><Star size={14} className="text-brand-accent" /> Con <strong>prioridad</strong> en resultados de búsqueda</li>
+          <li className="flex items-center gap-2"><Star size={14} className="text-[var(--gold-text)]" /> En la <strong>página principal</strong> como destacado</li>
+          <li className="flex items-center gap-2"><Star size={14} className="text-[var(--gold-text)]" /> Con <strong>prioridad</strong> en resultados de búsqueda</li>
         </ul>
         <div className="space-y-2 mb-6">
           {[

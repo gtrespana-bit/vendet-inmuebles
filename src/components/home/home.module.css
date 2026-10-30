@@ -1,32 +1,32 @@
 /* ==========================================================================
    VENEZUELA INMUEBLES · LANDING
-   Quiet luxury + practical portal. Ivory paper, deep emerald and brass.
+   Quiet luxury + practical portal. Warm paper, deep navy and brass.
    Flat surfaces, hairline rules, generous air, 4px radii.
    Scoped module: nothing here leaks to the rest of the site.
    ========================================================================== */
 
 .page {
-  --paper: #F6F1E6;
-  --surface: #FFFDF8;
-  --surface-2: #EAE4D5;
-  --ink: #0A1D19;
-  --ink-2: #55635C;
-  --ink-3: #6B736C;
-  --line: #DFD7C5;
-  --line-soft: #EFE8DA;
-  --brand: #0E3B33;
-  --brand-deep: #07241E;
-  --gold: #B07C2E;
-  --gold-text: #96702A;
-  --gold-soft: #EBD5A9;
+  --paper: #F4F1E9;
+  --surface: #FFFDF7;
+  --surface-2: #E7E2D4;
+  --ink: #101A2B;
+  --ink-2: #55606E;
+  --ink-3: #666E7B;
+  --line: #DCD6C6;
+  --line-soft: #EDE8DA;
+  --brand: #16294B;
+  --brand-deep: #0B1730;
+  --gold: #B08542;
+  --gold-text: #8C6526;
+  --gold-soft: #E8D6AE;
   --on-gold: #14231D;
-  --band-a: #EAE2CD;
-  --band-b: #F2EBDA;
-  --band-line: #D9CCAE;
-  --glow: rgba(190, 138, 60, 0.17);
-  --shadow: rgba(38, 34, 24, 0.5);
-  --wash: #FBF5E7;
-  --wash-2: #FBF7EC;
+  --band-a: #E7E1CE;
+  --band-b: #F0EBDD;
+  --band-line: #D5CDB8;
+  --glow: rgba(176, 133, 66, 0.16);
+  --shadow: rgba(16, 22, 38, 0.5);
+  --wash: #F3EDDF;
+  --wash-2: #F7F2E7;
   --display: 'Fraunces Variable', 'Iowan Old Style', Georgia, Cambria, serif;
   --sans: 'Inter Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
@@ -66,55 +66,6 @@
 .page :where(img) {
   display: block;
   max-width: 100%;
-}
-
-/* Colour themes — driven by html[data-theme] so the switcher can swap live.
-   "esmeralda" is the default defined above. */
-
-:global(html[data-theme='marino']) .page {
-  --paper: #F4F1E9;
-  --surface: #FFFDF7;
-  --surface-2: #E7E2D4;
-  --ink: #101A2B;
-  --ink-2: #55606E;
-  --ink-3: #6E7684;
-  --line: #DCD6C6;
-  --line-soft: #EDE8DA;
-  --brand: #16294B;
-  --brand-deep: #0B1730;
-  --gold: #B08542;
-  --gold-text: #8C6526;
-  --gold-soft: #E8D6AE;
-  --on-gold: #14231D;
-  --band-a: #E7E1CE;
-  --band-b: #F0EBDD;
-  --band-line: #D5CDB8;
-  --glow: rgba(176, 133, 66, 0.16);
-  --wash: #F3EDDF;
-  --wash-2: #F7F2E7;
-}
-
-:global(html[data-theme='oliva']) .page {
-  --paper: #F5F1E7;
-  --surface: #FFFDF8;
-  --surface-2: #E8E2D3;
-  --ink: #1B231C;
-  --ink-2: #5A6357;
-  --ink-3: #6E7669;
-  --line: #DBD5C4;
-  --line-soft: #EDE7D8;
-  --brand: #3E5543;
-  --brand-deep: #26362B;
-  --gold: #A85B36;
-  --gold-text: #9A4E28;
-  --gold-soft: #EBD3BE;
-  --on-gold: #FFFDF9;
-  --band-a: #E9E0CE;
-  --band-b: #F1E9D9;
-  --band-line: #D8CDB6;
-  --glow: rgba(168, 91, 54, 0.16);
-  --wash: #F6EBDD;
-  --wash-2: #F8F0E5;
 }
 
 .page :focus-visible {

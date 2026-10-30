@@ -38,7 +38,7 @@ export default function TabCreditos({ creditos, tasaBs, refreshCreditos }: { cre
             <p className="text-sm text-gray-600 mt-1">Sube tu publicación al #1 de la lista</p>
           </div>
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-            <p className="font-bold text-brand-primary flex items-center gap-2"><Star size={18} className="text-brand-accent" /> Destacado</p>
+            <p className="font-bold text-brand-primary flex items-center gap-2"><Star size={18} className="text-[var(--gold-text)]" /> Destacado</p>
             <p className="text-sm text-gray-600 mt-1">4cr/12h · 6cr/24h · 10cr/48h</p>
           </div>
         </div>

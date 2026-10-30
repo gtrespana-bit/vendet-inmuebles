@@ -13,7 +13,7 @@ export function FloatingChat() {
     <div className="floating-chat">
       {open && (
         <section
-          className="floating-chat__panel bg-white border border-[#e5ddd2] shadow-2xl mb-4 overflow-hidden"
+          className="floating-chat__panel bg-white border border-[#DCD6C6] shadow-2xl mb-4 overflow-hidden"
           aria-label={t('title')}
         >
           <div className="bg-[var(--burgundy)] text-white p-4 flex items-center justify-between">
@@ -35,7 +35,7 @@ export function FloatingChat() {
               <X size={18} aria-hidden="true" />
             </button>
           </div>
-          <div className="p-4 bg-[#faf8f4]">
+          <div className="p-4 bg-[#FBF9F3]">
             <p className="text-[#5e554c] text-sm leading-relaxed">{t('greeting')}</p>
             <LocalLink
               href="/contacto"

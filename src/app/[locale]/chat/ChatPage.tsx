@@ -468,8 +468,8 @@ export default function ChatPageClient() {
                   <div className="p-4 space-y-4 animate-pulse" aria-label={t('loadingConversations')}>
                     {[1, 2, 3, 4].map(index => (
                       <div key={index} className="flex items-start gap-3">
-                        <div className="h-10 w-10 rounded-full bg-[#eee8df]" />
-                        <div className="flex-1 space-y-2"><div className="h-3 w-3/4 bg-[#eee8df]" /><div className="h-3 w-1/2 bg-[#f3eee7]" /></div>
+                        <div className="h-10 w-10 rounded-full bg-[#EAE6DC]" />
+                        <div className="flex-1 space-y-2"><div className="h-3 w-3/4 bg-[#EAE6DC]" /><div className="h-3 w-1/2 bg-[#f3eee7]" /></div>
                       </div>
                     ))}
                   </div>

@@ -2,7 +2,7 @@
 export const criticalCSS = `
 /* Reset básico y tipografía */
 *, ::before, ::after { box-sizing: border-box; }
-body { margin: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; background-color: #faf8f4; }
+body { margin: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; background-color: #FBF9F3; }
 html { font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
 
 /* Header crítico */
@@ -14,9 +14,9 @@ header { position: sticky; top: 0; z-index: 50; background: #fbfaf7; color: #262
 .logo-text { display: none; }
 @media (min-width: 640px) { .logo-text { display: block; } }
 .logo-highlight { font-weight: 900; font-size: 1.25rem; letter-spacing: -0.025em; }
-.logo-yellow { color: #c7a765; }
+.logo-yellow { color: #B08542; }
 .logo-white { color: white; }
-.logo-badge { color: #c7a765; font-weight: 700; font-size: 0.75rem; margin-left: 0.25rem; }
+.logo-badge { color: #B08542; font-weight: 700; font-size: 0.75rem; margin-left: 0.25rem; }
 
 /* Navegación móvil */
 .mobile-menu-btn { display: flex; padding: 0.25rem; border-radius: 0.5rem; transition: background-color 0.2s; }
@@ -27,7 +27,7 @@ header { position: sticky; top: 0; z-index: 50; background: #fbfaf7; color: #262
 @media (min-width: 768px) { 
   .search-form { display: flex; flex: 1; max-width: 32rem; margin-left: 2rem; margin-right: 2rem; position: relative; }
   .search-input { width: 100%; padding: 0.5rem 1rem; padding-right: 3rem; border-radius: 0.5rem; color: #1f2937; background-color: white; outline: 2px solid transparent; outline-offset: 2px; }
-  .search-button { position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%); background-color: #c7a765; padding: 0.375rem; border-radius: 9999px; transition: background-color 0.2s; }
+  .search-button { position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%); background-color: #B08542; padding: 0.375rem; border-radius: 9999px; transition: background-color 0.2s; }
 }
 
 /* Acciones del header */
@@ -104,12 +104,12 @@ header { position: sticky; top: 0; z-index: 50; background: #fbfaf7; color: #262
 .text-gray-800 { color: #1f2937; }
 .text-gray-900 { color: #111827; }
 .text-brand-primary { color: var(--burgundy); }
-.text-yellow-400 { color: #c7a765; }
+.text-yellow-400 { color: #B08542; }
 .bg-white { background-color: #ffffff; }
-.bg-gray-50 { background-color: #faf8f4; }
+.bg-gray-50 { background-color: #FBF9F3; }
 .bg-gray-100 { background-color: #f3f4f6; }
 .bg-brand-primary { background-color: var(--burgundy); }
-.bg-yellow-400 { background-color: #c7a765; }
+.bg-yellow-400 { background-color: #B08542; }
 .rounded-lg { border-radius: 0.5rem; }
 .rounded-xl { border-radius: 0.75rem; }
 .border { border-width: 1px; }

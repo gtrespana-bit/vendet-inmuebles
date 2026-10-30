@@ -12,10 +12,9 @@ import { ServiceWorkerRegistration } from '@/components/ServiceWorkerRegistratio
 import PWAInstallBanner from '@/components/PWAInstallBanner'
 import PushNotificationBanner from '@/components/PushNotificationBanner'
 import BottomTabNav from '@/components/BottomTabNav'
-import ThemeSwitcher from '@/components/theme/ThemeSwitcher'
 
 export const viewport: Viewport = {
-  themeColor: '#0E3B33',
+  themeColor: '#16294B',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
@@ -128,11 +127,6 @@ export default async function LocaleLayout({
       <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-brand-primary focus:text-white focus:rounded-lg focus:shadow-lg">
         Skip to main content
       </a>
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `(function(){try{var t=localStorage.getItem('vi-theme');if(t&&['marino','oliva'].indexOf(t)>-1){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();`,
-        }}
-      />
       <NextIntlClientProvider locale={locale} messages={messages}>
         <AuthProvider>
           <Header />
@@ -141,7 +135,6 @@ export default async function LocaleLayout({
           <PWAInstallBanner />
           <PushNotificationBanner />
           <BottomTabNav />
-          <ThemeSwitcher />
         </AuthProvider>
         <Analytics />
         <SpeedInsights />

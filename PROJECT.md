@@ -178,7 +178,7 @@
 ## Configuración
 - `next.config.js` — images: webp/avif, remotePatterns: supabase.co + unsplash.com, Sentry
 - `tailwind.config.js` — content: `./src/**/*.{js,ts,jsx,tsx,mdx}`
-- Colores brand: primary `#7B2D3B`, dark `#5C1E2B`, accent `#C9A84C`, gray `#F5F5F5`, darkNav `#1a1a2e`
+- Colores brand (paleta Marino): primary `#16294B`, dark `#0B1730`, accent `#B08542`, gray `#F4F1E9`, darkNav `#0B1730`
 - Font: Inter (Google, display:swap, variable CSS)
 
 ## Optimizaciones Implementadas
@@ -232,10 +232,10 @@
 
 ## Notas de Diseño
 - BottomTabNav: siempre visible, no remover
-- Colores: brand-primary `#7B2D3B`, accent `#C9A84C`
+- Colores: brand-primary `#16294B`, accent `#B08542` (azul noche + latón)
 - Tipografía: Inter variable
 - Formato de precios: `$X.XXX` (USD) + Bs. con tasa BCV
-- PWA: standalone, theme-color `#7B2D3B`, black-translucent status bar
+- PWA: standalone, theme-color `#16294B`, black-translucent status bar
 
 ## Reglas de Trabajo (desde 2026-05-05)
 - **NO push a `main` sin aprobación explícita de Ruben**

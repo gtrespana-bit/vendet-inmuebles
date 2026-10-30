@@ -22,7 +22,7 @@ export default function MiPerfilRedirect() {
   }, [loading, locale, router, user])
 
   return (
-    <div className="min-h-[60vh] flex items-center justify-center bg-[#f8f5ef] px-4" aria-busy="true">
+    <div className="min-h-[60vh] flex items-center justify-center bg-[#F7F4EC] px-4" aria-busy="true">
       <p className="text-sm text-[#766d63]">{locale === 'en' ? 'Opening your account…' : 'Abriendo tu cuenta…'}</p>
     </div>
   )

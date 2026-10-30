@@ -107,7 +107,7 @@ export default function PlanesPage() {
 
                 <div className="mb-6">
                   <Icon className={`w-12 h-12 mb-4 ${
-                    plan.color === 'brand-accent' ? 'text-brand-accent' : 
+                    plan.color === 'brand-accent' ? 'text-[var(--gold-text)]' : 
                     plan.color === 'brand-primary' ? 'text-brand-primary' : 
                     'text-gray-600'
                   }`} />

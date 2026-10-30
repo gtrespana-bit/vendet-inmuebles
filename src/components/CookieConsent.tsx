@@ -33,7 +33,7 @@ export default function CookieConsent() {
           <p className="text-gray-300">
             Utilizamos cookies para mejorar tu experiencia, analizar el tráfico y personalizar el contenido. 
             Al continuar navegando, aceptas nuestra{' '}
-            <LocalLink href="/politica-de-privacidad" className="text-brand-accent hover:underline">
+            <LocalLink href="/politica-de-privacidad" className="text-[var(--gold-text)] hover:underline">
               política de privacidad
             </LocalLink>.
           </p>
