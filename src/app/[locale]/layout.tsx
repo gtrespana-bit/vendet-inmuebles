@@ -3,12 +3,17 @@ import { notFound } from 'next/navigation'
 import { routing } from '@/i18n/routing'
 import type { Metadata, Viewport } from 'next'
 import '../globals.css'
+// Fuentes variables autoalojadas: sin peticiones externas ni layout shift (en todas las páginas)
+import '@fontsource-variable/inter'
+import '@fontsource-variable/fraunces/opsz.css'
+import '@fontsource-variable/fraunces/opsz-italic.css'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
 import { AuthProvider } from '@/components/AuthProvider'
 import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import { ServiceWorkerRegistration } from '@/components/ServiceWorkerRegistration'
+import TrackPageView from '@/components/TrackPageView'
 import PWAInstallBanner from '@/components/PWAInstallBanner'
 import PushNotificationBanner from '@/components/PushNotificationBanner'
 import BottomTabNav from '@/components/BottomTabNav'
@@ -138,6 +143,7 @@ export default async function LocaleLayout({
         </AuthProvider>
         <Analytics />
         <SpeedInsights />
+        <TrackPageView />
         <ServiceWorkerRegistration />
       </NextIntlClientProvider>
     </>

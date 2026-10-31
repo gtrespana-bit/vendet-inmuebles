@@ -13,14 +13,14 @@ import {
   Megaphone, Download, Eye, Loader2, Check, X, Tag, Crown
 } from 'lucide-react'
 import VerificacionTab from './VerificacionTab'
-import MetricasTab from './MetricasTab'
+import AnalyticsTab from './analytics/AnalyticsTab'
 import PlanesTab from './PlanesTab'
 import Image from 'next/image'
 
 import { isAdminEmail } from '@/lib/admin-config'
 
 const TABS = [
-  { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
+  { id: 'dashboard', label: 'Analítica', icon: BarChart3 },
   { id: 'publicaciones', label: 'Publicaciones', icon: Package },
   { id: 'usuarios', label: 'Usuarios', icon: Users },
   { id: 'planes', label: 'Planes', icon: Crown },
@@ -1171,7 +1171,7 @@ export default function AdminPage() {
       </div>
 
       {/* Content */}
-      {tab === 'dashboard' && <MetricasTab />}
+      {tab === 'dashboard' && <AnalyticsTab />}
       {tab === 'usuarios' && <UsuariosTab notify={notify} />}
       {tab === 'planes' && <PlanesTab notify={notify} />}
       {tab === 'publicaciones' && <PublicacionesTab notify={notify} />}

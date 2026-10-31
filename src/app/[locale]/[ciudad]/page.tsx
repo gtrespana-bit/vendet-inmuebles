@@ -88,7 +88,7 @@ export default async function CiudadPage({ params }: Props) {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(cityJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(cityJsonLd).replace(/</g, '\\u003c') }}
       />
       <Breadcrumbs items={breadcrumbItems} />
       <LandingCiudad 

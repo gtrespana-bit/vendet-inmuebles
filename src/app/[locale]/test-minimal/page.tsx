@@ -1,6 +1,8 @@
+import { devOnlyPage } from '@/lib/dev-only'
 import { getTranslations } from 'next-intl/server'
 
 export default async function TestMinimalPage() {
+  devOnlyPage()
   const t = await getTranslations()
   
   return (

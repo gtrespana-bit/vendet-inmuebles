@@ -1,5 +1,6 @@
 'use client'
 
+import { trackEvent } from '@/lib/analytics-client'
 import LocalLink from '@/components/LocalLink'
 import { Search, ChevronRight, XCircle, Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -160,6 +161,20 @@ export default function BuscarClient({ searchParams: searchParamsPromise }: { se
 
   const clearAll = () => router.push('/buscar')
 
+  // Registrar búsqueda en analítica interna (solo con texto >= 2 caracteres)
+  useEffect(() => {
+    const q = query.trim()
+    if (q.length < 2) return
+    const timer = setTimeout(() => {
+      trackEvent('busqueda', {
+        ruta: '/buscar' + window.location.search,
+        meta: { q, categoria, tipo_slug, estado: ubicacionEstado, ciudad: ubicacionCiudad, precio_min: precioMin, precio_max: precioMax },
+      })
+    }, 800)
+    return () => clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query])
+
   useEffect(() => {
     let cancelled = false
     setLoading(true)
@@ -245,10 +260,10 @@ export default function BuscarClient({ searchParams: searchParamsPromise }: { se
         ) : categoria ? (
           <>
             <h1 className="text-2xl font-bold text-gray-900 mb-2">
-              {cat?.label || categoria} en Venezuela — Clasificados Venezuela Inmuebles
+              {cat?.label || categoria} en Venezuela — Venezuela Inmuebles
             </h1>
             <p className="text-gray-600">
-              Explora {cat?.label || categoria.toLowerCase()} en venta. Los mejores clasificados de {cat?.label || categoria.toLowerCase()} en Venezuela. 
+              Explora inmuebles de {cat?.label || categoria.toLowerCase()} en venta en Venezuela. 
               Publica gratis y conecta con compradores de todo el país.
             </p>
           </>

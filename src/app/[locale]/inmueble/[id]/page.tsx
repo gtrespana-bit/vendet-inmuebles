@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 import { createServerClient } from '@/lib/supabase-server'
 import PropertyGallery from '@/components/PropertyGallery'
+import TrackInmueble from '@/components/TrackInmueble'
 import PropertyDetailActions from '@/components/PropertyDetailActions'
 import PropertyLocationMap from '@/components/map/PropertyLocationMap'
 import { jitterPoint, resolveListingGeo } from '@/lib/geo/venezuela'
@@ -269,6 +270,8 @@ export default async function PropertyDetailPage({ params }: PageProps) {
   ].filter((fact) => isPresent(fact.value))
 
   return (
+    <>
+      <TrackInmueble id={propertyId} />
     <div className="property-detail">
       <main className="property-detail__inner">
         <nav className="property-detail__breadcrumb" aria-label={isEnglish ? 'Breadcrumb' : 'Ruta de navegación'}>
@@ -476,5 +479,6 @@ export default async function PropertyDetailPage({ params }: PageProps) {
         </div>
       )}
     </div>
+    </>
   )
 }

@@ -1,5 +1,6 @@
 'use client'
 
+import { devOnlyPage } from '@/lib/dev-only'
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { useAuth } from '@/components/AuthProvider'
@@ -31,6 +32,7 @@ const AI_SAMPLE = {
 }
 
 export default function DiagnosticoPage({ params }: { params: { locale: string } }) {
+  devOnlyPage()
   const { locale } = params
   const t = useTranslations('diagnostico')
   const { user, loading } = useAuth()

@@ -41,7 +41,7 @@ export default async function FAQPage() {
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }} />
       <div className="max-w-3xl mx-auto px-4 py-12">
         <h1 className="text-4xl font-black text-gray-800 mb-2 text-center">{t('title')}</h1>
         <p className="text-center text-gray-500 mb-10">{t('subtitle')}</p>

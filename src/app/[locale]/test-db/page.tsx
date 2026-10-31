@@ -1,9 +1,11 @@
+import { devOnlyPage } from '@/lib/dev-only'
 import { supabase } from '@/lib/supabase';
 import LocalLink from '@/components/LocalLink';
 
 export const dynamic = 'force-dynamic';
 
 export default async function TestDBPage({ params }: { params: { locale: string } }) {
+  devOnlyPage()
   const { locale } = await params;
   
   // Consultar las primeras 5 propiedades activas directamente

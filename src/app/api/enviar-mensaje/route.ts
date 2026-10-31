@@ -1,3 +1,5 @@
+import { registrarEvento, rutaDesdeReferer } from '@/lib/analytics-server'
+
 import { NextRequest, NextResponse } from 'next/server'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { requireAuthenticatedUser } from '@/lib/api-auth'
@@ -53,6 +55,13 @@ export async function POST(req: NextRequest) {
       titulo: `💬 ${sender?.nombre || 'Alguien'} te escribió`,
       cuerpo: contenido.slice(0, 100),
       click_url: `/chat?conversation=${conversacion_id}`,
+    })
+
+    await registrarEvento('mensaje_enviado', {
+      ruta: '/chat',
+      meta: { conversacion_id, destinatario_id },
+      userId: auth.user.id,
+      req,
     })
 
     return NextResponse.json({ ok: true, data: message }, { status: 201 })

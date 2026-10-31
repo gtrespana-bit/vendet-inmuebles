@@ -1,8 +1,10 @@
+import { devOnlyPage } from '@/lib/dev-only'
 import { getTranslations } from 'next-intl/server'
 import { Header } from '@/components/Header'
 import BottomTabNav from '@/components/BottomTabNav'
 
 export default async function TestLayoutOnlyPage() {
+  devOnlyPage()
   const t = await getTranslations()
   
   return (

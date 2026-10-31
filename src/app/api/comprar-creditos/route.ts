@@ -1,3 +1,5 @@
+import { registrarEvento, rutaDesdeReferer } from '@/lib/analytics-server'
+
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { checkRateLimit } from '@/lib/rate-limit'
@@ -94,6 +96,19 @@ export async function POST(req: NextRequest) {
       }),
     })
   }
+
+  await registrarEvento('compra_creditos', {
+    ruta: '/creditos',
+    meta: {
+      transaccion_id: tx.id,
+      creditos: Number(creditos),
+      precio_usd: Number(precioUsd),
+      metodo_pago: String(metodoPago).slice(0, 100),
+      estado: 'pendiente',
+    },
+    userId: user.id,
+    req,
+  })
 
   return NextResponse.json({ ok: true })
 }
