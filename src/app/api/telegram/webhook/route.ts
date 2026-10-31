@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { isValidUUID } from '@/lib/validation'
+import { notificarCompraRechazada, notificarCreditosAgregados } from '@/lib/email-eventos'
 
 export const runtime = 'nodejs'
 
@@ -135,6 +136,9 @@ async function procesarAprobacion(supabase: any, txId: string) {
       : { alert: 'No se pudo aprobar', text: '❌ No se pudo aprobar la transacción' }
   }
 
+  // Aviso transaccional al comprador (el pago ya está confirmado en la BD).
+  await notificarCreditosAgregados(supabase, tx.user_id, Number(tx.monto))
+
   return {
     alert: `✅ +${tx.monto} créditos aprobados`,
     text: `✅ <b>APROBADO</b>\n+${tx.monto} créditos\nUsuario: ${escapeHtml(tx.user_id)}\nMétodo: ${escapeHtml(tx.metodo_pago || 'N/A')}\n\n<i>Procesado desde Telegram</i>`,
@@ -147,7 +151,7 @@ async function procesarRechazo(supabase: any, txId: string) {
     .update({ estado: 'rechazado', actualizado_en: new Date().toISOString() })
     .eq('id', txId)
     .eq('estado', 'pendiente')
-    .select('id')
+    .select('id, user_id')
     .maybeSingle()
 
   if (error) {
@@ -155,6 +159,14 @@ async function procesarRechazo(supabase: any, txId: string) {
   }
   if (!data) {
     return { alert: 'La transacción ya fue procesada', text: '⚠️ La transacción ya fue procesada' }
+  }
+
+  if (data.user_id) {
+    await notificarCompraRechazada(
+      supabase,
+      data.user_id,
+      'No pudimos verificar el pago recibido. Si ya realizaste el pago, envíanos el comprobante.',
+    )
   }
 
   return {

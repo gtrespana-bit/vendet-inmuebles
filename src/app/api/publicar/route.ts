@@ -4,6 +4,7 @@ import { checkRateLimit } from '@/lib/rate-limit'
 import { requireAuthenticatedUser } from '@/lib/api-auth'
 import { sanitizeString } from '@/lib/validation'
 import { checkPlanLimits } from '@/lib/plans'
+import { emailProductoPublicado, emailPropiedadEnRevision } from '@/lib/server-email'
 
 export async function POST(req: NextRequest) {
   try {
@@ -138,6 +139,26 @@ export async function POST(req: NextRequest) {
 
     revalidatePath('/')
     revalidatePath('/catalogo')
+
+    // Confirmación por correo de la publicación (o de que entró en revisión).
+    const nombrePublicador = auth.user.email?.split('@')[0] || 'Usuario'
+    try {
+      if (auth.user.email) {
+        if (moderationState === 'aprobado') {
+          await emailProductoPublicado(
+            auth.user.email,
+            nombrePublicador,
+            titulo,
+            precio.toFixed(0),
+            property.slug || property.id,
+          )
+        } else {
+          await emailPropiedadEnRevision(auth.user.email, nombrePublicador, titulo)
+        }
+      }
+    } catch (emailError) {
+      console.error('Error enviando confirmación de publicación:', emailError)
+    }
 
     const alert = body.moderacionAlerta
     if (moderationState === 'pendiente' && alert?.nivel) {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { notifyUser } from '@/lib/push-notify'
 import { requireAuthenticatedUser } from '@/lib/api-auth'
 import { isValidUUID } from '@/lib/validation'
+import { notificarResena } from '@/lib/email-eventos'
 
 /** Envía una reseña únicamente entre participantes de una conversación del inmueble. */
 export async function POST(request: NextRequest) {
@@ -71,6 +72,13 @@ export async function POST(request: NextRequest) {
       tag: 'resena',
       icon: '/icon-192.png',
       click_url: '/dashboard?tab=resenas',
+    })
+    await notificarResena(auth.supabaseAdmin, {
+      evaluadoId: evaluado_id,
+      autorId: auth.user.id,
+      puntuacion: rating,
+      comentario: typeof comentario === 'string' ? comentario.trim() || null : null,
+      productoId: producto_id,
     })
 
     return NextResponse.json({ ok: true })

@@ -9,7 +9,6 @@ import Avatar from '@/components/Avatar'
 import { Send, ArrowLeft, Search, User, Trash2, ExternalLink, Star, MessageSquare } from 'lucide-react'
 import LocalLink from '@/components/LocalLink'
 import { useTranslations } from 'next-intl'
-import { emailMensajeRecibido } from '@/lib/server-email'
 import { localizePath } from '@/lib/auth-redirect'
 import { UNREAD_REFRESH_EVENT } from '@/hooks/useUnreadMessages'
 import { mergeChatMessages } from '@/lib/chat-messages'
@@ -24,7 +23,6 @@ type Conversacion = {
   creado_en: string
   otro_nombre: string
   otro_foto: string | null
-  otro_email: string | null
   producto_titulo: string | null
   no_leidos: number
 }
@@ -164,7 +162,7 @@ export default function ChatPageClient() {
     if (vendedorId && !otroIds.includes(vendedorId)) otroIds.push(vendedorId)
     if (productoId && !prodIds.includes(productoId)) prodIds.push(productoId)
 
-    const perfilMap = new Map<string, { nombre: string; foto: string | null; email: string | null }>()
+    const perfilMap = new Map<string, { nombre: string; foto: string | null }>()
     if (otroIds.length) {
       try {
         const response = await fetch(`/api/user-bulk?ids=${encodeURIComponent(otroIds.join(','))}`, {
@@ -172,7 +170,7 @@ export default function ChatPageClient() {
         })
         const json = await response.json()
         json.profiles?.forEach((profile: { id: string; nombre: string; foto_perfil_url: string | null }) => {
-          perfilMap.set(profile.id, { nombre: profile.nombre || t('unknownUser'), foto: profile.foto_perfil_url || null, email: null })
+          perfilMap.set(profile.id, { nombre: profile.nombre || t('unknownUser'), foto: profile.foto_perfil_url || null })
         })
       } catch (error) { console.error('Error fetching user profiles:', error) }
     }
@@ -204,7 +202,6 @@ export default function ChatPageClient() {
         ultimo_mensaje: conversation.ultimo_mensaje_contenido || conversation.ultimo_mensaje || null,
         otro_nombre: profile?.nombre || t('unknownUser'),
         otro_foto: profile?.foto || null,
-        otro_email: profile?.email || null,
         producto_titulo: conversation.producto_id ? (prodMap.get(conversation.producto_id) || null) : null,
         no_leidos: unreadMap.get(conversation.id) || 0,
       }
@@ -242,7 +239,6 @@ export default function ChatPageClient() {
             ultimo_mensaje: null,
             otro_nombre: profile?.nombre || t('unknownUser'),
             otro_foto: profile?.foto || null,
-            otro_email: profile?.email || null,
             producto_titulo: prodMap.get(productoId) || null,
             no_leidos: 0,
           }, ...previous.filter(conversation => conversation.id !== newConversation.id)])
@@ -443,12 +439,6 @@ export default function ChatPageClient() {
         }),
       })
     } catch (error) { console.error('Push send failed:', error) }
-
-    if (conversation.otro_email && user.id !== recipientId) {
-      const propertyTitle = conversation.producto_titulo || t('aProperty')
-      const preview = message.length > 100 ? `${message.substring(0, 100)}…` : message
-      emailMensajeRecibido(conversation.otro_email, conversation.otro_nombre, user.email?.split('@')[0] || t('unknownUser'), propertyTitle, preview).catch(error => console.error('Error emailing conversation:', error))
-    }
     setEnviando(false)
   }
 

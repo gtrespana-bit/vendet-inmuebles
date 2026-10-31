@@ -4,8 +4,18 @@ import nodemailer from 'nodemailer'
 
 const FROM = process.env.SMTP_FROM || '"Venezuela Inmuebles" <noreply@venezuela-inmuebles.online>'
 const CONTACT = 'contacto@venezuela-inmuebles.online'
-const URL = process.env.NEXT_PUBLIC_URL || 'https://venezuela-inmuebles.online'
+const URL = (process.env.NEXT_PUBLIC_URL || process.env.NEXT_PUBLIC_BASE_URL || 'https://venezuela-inmuebles.online').replace(/\/$/, '')
 const LOGO = `${URL}/logo-venezuela-inmuebles.png`
+
+/** Escapa contenido escrito por usuarios antes de insertarlo en el HTML. */
+function esc(value: unknown): string {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
 
 // ─── Transporter ───────────────────────────────────────────
 
@@ -19,13 +29,33 @@ function getTransporter() {
   })
 }
 
-async function enviar(to: string, subject: string, html: string): Promise<boolean> {
+interface OpcionesEnvio {
+  replyTo?: string
+  /** URL de baja en un clic (cabecera List-Unsubscribe). */
+  unsubscribeUrl?: string
+}
+
+async function enviar(to: string, subject: string, html: string, options: OpcionesEnvio = {}): Promise<boolean> {
   if (!process.env.SMTP_PASS) {
     console.warn('⚠️ SMTP no configurado')
     return false
   }
   try {
-    await getTransporter().sendMail({ from: FROM, to, subject, html })
+    await getTransporter().sendMail({
+      from: FROM,
+      to,
+      subject,
+      html,
+      ...(options.replyTo ? { replyTo: options.replyTo } : {}),
+      ...(options.unsubscribeUrl
+        ? {
+            headers: {
+              'List-Unsubscribe': `<${options.unsubscribeUrl}>`,
+              'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+            },
+          }
+        : {}),
+    })
     console.log(`✅ Email a ${to}: ${subject}`)
     return true
   } catch (e) {
@@ -48,7 +78,7 @@ const COLORS = {
   success: '#059669',
 }
 
-function emailLayout(title: string, body: string, ctaText?: string, ctaUrl?: string): string {
+function emailLayout(title: string, body: string, ctaText?: string, ctaUrl?: string, footerExtra = ''): string {
   return `<!DOCTYPE html>
 <html lang="es" style="margin:0;padding:0">
 <head>
@@ -136,6 +166,7 @@ function emailLayout(title: string, body: string, ctaText?: string, ctaUrl?: str
                     <p style="margin:0 0 6px">El marketplace venezolano</p>
                     <p style="margin:0"><a href="mailto:${CONTACT}" style="color:${COLORS.primary};text-decoration:none">${CONTACT}</a></p>
                     <p style="margin:6px 0 0"><a href="${URL}" style="color:${COLORS.primary};text-decoration:none">${URL}</a></p>
+                    ${footerExtra}
                   </td>
                 </tr>
               </table>
@@ -170,10 +201,10 @@ export async function emailProductoPublicado(
 ): Promise<boolean> {
   return enviar(email, '✅ Tu anuncio fue publicado', emailLayout(
     'Anuncio publicado',
-    `<p style="margin:0 0 16px">Hola <strong>${nombre}</strong>,</p>
+    `<p style="margin:0 0 16px">Hola <strong>${esc(nombre)}</strong>,</p>
      <p style="margin:0 0 20px">Tu anuncio ya está visible en Venezuela Inmuebles para quienes buscan en Venezuela.</p>
      ${card(`
-       <p style="margin:0 0 8px;font-weight:600;font-size:16px;color:${COLORS.dark}">${titulo}</p>
+       <p style="margin:0 0 8px;font-weight:600;font-size:16px;color:${COLORS.dark}">${esc(titulo)}</p>
        <p style="margin:0;font-size:22px;font-weight:700;color:${COLORS.primary}">$${precio} USD</p>
      `)}
      <p style="margin:24px 0 0;color:${COLORS.gray};font-size:14px">Consejo: revisa tu anuncio desde tu perfil para asegurarte de que la foto principal sea la mejor.</p>`,
@@ -273,5 +304,255 @@ export async function emailSubidaNivel(
      `)}`,
     'Ver mi perfil',
     `${URL}/dashboard?tab=perfil`,
+  ))
+}
+
+// ─── 6. Mensajes sin leer (aviso diferido) ─────────────────
+
+export interface MensajeNoLeidoParams {
+  email: string
+  nombreDestinatario: string
+  nombreRemitente: string
+  tituloPropiedad: string
+  ubicacionPropiedad?: string | null
+  precioPropiedad?: string | null
+  imagenPropiedad?: string | null
+  totalMensajes: number
+  mensajePreview: string
+  urlChat: string
+  urlBaja: string
+}
+
+function imagenSegura(url?: string | null): string | null {
+  if (!url) return null
+  return /^https?:\/\//i.test(url) ? url : null
+}
+
+/**
+ * Aviso de mensajes de chat que el destinatario no ha leído tras el plazo de
+ * espera. Agrupa todos los mensajes de la conversación en un único correo.
+ */
+export async function emailMensajesNoLeidos(params: MensajeNoLeidoParams): Promise<boolean> {
+  const {
+    email,
+    nombreDestinatario,
+    nombreRemitente,
+    tituloPropiedad,
+    ubicacionPropiedad,
+    precioPropiedad,
+    imagenPropiedad,
+    totalMensajes,
+    mensajePreview,
+    urlChat,
+    urlBaja,
+  } = params
+
+  const total = Math.max(1, Number(totalMensajes) || 1)
+  const resumen = total === 1 ? '1 mensaje sin leer' : `${total} mensajes sin leer`
+  const imagen = imagenSegura(imagenPropiedad)
+
+  return enviar(
+    email,
+    `Tienes mensajes sin leer sobre «${tituloPropiedad}»`,
+    emailLayout(
+      'Mensajes sin leer',
+      `<p style="margin:0 0 16px">Hola <strong>${esc(nombreDestinatario)}</strong>,</p>
+       <p style="margin:0 0 20px">
+         <strong>${esc(nombreRemitente)}</strong> te escribió sobre tu inmueble
+         <strong>«${esc(tituloPropiedad)}»</strong> y todavía no has abierto el mensaje.
+         Esperamos unos minutos antes de avisarte por correo para no interrumpir la conversación.
+       </p>
+       ${card(`
+         ${imagen ? `<img src="${esc(imagen)}" alt="" width="100%" style="display:block;width:100%;max-height:190px;object-fit:cover;border-radius:8px;margin-bottom:14px;border:0">` : ''}
+         <p style="margin:0 0 6px;font-weight:700;font-size:16px;color:${COLORS.dark}">${esc(tituloPropiedad)}</p>
+         ${ubicacionPropiedad ? `<p style="margin:0 0 6px;color:${COLORS.gray};font-size:13px">${esc(ubicacionPropiedad)}</p>` : ''}
+         ${precioPropiedad ? `<p style="margin:0 0 14px;font-size:20px;font-weight:700;color:${COLORS.primary}">${esc(precioPropiedad)}</p>` : ''}
+         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${COLORS.white};border-radius:8px;border-left:3px solid ${COLORS.primary}">
+           <tr>
+             <td style="padding:14px 16px;font-family:'Inter','Segoe UI',Arial,sans-serif;font-size:14px;color:${COLORS.dark};font-style:italic;line-height:1.6">
+               «${esc(mensajePreview)}»
+             </td>
+           </tr>
+         </table>
+         <p style="margin:12px 0 0;color:${COLORS.gray};font-size:12px">${esc(resumen)}</p>
+       `)}
+       <p style="margin:0;color:${COLORS.gray};font-size:13px">
+         Responde desde la plataforma para mantener tu número de teléfono privado y
+         conservar el historial de la conversación.
+       </p>`,
+      'Leer y responder',
+      urlChat,
+      `<p style="margin:12px 0 0;font-size:11px;color:${COLORS.gray}">Recibes este aviso porque alguien te escribió en Venezuela Inmuebles. <a href="${esc(urlBaja)}" style="color:${COLORS.gray};text-decoration:underline">No quiero recibir estos avisos</a>.</p>`,
+    ),
+    { unsubscribeUrl: urlBaja, replyTo: CONTACT },
+  )
+}
+
+// ─── 7. Moderación de anuncios ─────────────────────────────
+
+export async function emailPropiedadAprobada(
+  email: string,
+  nombre: string,
+  titulo: string,
+  slug: string,
+): Promise<boolean> {
+  return enviar(email, '✅ Tu inmueble fue aprobado', emailLayout(
+    'Anuncio aprobado',
+    `<p style="margin:0 0 16px">Hola <strong>${esc(nombre)}</strong>,</p>
+     <p style="margin:0 0 20px">Revisamos tu anuncio y ya está publicado para todos los compradores.</p>
+     ${card(`<p style="margin:0;font-weight:700;font-size:16px;color:${COLORS.dark}">${esc(titulo)}</p>`)}
+     <p style="margin:24px 0 0;color:${COLORS.gray};font-size:14px">Consejo: responde rápido a los mensajes, las propiedades con respuesta en menos de 1 hora reciben más contactos.</p>`,
+    'Ver mi anuncio',
+    `${URL}/inmueble/${encodeURIComponent(slug)}`,
+  ))
+}
+
+export async function emailPropiedadRechazada(
+  email: string,
+  nombre: string,
+  titulo: string,
+  motivo?: string | null,
+): Promise<boolean> {
+  return enviar(email, 'Tu anuncio necesita cambios', emailLayout(
+    'Anuncio no publicado',
+    `<p style="margin:0 0 16px">Hola <strong>${esc(nombre)}</strong>,</p>
+     <p style="margin:0 0 20px">Revisamos tu anuncio y por ahora no pudimos publicarlo:</p>
+     ${card(`
+       <p style="margin:0 0 8px;font-weight:700;font-size:16px;color:${COLORS.dark}">${esc(titulo)}</p>
+       <p style="margin:0;color:${COLORS.gray};font-size:13px">${esc(motivo || 'El contenido no cumple nuestras normas de publicación.')}</p>
+     `)}
+     <p style="margin:0 0 8px;font-weight:600">¿Qué puedes hacer?</p>
+     <p style="margin:0;color:${COLORS.gray};font-size:14px">Corrige la información señalada y vuelve a publicarlo. Si crees que fue un error, respóndenos a este correo y lo revisamos contigo.</p>`,
+    'Ir a mis anuncios',
+    `${URL}/dashboard`,
+  ), { replyTo: CONTACT })
+}
+
+// ─── 8. Verificación revocada ──────────────────────────────
+
+export async function emailVerificacionRevocada(email: string, nombre: string): Promise<boolean> {
+  return enviar(email, 'Actualización sobre tu verificación', emailLayout(
+    'Verificación no activa',
+    `<p style="margin:0 0 16px">Hola <strong>${esc(nombre)}</strong>,</p>
+     <p style="margin:0 0 20px">
+       Tu sello de verificación ya no está activo. Tus anuncios siguen publicados,
+       pero los compradores ya no verán la insignia de cuenta verificada.
+     </p>
+     ${card(`<p style="margin:0;color:${COLORS.gray};font-size:14px">Si crees que se trata de un error o quieres volver a verificar tu identidad, escríbenos a ${esc(CONTACT)} y te ayudamos.</p>`)}`,
+    'Ir a mi perfil',
+    `${URL}/dashboard`,
+  ), { replyTo: CONTACT })
+}
+
+// ─── 9. Reseña recibida ────────────────────────────────────
+
+export async function emailResenaRecibida(
+  email: string,
+  nombre: string,
+  nombreAutor: string,
+  puntuacion: number,
+  comentario: string | null,
+  tituloPropiedad: string | null,
+): Promise<boolean> {
+  const estrellas = '★'.repeat(Math.max(1, Math.min(5, Math.round(Number(puntuacion) || 0))))
+  return enviar(email, `⭐ ${nombreAutor} te dejó una reseña`, emailLayout(
+    'Nueva reseña',
+    `<p style="margin:0 0 16px">Hola <strong>${esc(nombre)}</strong>,</p>
+     <p style="margin:0 0 20px"><strong>${esc(nombreAutor)}</strong> valoró su experiencia contigo${tituloPropiedad ? ` en «${esc(tituloPropiedad)}»` : ''}.</p>
+     ${card(`
+       <p style="margin:0 0 8px;font-size:22px;letter-spacing:2px;color:${COLORS.accent}">${estrellas}</p>
+       ${comentario ? `<p style="margin:0;color:${COLORS.dark};font-size:14px;font-style:italic;line-height:1.6">«${esc(comentario)}»</p>` : `<p style="margin:0;color:${COLORS.gray};font-size:14px">La reseña no incluye comentario.</p>`}
+     `)}
+     <p style="margin:0;color:${COLORS.gray};font-size:14px">Responder con amabilidad mejora tu reputación y la confianza de próximos compradores.</p>`,
+    'Ver mis reseñas',
+    `${URL}/dashboard?tab=resenas`,
+  ))
+}
+
+// ─── 10. Anuncio destacado / boost ─────────────────────────
+
+export async function emailPropiedadDestacada(
+  email: string,
+  nombre: string,
+  titulo: string,
+  slug: string,
+): Promise<boolean> {
+  return enviar(email, '⭐ Tu inmueble está destacado', emailLayout(
+    'Inmueble destacado',
+    `<p style="margin:0 0 16px">Hola <strong>${esc(nombre)}</strong>,</p>
+     <p style="margin:0 0 20px">Tu anuncio ahora aparece destacado y con mayor visibilidad en la búsqueda durante las próximas horas.</p>
+     ${card(`<p style="margin:0;font-weight:700;font-size:16px;color:${COLORS.dark}">${esc(titulo)}</p>`)}
+     <p style="margin:24px 0 0;color:${COLORS.gray};font-size:14px">Aprovecha el impulso: comparte el enlace en tus redes y responde rápido a los interesados.</p>`,
+    'Ver mi anuncio',
+    `${URL}/inmueble/${encodeURIComponent(slug)}`,
+  ))
+}
+
+export async function emailPropiedadBoost(
+  email: string,
+  nombre: string,
+  titulo: string,
+  slug: string,
+): Promise<boolean> {
+  return enviar(email, '🚀 Tu inmueble recibió un impulso', emailLayout(
+    'Impulso aplicado',
+    `<p style="margin:0 0 16px">Hola <strong>${esc(nombre)}</strong>,</p>
+     <p style="margin:0 0 20px">Aplicamos un impulso a tu anuncio para que más compradores lo vean en el catálogo.</p>
+     ${card(`<p style="margin:0;font-weight:700;font-size:16px;color:${COLORS.dark}">${esc(titulo)}</p>`)}`,
+    'Ver mi anuncio',
+    `${URL}/inmueble/${encodeURIComponent(slug)}`,
+  ))
+}
+
+// ─── 11. Inmueble marcado como vendido ─────────────────────
+
+export async function emailPropiedadVendida(
+  email: string,
+  nombre: string,
+  titulo: string,
+): Promise<boolean> {
+  return enviar(email, '🎉 Marcaste tu inmueble como vendido', emailLayout(
+    '¡Felicidades por la venta!',
+    `<p style="margin:0 0 16px">Hola <strong>${esc(nombre)}</strong>,</p>
+     <p style="margin:0 0 20px">Registramos que <strong>${esc(titulo)}</strong> ya no está disponible. El anuncio permanece en tu historial para que puedas reutilizarlo.</p>
+     ${card(`<p style="margin:0;color:${COLORS.gray};font-size:14px">Si quieres vender o alquilar otro inmueble, publícalo en minutos desde tu panel.</p>`)}`,
+    'Publicar otro inmueble',
+    `${URL}/publicar`,
+  ))
+}
+
+// ─── 12. Compra de créditos rechazada ──────────────────────
+
+export async function emailCreditosRechazados(
+  email: string,
+  nombre: string,
+  motivo?: string | null,
+): Promise<boolean> {
+  return enviar(email, 'No pudimos procesar tu compra de créditos', emailLayout(
+    'Compra no aprobada',
+    `<p style="margin:0 0 16px">Hola <strong>${esc(nombre)}</strong>,</p>
+     <p style="margin:0 0 20px">Revisamos tu solicitud de créditos y no pudimos aprobarla.</p>
+     ${card(`<p style="margin:0;color:${COLORS.gray};font-size:14px">${esc(motivo || 'No pudimos verificar el pago recibido.')}</p>`)}
+     <p style="margin:0;color:${COLORS.gray};font-size:14px">Si ya realizaste el pago, respóndenos a este correo con el comprobante y lo revisamos de inmediato.</p>`,
+    'Ver mis créditos',
+    `${URL}/creditos`,
+  ), { replyTo: CONTACT })
+}
+
+// ─── 13. Anuncio en revisión ───────────────────────────────
+
+export async function emailPropiedadEnRevision(
+  email: string,
+  nombre: string,
+  titulo: string,
+): Promise<boolean> {
+  return enviar(email, 'Recibimos tu anuncio y está en revisión', emailLayout(
+    'Anuncio en revisión',
+    `<p style="margin:0 0 16px">Hola <strong>${esc(nombre)}</strong>,</p>
+     <p style="margin:0 0 20px">Recibimos tu anuncio correctamente. Nuestro equipo lo está revisando y te avisaremos por correo en cuanto esté publicado.</p>
+     ${card(`<p style="margin:0;font-weight:700;font-size:16px;color:${COLORS.dark}">${esc(titulo)}</p>`)}
+     <p style="margin:24px 0 0;color:${COLORS.gray};font-size:14px">La revisión suele tardar menos de 24 horas. Mientras tanto puedes seguir preparando las fotos y la descripción desde tu panel.</p>`,
+    'Ir a mi panel',
+    `${URL}/dashboard`,
   ))
 }

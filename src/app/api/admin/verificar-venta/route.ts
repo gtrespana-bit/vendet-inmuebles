@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/api-auth'
 import { requireUUIDs } from '@/lib/validation'
+import { notificarVerificacion } from '@/lib/email-eventos'
 
 /** Actualiza el perfil del vendedor tras una verificación aprobada por un admin. */
 export async function POST(request: NextRequest) {
@@ -26,6 +27,8 @@ export async function POST(request: NextRequest) {
       .update(updateData)
       .eq('id', userId)
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+    await notificarVerificacion(auth.supabaseAdmin, userId, true)
 
     return NextResponse.json({ ok: true })
   } catch (err: any) {
