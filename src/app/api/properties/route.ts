@@ -213,8 +213,8 @@ export async function POST(req: NextRequest) {
 /**
  * PATCH /api/properties — Editar un anuncio propio
  * Body: { id, titulo?, descripcion?, precio?, tipo? (slug), ciudad?, estado?,
- *         area_construida?, area_terreno?, puestos_estacionamiento?, condicion?,
- *         electricidad?, agua?, caracteristicas?: string[],
+ *         area_construida?, area_total?, puestos_estacionamiento?, condicion?,
+ *         latitud?, longitud?, caracteristicas?: string[],
  *         imagenes?: Array<{ id?: string, url: string }> }
  * Las imágenes se envían como lista completa (la primera = portada).
  */
@@ -237,12 +237,13 @@ export async function PATCH(req: NextRequest) {
     }
 
     // El inmueble debe existir y ser del usuario autenticado
-    const { data: existing } = await supabase
+    const { data: existing, error: existingError } = await supabase
       .from('inmuebles')
-      .select('id, user_id')
+      .select('id, usuario_id')
       .eq('id', id)
-      .single()
-    if (!existing || existing.user_id !== user.id) {
+      .maybeSingle()
+    if (existingError) throw existingError
+    if (!existing || existing.usuario_id !== user.id) {
       return NextResponse.json({ error: 'Inmueble no encontrado' }, { status: 404 })
     }
 
@@ -267,16 +268,25 @@ export async function PATCH(req: NextRequest) {
     if (estado !== undefined) cambios.estado = estado
     const areaConstruida = num(body.area_construida)
     if (areaConstruida !== undefined) cambios.area_construida = areaConstruida
-    const areaTerreno = num(body.area_terreno)
-    if (areaTerreno !== undefined) cambios.area_terreno = areaTerreno
+    const areaTerreno = num(body.area_total)
+    if (areaTerreno !== undefined) cambios.area_total = areaTerreno
     const puestos = num(body.puestos_estacionamiento)
     if (puestos !== undefined) cambios.puestos_estacionamiento = puestos
     const condicion = str(body.condicion, 60)
     if (condicion !== undefined) cambios.condicion = condicion || null
-    const electricidad = str(body.electricidad, 20)
-    if (electricidad !== undefined) cambios.electricidad = electricidad || null
-    const agua = str(body.agua, 20)
-    if (agua !== undefined) cambios.agua = agua || null
+    for (const [key, limit] of [['latitud', 90], ['longitud', 180]] as const) {
+      const value = body[key]
+      if (value === null || (typeof value === 'number' && Number.isFinite(value) && Math.abs(value) <= limit)) cambios[key] = value
+    }
+
+    if (estado && ciudad) {
+      const { data: state } = await supabase.from('states').select('id').eq('name', estado).maybeSingle()
+      const { data: city } = state?.id
+        ? await supabase.from('cities').select('id').eq('state_id', state.id).ilike('name', ciudad).maybeSingle()
+        : { data: null }
+      cambios.ubicacion_estado_id = state?.id || null
+      cambios.ubicacion_ciudad_id = city?.id || null
+    }
 
     if (typeof body.tipo === 'string' && body.tipo.trim()) {
       const slug = body.tipo.trim().toLowerCase()
@@ -291,7 +301,7 @@ export async function PATCH(req: NextRequest) {
     }
 
     if (Object.keys(cambios).length > 0) {
-      const { error } = await supabase.from('inmuebles').update(cambios).eq('id', id)
+      const { error } = await supabase.from('inmuebles').update(cambios).eq('id', id).eq('usuario_id', user.id)
       if (error) throw error
     }
 
@@ -300,7 +310,7 @@ export async function PATCH(req: NextRequest) {
       const limpias: string[] = Array.from(new Set(
         (body.caracteristicas as unknown[])
           .filter((c): c is string => typeof c === 'string')
-          .map((c) => c.trim().toLowerCase())
+          .map((c) => c.trim().slice(0, 60))
           .filter((c) => c.length >= 2)
       )).slice(0, 25)
 
@@ -310,7 +320,7 @@ export async function PATCH(req: NextRequest) {
 
       const ids: Array<string | number> = []
       for (const nombre of limpias) {
-        const found = mapa.get(nombre)
+        const found = mapa.get(nombre.toLowerCase())
         if (found) {
           ids.push(found)
           continue
@@ -322,7 +332,7 @@ export async function PATCH(req: NextRequest) {
           .single()
         const creadoId = creada?.id ?? null
         if (creadoId !== null && creadoId !== undefined) {
-          mapa.set(nombre, creadoId)
+          mapa.set(nombre.toLowerCase(), creadoId)
           ids.push(creadoId)
         }
       }
@@ -344,36 +354,48 @@ export async function PATCH(req: NextRequest) {
           !!img && typeof (img as { url?: unknown }).url === 'string' && !!(img as { url: string }).url.startsWith('http'))
         .slice(0, 20)
 
-      const { data: filasActuales } = await supabase
-        .from('inmueble_imagenes')
-        .select('id')
-        .eq('inmueble_id', id)
+      const { data: filasActuales, error: imagesReadError } = await supabase
+        .from('inmueble_imagenes').select('id, orden').eq('inmueble_id', id)
+      if (imagesReadError) throw imagesReadError
 
       const actualesIds = new Set((filasActuales || []).map((f) => String(f.id)))
       const conservar = new Set(nuevas.map((img: { id?: string }) => img.id).filter(Boolean) as string[])
-
-      // Borrar las que ya no están en la lista
+      const retenidas = (filasActuales || []).filter((f) => conservar.has(String(f.id)))
+      if (conservar.size !== nuevas.filter((img: { id?: string }) => img.id).length ||
+          Array.from(conservar).some((imageId) => !actualesIds.has(imageId))) {
+        return NextResponse.json({ error: 'Imagen no válida' }, { status: 400 })
+      }
       const borrar = Array.from(actualesIds).filter((fid) => !conservar.has(fid))
       if (borrar.length > 0) {
-        const { error: delErr } = await supabase.from('inmueble_imagenes').delete().in('id', borrar)
-        if (delErr) throw delErr
+        const { error } = await supabase.from('inmueble_imagenes').delete().eq('inmueble_id', id).in('id', borrar)
+        if (error) throw error
       }
 
-      // Reordenar las conservadas y añadir las nuevas
+      // Apartar los órdenes existentes antes de reordenar para evitar la restricción única.
+      const offset = Math.max(0, ...(filasActuales || []).map((f) => f.orden)) + nuevas.length + 1
+      for (let index = 0; index < retenidas.length; index++) {
+        const fila = retenidas[index]
+        const { error } = await supabase.from('inmueble_imagenes')
+          .update({ orden: offset + index, es_portada: false }).eq('inmueble_id', id).eq('id', fila.id)
+        if (error) throw error
+      }
       for (let i = 0; i < nuevas.length; i++) {
         const img = nuevas[i]
         if (img.id && actualesIds.has(img.id)) {
-          await supabase.from('inmueble_imagenes').update({ orden: i }).eq('id', img.id)
+          const { error } = await supabase.from('inmueble_imagenes')
+            .update({ orden: i, es_portada: i === 0 }).eq('inmueble_id', id).eq('id', img.id)
+          if (error) throw error
         } else if (!img.id) {
-          await supabase.from('inmueble_imagenes').insert({ inmueble_id: id, url: img.url, orden: i })
+          const { error } = await supabase.from('inmueble_imagenes')
+            .insert({ inmueble_id: id, url_imagen: img.url, orden: i, es_portada: i === 0 })
+          if (error) throw error
+        } else {
+          throw new Error('Imagen no válida')
         }
       }
-
-      // Portada del listado = primera foto
-      const primera = nuevas[0]?.url
-      if (primera) {
-        await supabase.from('inmuebles').update({ imagen_url: primera }).eq('id', id)
-      }
+      const { error: coverError } = await supabase.from('inmuebles')
+        .update({ imagen_url: nuevas[0]?.url || null }).eq('id', id).eq('usuario_id', user.id)
+      if (coverError) throw coverError
     }
 
     return NextResponse.json({ success: true })

@@ -1668,6 +1668,7 @@
     "saved": "Cambios guardados correctamente",
     "redirecting": "Abriendo tu anuncio…",
     "cancel": "Cancelar",
+    "loadError": "No se pudo cargar el anuncio. Inténtalo de nuevo más tarde.",
     "notFound": "Anuncio no encontrado o no eres su propietario",
     "goDashboard": "Ir a mi panel"
   },

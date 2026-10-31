@@ -55,6 +55,7 @@ export default function EditarInmueblePage({ params }: { params: { locale: strin
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [loadFailed, setLoadFailed] = useState(false)
   const [exito, setExito] = useState(false)
   const [noExiste, setNoExiste] = useState(false)
 
@@ -93,25 +94,31 @@ export default function EditarInmueblePage({ params }: { params: { locale: strin
   // Cargar el inmueble
   useEffect(() => {
     if (authLoading) return
-    if (!user) return
+    if (!user) { setLoading(false); return }
     let cancelado = false
 
     const cargar = async () => {
-      const { data } = await supabase
+      const { data, error: loadError } = await supabase
         .from('inmuebles')
         .select(`
-          id, user_id, titulo, precio, descripcion, ciudad, estado,
-          area_construida, area_terreno, puestos_estacionamiento,
-          condicion, electricidad, agua, lat, lng,
+          id, usuario_id, titulo, precio, descripcion, ciudad, estado,
+          area_construida, area_total, puestos_estacionamiento,
+          condicion, latitud, longitud,
           tipo:tipo_id ( slug ),
-          inmueble_imagenes ( id, url, orden ),
+          inmueble_imagenes ( id, url_imagen, orden ),
           inmueble_caracteristicas ( caracteristicas ( nombre ) )
         `)
         .eq('id', propertyId)
-        .single()
+        .maybeSingle()
 
       if (cancelado) return
-      if (!data || data.user_id !== user.id) {
+      if (loadError) {
+        console.error('Error cargando inmueble:', loadError)
+        setLoadFailed(true)
+        setLoading(false)
+        return
+      }
+      if (!data || data.usuario_id !== user.id) {
         setNoExiste(true)
         setLoading(false)
         return
@@ -124,23 +131,25 @@ export default function EditarInmueblePage({ params }: { params: { locale: strin
       setEstado(data.estado || '')
       setCiudad(data.ciudad || '')
       setAreaConstruida(data.area_construida != null ? String(data.area_construida) : '')
-      setAreaTerreno(data.area_terreno != null ? String(data.area_terreno) : '')
+      setAreaTerreno(data.area_total != null ? String(data.area_total) : '')
       setPuestos(data.puestos_estacionamiento != null ? String(data.puestos_estacionamiento) : '')
       setCondicion(data.condicion || '')
-      setElectricidad(data.electricidad || '')
-      setAgua(data.agua || '')
-      setLat(typeof data.lat === 'number' ? data.lat : null)
-      setLng(typeof data.lng === 'number' ? data.lng : null)
+      setLat(data.latitud != null ? Number(data.latitud) : null)
+      setLng(data.longitud != null ? Number(data.longitud) : null)
 
-      const imgs = [...((data.inmueble_imagenes as Array<{ id: string; url: string; orden: number }>) || [])]
+      const imgs = [...((data.inmueble_imagenes as Array<{ id: string; url_imagen: string; orden: number }>) || [])]
         .sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0))
-        .map((img) => ({ id: img.id, url: img.url }))
+        .map((img) => ({ id: img.id, url: img.url_imagen }))
       setImagenes(imgs)
 
       const cars = ((data.inmueble_caracteristicas as Array<{ caracteristicas: { nombre: string } | null }>) || [])
         .map((r) => r.caracteristicas?.nombre)
         .filter(Boolean) as string[]
-      setCaracteristicas(cars)
+      const has110 = cars.includes('Electricidad 110V')
+      const has220 = cars.includes('Electricidad 220V')
+      setElectricidad(has110 && has220 ? 'ambas' : has110 ? '110v' : has220 ? '220v' : '')
+      setAgua(cars.includes('Agua 24 horas') ? '24h' : cars.includes('Agua intermitente') ? 'intermitente' : '')
+      setCaracteristicas(cars.filter((c) => !['Electricidad 110V', 'Electricidad 220V', 'Agua 24 horas', 'Agua intermitente'].includes(c)))
 
       setLoading(false)
     }
@@ -157,7 +166,7 @@ export default function EditarInmueblePage({ params }: { params: { locale: strin
       return
     }
     const subiendo = imagenes.some((img) => img.uploading)
-    if (subiendo) {
+    if (subiendo || imagenes.some((img) => img.error)) {
       setError(tp('uploadingPhotos'))
       return
     }
@@ -178,12 +187,17 @@ export default function EditarInmueblePage({ params }: { params: { locale: strin
           estado,
           ciudad,
           area_construida: areaConstruida ? Number(areaConstruida) : null,
-          area_terreno: areaTerreno ? Number(areaTerreno) : null,
+          area_total: areaTerreno ? Number(areaTerreno) : null,
           puestos_estacionamiento: puestos ? Number(puestos) : null,
           condicion,
-          electricidad,
-          agua,
-          caracteristicas,
+          latitud: lat,
+          longitud: lng,
+          caracteristicas: [
+            ...caracteristicas,
+            ...(electricidad === '110v' || electricidad === 'ambas' ? ['Electricidad 110V'] : []),
+            ...(electricidad === '220v' || electricidad === 'ambas' ? ['Electricidad 220V'] : []),
+            ...(agua === '24h' ? ['Agua 24 horas'] : agua === 'intermitente' ? ['Agua intermitente'] : []),
+          ],
           imagenes: imagenes.map((img) => ({ id: img.id, url: img.url })),
         }),
       })
@@ -335,11 +349,11 @@ export default function EditarInmueblePage({ params }: { params: { locale: strin
     )
   }
 
-  if (noExiste || !user) {
+  if (noExiste || !user || loadFailed) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-16 text-center">
         <AlertCircle size={40} className="mx-auto text-amber-500 mb-4" />
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">{t('notFound')}</h1>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">{loadFailed ? t('loadError') : t('notFound')}</h1>
         <LocalLink href={`/${locale}/dashboard`} className="inline-block mt-4 text-brand-primary font-semibold">
           {t('goDashboard')}
         </LocalLink>
