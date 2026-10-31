@@ -110,7 +110,7 @@ export default function PWAInstallBanner() {
   return (
     <>
       {mounted && showBanner && (
-        <div className="fixed bottom-4 inset-x-4 z-[60] md:inset-x-auto md:left-4 md:bottom-4 md:max-w-sm animate-fadeIn">
+        <div className="fixed inset-x-4 z-[60] bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] md:inset-x-auto md:left-4 md:bottom-4 md:max-w-sm animate-fadeIn">
           <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 p-4">
             <button onClick={handleDismiss} aria-label={t('pwa.closeBanner')} className="absolute top-3 right-3 text-gray-400 hover:text-gray-600">
               <X size={16} />
