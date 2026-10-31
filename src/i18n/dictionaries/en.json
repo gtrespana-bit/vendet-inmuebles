@@ -1670,6 +1670,7 @@
     "saved": "Changes saved successfully",
     "redirecting": "Opening your listing…",
     "cancel": "Cancel",
+    "loadError": "Could not load the listing. Please try again later.",
     "notFound": "Listing not found or you are not its owner",
     "goDashboard": "Go to my dashboard"
   },
