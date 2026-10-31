@@ -1670,5 +1670,25 @@
     "cancel": "Cancelar",
     "notFound": "Anuncio no encontrado o no eres su propietario",
     "goDashboard": "Ir a mi panel"
+  },
+  "diagnostico": {
+    "title": "Diagnóstico de fotos e IA",
+    "subtitle": "Comprueba desde tu sesión si la subida de fotos (R2) y la IA (Gemini) funcionan en el servidor.",
+    "loginRequired": "Inicia sesión para ejecutar el diagnóstico (usa la misma cuenta con la que publicas).",
+    "loginLink": "Iniciar sesión",
+    "photosTitle": "Subida de fotos (R2)",
+    "photosDesc": "Sube un archivo de prueba real al bucket y verifica variables de entorno y permisos de escritura.",
+    "aiTitle": "Mejora de descripción (Gemini)",
+    "aiDesc": "Envía una descripción de ejemplo a la IA y comprueba que devuelve un texto completo.",
+    "reRun": "Volver a probar",
+    "running": "Probando… esto puede tardar unos segundos",
+    "photosOk": "Almacenamiento R2 OK — la subida de fotos debería funcionar al publicar",
+    "photosFail": "El almacenamiento R2 falla — revisa las variables marcadas con ✗",
+    "envVars": "Variables de entorno (en Vercel)",
+    "writeTestLabel": "Prueba de escritura en R2",
+    "probeUrlLabel": "Abrir archivo de prueba",
+    "aiOk": "IA funcionando — devolvió una descripción de {words} palabras",
+    "aiFail": "La IA no respondió correctamente:",
+    "hint": "Si R2 sale ✗ en alguna variable, añade o corrige esa variable en Vercel → Settings → Environment Variables y haz redeploy. Si la prueba de escritura falla con AccessDenied, el token de la API de R2 no tiene permiso «Object Read & Write» en Cloudflare."
   }
 }
