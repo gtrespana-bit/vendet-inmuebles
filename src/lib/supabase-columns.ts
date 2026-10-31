@@ -48,6 +48,7 @@ export const VALID_PROPERTY_COLUMNS = [
   'propietario_verificado',
   'propietario_tipo',
   'propietario_empresa',
+  'metodos_contacto',
   'main_image_url',
   'imagenes',
   'caracteristicas'

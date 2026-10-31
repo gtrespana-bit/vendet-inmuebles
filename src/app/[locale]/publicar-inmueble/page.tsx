@@ -12,6 +12,8 @@ import { ESTADOS, MUNICIPIOS_POR_ESTADO } from '@/lib/ubicaciones';
 import LocationPicker from '@/components/map/LocationPicker';
 import { resolveListingGeo } from '@/lib/geo/venezuela';
 import { compressImage } from '@/lib/image-compress';
+import { limpiarMetodosContacto, validarMetodosContacto } from '@/lib/contact-methods';
+import ContactMethodsFields, { type MetodosContactoForm } from '@/components/ContactMethodsFields';
 import { Sparkles, Loader2 } from 'lucide-react';
 
 interface ImagePreview {
@@ -174,6 +176,9 @@ export default function PublicarInmueblePage() {
   // Precio
   const [precio, setPrecio] = useState('');
 
+  // Métodos de contacto de este anuncio (llamadas / WhatsApp / email / Messenger)
+  const [metodosContacto, setMetodosContacto] = useState<MetodosContactoForm>({});
+
   // Imágenes
   const [imagenes, setImagenes] = useState<ImagePreview[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -295,6 +300,13 @@ export default function PublicarInmueblePage() {
         throw new Error(tPublish('loginRequiredError'));
       }
 
+      const campoInvalido = validarMetodosContacto(metodosContacto);
+      if (campoInvalido) {
+        if (campoInvalido === 'telefono' || campoInvalido === 'whatsapp') throw new Error(tPublish('invalidPhone'));
+        if (campoInvalido === 'email') throw new Error(tPublish('invalidEmail'));
+        throw new Error(tPublish('invalidMessenger'));
+      }
+
       const { data: { session } } = await supabase.auth.getSession();
       if (!session || session.user.id !== user.id) {
         throw new Error(tPublish('sessionExpiredError'));
@@ -364,6 +376,7 @@ export default function PublicarInmueblePage() {
           imagenes: imageUrls,
           latitud: pin?.lat ?? null,
           longitud: pin?.lng ?? null,
+          metodos_contacto: limpiarMetodosContacto(metodosContacto),
         }),
       });
 
@@ -925,6 +938,25 @@ export default function PublicarInmueblePage() {
                 required
               />
             </div>
+          </section>
+
+          {/* ============ 6. CONTACTO ============ */}
+          <section aria-labelledby="sec-contacto">
+            <p className="home-eyebrow">6 · {tPublish('contactSection')}</p>
+            <ContactMethodsFields
+              idPrefix="publish-contact"
+              value={metodosContacto}
+              onChange={setMetodosContacto}
+              labels={{
+                title: tPublish('contactTitle'),
+                desc: tPublish('contactDesc'),
+                whatsappLabel: tPublish('whatsappLabel'),
+                phoneCallsLabel: tPublish('phoneCallsLabel'),
+                emailLabel: tPublish('emailLabel'),
+                messengerLabel: tPublish('messengerLabel'),
+                chatAuto: tPublish('chatAuto'),
+              }}
+            />
           </section>
 
           {/* Botón de envío */}

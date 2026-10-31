@@ -764,11 +764,13 @@
     "municipality": "City",
     "municipalityPlaceholder": "City...",
     "contactTitle": "How can buyers contact you for this listing?",
-    "contactDesc": "Contact methods are per listing. Choose the ones you want to show buyers.",
+    "contactDesc": "Contact methods are per listing. Choose the ones you want to show buyers; if you do not tick any phone only the internal chat will be shown.",
     "calls": "Calls",
     "phoneCallsLabel": "Phone number for calls (optional)",
     "whatsappLabel": "Phone number for WhatsApp (optional)",
-    "chatAuto": "Internal chat enabled automatically",
+    "chatAuto": "Internal chat is always enabled on every listing.",
+    "emailLabel": "Contact email (optional)",
+    "messengerLabel": "Facebook Messenger (optional)",
     "addPhotos": "Add photos",
     "photosDesc": "Upload up to 10 photos. The first one will be the cover.",
     "cover": "Cover",
@@ -797,7 +799,9 @@
     "conditionLikeNew": "Like new",
     "conditionGood": "Good",
     "conditionUsed": "Used",
-    "invalidPhone": "The phone number is invalid: use 7 to 15 digits, it may start with +."
+    "invalidPhone": "The phone number is invalid: use 7 to 15 digits, it may start with +.",
+    "invalidEmail": "The contact email is invalid.",
+    "invalidMessenger": "The Messenger link must start with http:// or https://."
   },
   "dashboard": {
     "passwordTitle": "Change password",
@@ -1537,7 +1541,18 @@
     "mapPinSet": "📍 Exact location set on the map",
     "uploadTooLarge": "One of the images is too large. We compressed it anyway; if it keeps failing, try another photo (max 8 MB).",
     "aiError": "The AI did not respond. Try again in a few seconds.",
-    "aiTooShort": "Write at least a few words of the draft before asking the AI to improve it."
+    "aiTooShort": "Write at least a few words of the draft before asking the AI to improve it.",
+    "contactSection": "Contact",
+    "contactTitle": "How can buyers contact you for this listing?",
+    "contactDesc": "Contact methods are per listing. Tick the ones you want to show buyers; if you do not tick any phone only the internal chat will be shown.",
+    "whatsappLabel": "Phone number for WhatsApp (optional)",
+    "phoneCallsLabel": "Phone number for calls (optional)",
+    "emailLabel": "Contact email (optional)",
+    "messengerLabel": "Facebook Messenger (optional)",
+    "chatAuto": "Internal chat is always enabled on every listing.",
+    "invalidPhone": "The phone number is invalid: use 7 to 15 digits, it may start with +.",
+    "invalidEmail": "The contact email is invalid.",
+    "invalidMessenger": "The Messenger link must start with http:// or https://."
   },
   "pushBanner": {
     "title": "Stay up to date",
@@ -1728,7 +1743,18 @@
     "cancel": "Cancel",
     "loadError": "Could not load the listing. Please try again later.",
     "notFound": "Listing not found or you are not its owner",
-    "goDashboard": "Go to my dashboard"
+    "goDashboard": "Go to my dashboard",
+    "contactTitle": "How can buyers contact you for this listing?",
+    "contactDesc": "Contact methods are per listing. Tick the ones you want to show buyers; if you do not tick any phone only the internal chat will be shown.",
+    "contactLegacyHint": "This listing does not have contact methods configured yet: your profile phone is being shown. Tick below the ones you want to use for this listing.",
+    "whatsappLabel": "Phone number for WhatsApp (optional)",
+    "phoneCallsLabel": "Phone number for calls (optional)",
+    "emailLabel": "Contact email (optional)",
+    "messengerLabel": "Facebook Messenger (optional)",
+    "chatAuto": "Internal chat is always enabled on every listing.",
+    "invalidPhone": "The phone number is invalid: use 7 to 15 digits, it may start with +.",
+    "invalidEmail": "The contact email is invalid.",
+    "invalidMessenger": "The Messenger link must start with http:// or https://."
   },
   "diagnostico": {
     "title": "Photo upload & AI diagnostics",

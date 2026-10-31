@@ -4,8 +4,18 @@
  * El chat interno SIEMPRE está activo. Opcionales: teléfono para llamadas
  * (`telefono`) y teléfono para WhatsApp (`whatsapp`). En la ficha del anuncio
  * se muestran como botones: `tel:` para llamar y `wa.me?text=...` con mensaje
- * pre-escrito para WhatsApp.
+ * pre-escrito para WhatsApp. También se admiten `email` y `messenger`.
+ *
+ * Semántica de la columna:
+ * - `null` (o columna ausente): publicación antigua sin configurar. La ficha
+ *   usa el teléfono del perfil como hasta ahora (compatibilidad).
+ * - Objeto `{ ... }`: la publicación eligió sus métodos. Aunque esté vacío
+ *   (`{}`) se respeta la elección y solo se muestra el chat interno.
  */
+
+/** Claves admitidas dentro de `metodos_contacto`. */
+export const CLAVES_METODOS_CONTACTO = ['telefono', 'whatsapp', 'email', 'messenger'] as const
+export type ClaveMetodoContacto = (typeof CLAVES_METODOS_CONTACTO)[number]
 
 /** Normaliza un teléfono: conserva el '+' inicial y los dígitos; exige 7-15 dígitos (E.164). */
 export function normalizarTelefono(valor: unknown): string | null {
@@ -44,13 +54,25 @@ export interface MetodosContactoSanitizados {
   messenger?: string
 }
 
+/** `true` cuando la publicación tiene métodos configurados (aunque el objeto esté vacío). */
+export function tieneMetodosConfigurados(valor: unknown): boolean {
+  return !!valor && typeof valor === 'object' && !Array.isArray(valor)
+}
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
+const MESSENGER_RE = /^https?:\/\/\S+$/i
+
 /**
  * Sanitiza el objeto `metodos_contacto` recibido del cliente (API route):
  * solo claves conocidas, teléfonos normalizados y válidos, email válido y
- * messenger http(s). Devuelve null si no queda nada válido.
+ * messenger http(s).
+ *
+ * Devuelve `null` si el valor no es un objeto (la publicación no configura
+ * métodos) y `{}` si es un objeto sin métodos válidos (elección explícita de
+ * dejar solo el chat interno).
  */
 export function sanitizarMetodosContacto(valor: unknown): MetodosContactoSanitizados | null {
-  if (!valor || typeof valor !== 'object' || Array.isArray(valor)) return null
+  if (!tieneMetodosConfigurados(valor)) return null
   const raw = valor as Record<string, unknown>
   const out: MetodosContactoSanitizados = {}
 
@@ -62,42 +84,91 @@ export function sanitizarMetodosContacto(valor: unknown): MetodosContactoSanitiz
 
   if (typeof raw.email === 'string') {
     const email = raw.email.trim().slice(0, 254).toLowerCase()
-    if (/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) out.email = email
+    if (EMAIL_RE.test(email)) out.email = email
   }
 
   if (typeof raw.messenger === 'string') {
     const m = raw.messenger.trim().slice(0, 500)
-    if (/^https?:\/\/\S+$/i.test(m)) out.messenger = m
+    if (MESSENGER_RE.test(m)) out.messenger = m
   }
 
-  return Object.keys(out).length > 0 ? out : null
+  return out
+}
+
+/**
+ * Prepara para el API el objeto del formulario: recorta espacios y descarta
+ * campos vacíos. Mantiene el objeto (aunque quede vacío) para que el servidor
+ * distinga "solo chat" de "sin configurar".
+ */
+export function limpiarMetodosContacto(valor: Record<string, unknown> | null | undefined): MetodosContactoSanitizados {
+  const out: MetodosContactoSanitizados = {}
+  if (!valor) return out
+  for (const clave of CLAVES_METODOS_CONTACTO) {
+    const v = valor[clave]
+    if (typeof v !== 'string') continue
+    const limpio = v.trim()
+    if (limpio) out[clave] = limpio
+  }
+  return out
+}
+
+/**
+ * Valida el formulario antes de enviarlo. Devuelve la primera clave inválida
+ * (solo se validan los campos que el usuario haya rellenado).
+ */
+export function validarMetodosContacto(valor: Record<string, unknown> | null | undefined): ClaveMetodoContacto | null {
+  if (!valor) return null
+  const texto = (clave: ClaveMetodoContacto) => {
+    const v = valor[clave]
+    return typeof v === 'string' ? v.trim() : ''
+  }
+
+  const telefono = texto('telefono')
+  if (telefono && !normalizarTelefono(telefono)) return 'telefono'
+
+  const whatsapp = texto('whatsapp')
+  if (whatsapp && !normalizarTelefono(whatsapp)) return 'whatsapp'
+
+  const email = texto('email')
+  if (email && !EMAIL_RE.test(email)) return 'email'
+
+  const messenger = texto('messenger')
+  if (messenger && !MESSENGER_RE.test(messenger)) return 'messenger'
+
+  return null
 }
 
 /**
  * Resuelve los métodos de contacto a mostrar en la ficha pública.
- * Si la publicación eligió métodos (metodos_contacto no vacío), se muestran
- * SOLO los elegidos; si no (publicaciones antiguas), se usa el teléfono del
- * perfil como hasta ahora.
+ * Si la publicación eligió métodos (metodos_contacto es un objeto), se muestran
+ * SOLO los elegidos; si no (publicaciones antiguas con `null`), se usa el
+ * teléfono y el email del perfil como hasta ahora.
  */
 export function resolverContactoPublicacion(property: Record<string, any>): {
   telLlamadas: string | null
   telWhatsapp: string | null
   email: string | null
+  messenger: string | null
 } {
-  const raw = property.metodos_contacto
-  const tieneMetodos = !!(raw && typeof raw === 'object' && !Array.isArray(raw) && Object.keys(raw).length > 0)
-  const metodos = (tieneMetodos ? raw : {}) as Record<string, unknown>
-  const telPerfil = normalizarTelefono(property.propietario_telefono)
+  const raw = property?.metodos_contacto
+  const configurado = tieneMetodosConfigurados(raw)
+  const metodos = (configurado ? raw : {}) as Record<string, unknown>
+  const telPerfil = normalizarTelefono(property?.propietario_telefono)
 
-  const telLlamadas = normalizarTelefono(metodos.telefono) ?? (tieneMetodos ? null : telPerfil)
-  const telWhatsapp = normalizarTelefono(metodos.whatsapp) ?? (tieneMetodos ? null : telPerfil)
+  const telLlamadas = normalizarTelefono(metodos.telefono) ?? (configurado ? null : telPerfil)
+  const telWhatsapp = normalizarTelefono(metodos.whatsapp) ?? (configurado ? null : telPerfil)
 
   let email: string | null = null
-  if (typeof metodos.email === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(metodos.email)) {
-    email = metodos.email
-  } else if (!tieneMetodos && typeof property.propietario_email === 'string' && property.propietario_email.includes('@')) {
+  if (typeof metodos.email === 'string' && EMAIL_RE.test(metodos.email.trim())) {
+    email = metodos.email.trim()
+  } else if (!configurado && typeof property?.propietario_email === 'string' && property.propietario_email.includes('@')) {
     email = property.propietario_email
   }
 
-  return { telLlamadas, telWhatsapp, email }
+  let messenger: string | null = null
+  if (typeof metodos.messenger === 'string' && MESSENGER_RE.test(metodos.messenger.trim())) {
+    messenger = metodos.messenger.trim()
+  }
+
+  return { telLlamadas, telWhatsapp, email, messenger }
 }

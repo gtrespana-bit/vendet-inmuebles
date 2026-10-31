@@ -12,8 +12,10 @@ import {
   ParkingSquare,
   Clock3,
   Eye,
+  Mail,
   MapPin,
   MessageCircle,
+  MessageSquare,
   Phone,
   Ruler,
   ShieldCheck,
@@ -199,8 +201,9 @@ export default async function PropertyDetailPage({ params }: PageProps) {
   const createdAt = formatDate(property.publicado_en || property.creado_en, locale)
   const chatPath = `/chat?producto_id=${encodeURIComponent(propertyId)}&vendedor_id=${encodeURIComponent(ownerId)}`
   const chatHref = `${isEnglish ? '/en' : ''}${chatPath}`
-  // Contacto elegido al publicar (chat siempre activo; teléfono/WhatsApp opcionales).
-  // Si la publicación no eligió métodos, se usa el teléfono del perfil (comportamiento previo).
+  // Contacto elegido en el anuncio (chat siempre activo; teléfono/WhatsApp opcionales).
+  // Si la publicación no configuró métodos (null), se usa el teléfono del perfil
+  // como hasta ahora; si eligió (objeto, aunque esté vacío), se respeta su elección.
   const contacto = resolverContactoPublicacion(property)
   const anuncioUrl = `https://venezuela-inmuebles.online${isEnglish ? '/en' : ''}/inmueble/${property.slug || propertyId}`
   const mensajeWa = mensajeWhatsappPredeterminado(title, anuncioUrl, isEnglish)
@@ -444,22 +447,31 @@ export default async function PropertyDetailPage({ params }: PageProps) {
                   {isEnglish ? 'Open chat' : 'Abrir chat'} <ArrowUpRight size={17} aria-hidden="true" />
                 </Link>
               )}
-              {(hrefWhatsapp || hrefLlamar) && (
+              {(hrefWhatsapp || hrefLlamar || contacto.messenger) && (
                 <div className="property-contact-card__secondary-actions">
                   {hrefWhatsapp && (
-                    <a href={hrefWhatsapp} target="_blank" rel="noreferrer">WhatsApp</a>
+                    <a className="property-contact-card__whatsapp" href={hrefWhatsapp} target="_blank" rel="noreferrer">
+                      <MessageCircle size={14} aria-hidden="true" /> WhatsApp
+                    </a>
                   )}
                   {hrefLlamar && (
-                    <a href={hrefLlamar}>{isEnglish ? 'Call' : 'Llamar'}</a>
+                    <a href={hrefLlamar}>
+                      <Phone size={14} aria-hidden="true" /> {isEnglish ? 'Call' : 'Llamar'}
+                    </a>
+                  )}
+                  {contacto.messenger && (
+                    <a href={contacto.messenger} target="_blank" rel="noreferrer">
+                      <MessageSquare size={14} aria-hidden="true" /> Messenger
+                    </a>
                   )}
                 </div>
               )}
-              {!hrefWhatsapp && !hrefLlamar && contacto.email && (
+              {contacto.email && (
                 <a className="property-contact-card__email" href={`mailto:${contacto.email}`}>
-                  {isEnglish ? 'Send an email' : 'Enviar correo'}
+                  <Mail size={14} aria-hidden="true" /> {isEnglish ? 'Send an email' : 'Enviar correo'}
                 </a>
               )}
-              {!ownerId && !hrefWhatsapp && !hrefLlamar && !contacto.email && (
+              {!ownerId && !hrefWhatsapp && !hrefLlamar && !contacto.email && !contacto.messenger && (
                 <p className="property-contact-card__muted">{isEnglish ? 'Contact details are not available yet.' : 'Todavía no hay datos de contacto disponibles.'}</p>
               )}
 
