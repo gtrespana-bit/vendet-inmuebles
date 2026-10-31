@@ -33,8 +33,10 @@ mensajes nuevos.
 1. La migración `supabase/migrations/006_notificaciones_email.sql` ya está
    aplicada al proyecto Supabase `quxbqmqwiacfwbpqioev` (2026-10-31). En un
    entorno nuevo, aplícala desde el SQL Editor o con `supabase db push`.
-2. Define `CRON_SECRET` en Vercel (Production, Preview y Development).
-3. Programar la ruta cada 5 minutos (ver abajo).
+2. Define `CRON_SECRET` en Vercel (Production y, si usas previews, también
+   Preview/Development) y vuelve a desplegar.
+3. La ruta queda programada cada 5 minutos con Supabase `pg_cron` + `pg_net`
+   (ya creado en este proyecto, ver abajo). No hace falta un cron de Vercel.
 
 El plazo se puede cambiar sin tocar código, a nivel de base de datos:
 
@@ -47,30 +49,36 @@ ALTER DATABASE postgres SET app.chat_email_delay_minutes = '10';
 
 ### Programación del cron
 
-**Vercel Cron** (incluido en `vercel.json`, cada 5 minutos):
-
-```json
-{ "crons": [{ "path": "/api/cron/notificaciones-email", "schedule": "*/5 * * * *" }] }
-```
-
-Vercel añade automáticamente `Authorization: Bearer $CRON_SECRET` cuando la
-variable existe. Los planes Hobby sólo permiten crons diarios; en ese caso usa
-un programador externo o `pg_cron`.
-
-**Supabase pg_cron + pg_net** (alternativa, cada 5 minutos):
+**Supabase pg_cron + pg_net (recomendado, ya activo).** Se ejecuta cada 5
+minutos dentro de Supabase y llama al endpoint con la cabecera
+`Authorization: Bearer $CRON_SECRET`. Script reproducible:
+`supabase/cron/notificaciones_email_pg_cron.sql`.
 
 ```sql
--- Requiere las extensiones pg_cron y pg_net.
+create extension if not exists pg_cron with schema extensions;
+create extension if not exists pg_net with schema extensions;
+
 select cron.schedule(
-  'notificaciones-email',
+  'notificaciones-email-chat',
   '*/5 * * * *',
-  $$
-    select net.http_get(
-      url := 'https://venezuela-inmuebles.online/api/cron/notificaciones-email?secret=TU_CRON_SECRET'
-    );
-  $$
+  $job$select net.http_get(
+    url := 'https://venezuela-inmuebles.online/api/cron/notificaciones-email',
+    headers := jsonb_build_object('Authorization', 'Bearer TU_CRON_SECRET')
+  )$job$
 );
 ```
+
+Comprobación: `select jobid, jobname, schedule, active from cron.job;` y
+`select id, status_code, error_message from net._http_response order by id desc limit 5;`
+(debe devolver `200` tras desplegar).
+
+**Vercel Cron (respaldo diario).** En `vercel.json` queda una ejecución diaria
+a las 09:00 UTC, porque el plan Hobby sólo permite crons diarios. En Vercel Pro
+puedes cambiar la expresión a `*/5 * * * *`.
+
+**Cron externo (alternativa).** Cualquier servicio que haga una petición GET
+cada 5 minutos con `Authorization: Bearer $CRON_SECRET` sirve (cron-job.org,
+EasyCron, etc.). No compartas el secreto en la URL si puedes usar la cabecera.
 
 También puede invocarse manualmente:
 

@@ -54,9 +54,12 @@ R2 sigue pendiente de configurar y verificar. Cuando se despliegue el cambio de 
 
 La migración `006_notificaciones_email.sql` (aplicada el 2026-10-31) añade la cola `notificaciones_email`,
 la preferencia `perfiles.email_notificaciones` y los triggers que programan y
-cancelan los avisos de mensajes sin leer. El envío real lo hace el cron
-`/api/cron/notificaciones-email`, programado en `vercel.json` cada 5 minutos y
-protegido con la variable `CRON_SECRET`.
+cancelan los avisos de mensajes sin leer. El envío real lo hace
+`/api/cron/notificaciones-email`, protegido con la variable `CRON_SECRET`.
 
-Detalles, alternativas de programación (Vercel Cron, Supabase pg_cron) y lista
-completa de correos transaccionales: [EMAIL_NOTIFICATIONS.md](EMAIL_NOTIFICATIONS.md).
+Como el proyecto está en Vercel Hobby (crons diarios), la ejecución cada 5
+minutos la hace Supabase con `pg_cron` + `pg_net` (job `notificaciones-email-chat`,
+ya programado). `vercel.json` conserva una ejecución diaria de respaldo.
+
+Detalles, comprobaciones y lista completa de correos transaccionales:
+[EMAIL_NOTIFICATIONS.md](EMAIL_NOTIFICATIONS.md).
