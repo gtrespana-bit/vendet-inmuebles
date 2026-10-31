@@ -14,7 +14,13 @@ export function createServerClient() {
     auth: {
       autoRefreshToken: false,
       persistSession: false
-    }
+    },
+    global: {
+      // Next.js 14 cachea los fetch de los Server Components en el Data Cache.
+      // Los datos de los anuncios (ambientes, fotos, contacto, visitas…) deben
+      // leerse siempre frescos; sin esto una edición puede tardar en verse.
+      fetch: (input, init) => fetch(input, { ...init, cache: 'no-store' }),
+    },
   })
 }
 

@@ -1,20 +1,10 @@
-/** URL names and catalogue labels are stable across languages. */
-export const CATALOG_AMENITIES = [
-  { key: 'gas', name: 'Gas doméstico' },
-  { key: 'aire', name: 'Aire acondicionado' },
-  { key: 'ventiladores', name: 'Ventiladores' },
-  { key: 'generador', name: 'Generador eléctrico' },
-  { key: 'piscina', name: 'Piscina' },
-  { key: 'ascensor', name: 'Ascensor' },
-  { key: 'jardin', name: 'Jardín' },
-  { key: 'balcon', name: 'Balcón o terraza' },
-  { key: 'cisterna', name: 'Cisterna' },
-  { key: 'seguridad', name: 'Seguridad 24 horas' },
-  { key: 'agua24', name: 'Agua 24 horas' },
-  { key: 'electricidad110', name: 'Electricidad 110V' },
-  { key: 'electricidad220', name: 'Electricidad 220V' },
-  { key: 'amueblado', name: 'Amueblado' },
-] as const
+import { AMENITIES } from './amenities.ts'
+
+/**
+ * Amenidades filtrables del catálogo. Se derivan del catálogo compartido para
+ * que publicar, editar y filtrar hablen siempre del mismo conjunto.
+ */
+export const CATALOG_AMENITIES = AMENITIES.map(({ key, name }) => ({ key, name }))
 
 export const EXTRA_FILTER_KEYS = ['habitaciones', 'banos', 'estacionamientos', 'areaMin', 'areaMax', 'condicion', 'amenidades'] as const
 

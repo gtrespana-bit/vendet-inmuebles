@@ -21,7 +21,9 @@ import {
   ShieldCheck,
   Sparkles,
 } from 'lucide-react'
+import { getTranslations } from 'next-intl/server'
 import { createServerClient } from '@/lib/supabase-server'
+import { claveAmenidad, leerAmenidades, ordenAmenidad } from '@/lib/amenities'
 import PropertyGallery from '@/components/PropertyGallery'
 import TrackInmueble from '@/components/TrackInmueble'
 import PropertyDetailActions from '@/components/PropertyDetailActions'
@@ -29,8 +31,11 @@ import PropertyLocationMap from '@/components/map/PropertyLocationMap'
 import { jitterPoint, resolveListingGeo } from '@/lib/geo/venezuela'
 import { resolverContactoPublicacion, telHref, whatsappHref, mensajeWhatsappPredeterminado } from '@/lib/contact-methods'
 
-// Listing edits should appear immediately, not from a cached server fetch.
+// Listing edits (fotos, ambientes, servicios, contacto…) deben aparecer de
+// inmediato: nada de caché de ruta ni de respuestas de Supabase.
 export const dynamic = 'force-dynamic'
+export const revalidate = 0
+export const fetchCache = 'force-no-store'
 
 interface PageProps {
   params: Promise<{ id: string; locale: string }>
@@ -85,28 +90,6 @@ function getPropertyImages(property: PropertyRecord): string[] {
   const cover = property.main_image_url || property.imagen_portada || property.imagen_url
   if (typeof cover === 'string' && cover.trim() && !images.includes(cover)) images.unshift(cover)
   return images.length ? images : ['/sinimagen.webp']
-}
-
-function getAmenities(value: unknown): string[] {
-  if (Array.isArray(value)) {
-    return value
-      .map((item) => typeof item === 'string' ? item : item?.nombre || item?.label || item?.name)
-      .filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
-  }
-
-  if (typeof value === 'string') {
-    return value.split(/[,;|]/).map((item) => item.trim()).filter(Boolean)
-  }
-
-  if (value && typeof value === 'object') {
-    return Object.entries(value as Record<string, unknown>)
-      .filter(([, enabled]) => enabled === true || enabled === 1 || (typeof enabled === 'string' && enabled.trim()))
-      .map(([label, enabled]) => typeof enabled === 'string' && enabled !== 'true'
-        ? enabled
-        : label.replace(/[_-]+/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase()))
-  }
-
-  return []
 }
 
 function isPresent(value: unknown): boolean {
@@ -197,7 +180,20 @@ export default async function PropertyDetailPage({ params }: PageProps) {
     ? (isEnglish ? 'Real estate professional' : 'Profesional inmobiliario')
     : (isEnglish ? 'Private owner' : 'Propietario particular')
   const isVerified = property.propietario_verificado === true || Number(property.nivel_confianza || 0) > 50
-  const features = getAmenities(property.caracteristicas || property.caracteristicas_adicionales)
+  // Todos los ambientes/servicios guardados, ordenados como el catálogo y con
+  // la etiqueta traducida cuando la característica es conocida.
+  const tAmenity = await getTranslations({ locale, namespace: 'catalog.extra.amenity' })
+  const features = leerAmenidades(property.caracteristicas)
+    .sort((a, b) => ordenAmenidad(a) - ordenAmenidad(b))
+    .map((nombre) => {
+      const clave = claveAmenidad(nombre)
+      if (!clave) return nombre
+      try {
+        return tAmenity(clave)
+      } catch {
+        return nombre
+      }
+    })
   const createdAt = formatDate(property.publicado_en || property.creado_en, locale)
   const chatPath = `/chat?producto_id=${encodeURIComponent(propertyId)}&vendedor_id=${encodeURIComponent(ownerId)}`
   const chatHref = `${isEnglish ? '/en' : ''}${chatPath}`
