@@ -18,6 +18,9 @@ function modelCandidates(): string[] {
 }
 
 async function callGemini(apiKey: string, model: string, prompt: string): Promise<Response> {
+  // Gemini 3.x gasta tokens de thinking del presupuesto de salida. Con poco
+  // presupuesto la respuesta se truncaba a una línea → 4096 + thinking bajo.
+  const isV3 = model.startsWith('gemini-3')
   return fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
     {
@@ -25,10 +28,18 @@ async function callGemini(apiKey: string, model: string, prompt: string): Promis
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.7, maxOutputTokens: 600 },
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 4096,
+          ...(isV3 ? { thinkingConfig: { thinkingLevel: 'low' } } : {}),
+        },
       }),
     }
   )
+}
+
+function countWords(text: string): number {
+  return text.trim().split(/\s+/).filter(Boolean).length
 }
 
 export async function POST(request: NextRequest) {
@@ -83,7 +94,8 @@ Reescribe la siguiente descripción de propiedad para que sea atractiva, clara y
 
 Reglas:
 - Responde SOLO con el texto de la descripción reescrita, sin títulos ni comentarios.
-- 80-140 palabras, párrafos cortos.
+- Extensión: 80-140 palabras en 2-4 párrafos cortos separados por saltos de línea. NUNCA la resumas a una sola línea o frase.
+- Si el borrador ya es bueno, púralo y amplíalo con los datos reales; nunca lo acortes.
 - Usa los datos reales que se te dan; no inventes características que no aparezcan.
 - Tono profesional y cercano, en español de Venezuela.
 - No uses emojis ni caracteres especiales raros.
@@ -123,12 +135,31 @@ ${descripcion.slice(0, 4000)}`
     }
 
     const data = await response.json()
-    const texto = data?.candidates?.[0]?.content?.parts?.[0]?.text
-    if (!texto || typeof texto !== 'string') {
+    // Gemini 3.x puede devolver partes de "pensamiento" antes del texto real:
+    // nos quedamos con las partes de texto que no son pensamiento.
+    const parts: any[] = data?.candidates?.[0]?.content?.parts || []
+    const texto = parts
+      .map((p) => (p && p.thought !== true && typeof p.text === 'string' ? p.text : ''))
+      .join('')
+      .trim()
+    // Guardas: si el modelo devolvió basura o truncó, preferimos fallar a
+    // arruinarle la descripción al usuario.
+    const finishReason: string = data?.candidates?.[0]?.finishReason || ''
+    const minPalabras = Math.min(50, Math.max(20, Math.floor(countWords(descripcion) * 0.4)))
+    if (!texto) {
       return NextResponse.json({ error: 'El servicio de IA no devolvió texto' }, { status: 502 })
     }
+    if (countWords(texto) < minPalabras || finishReason === 'MAX_TOKENS') {
+      console.error('Gemini: respuesta demasiado corta o truncada', {
+        finishReason, palabras: countWords(texto), minPalabras,
+      })
+      return NextResponse.json(
+        { error: 'La IA devolvió una respuesta incompleta. Inténtalo de nuevo.' },
+        { status: 502 }
+      )
+    }
 
-    return NextResponse.json({ descripcion: texto.trim().slice(0, 6000) })
+    return NextResponse.json({ descripcion: texto.slice(0, 6000) })
   } catch (err: any) {
     console.error('Mejorar descripción error:', err)
     return NextResponse.json({ error: err.message || 'Error interno' }, { status: 500 })
