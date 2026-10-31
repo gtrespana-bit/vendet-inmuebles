@@ -23,11 +23,6 @@ import HomeSearch from '@/components/home/HomeSearch'
 import ListingCard, { type HomeListing } from '@/components/home/ListingCard'
 import styles from '@/components/home/home.module.css'
 
-// Self-hosted variable fonts: no external requests, no layout shift.
-import '@fontsource-variable/inter'
-import '@fontsource-variable/fraunces/opsz.css'
-import '@fontsource-variable/fraunces/opsz-italic.css'
-
 const SITE_URL = 'https://venezuela-inmuebles.online'
 const LISTING_COLUMNS =
   'id, slug, titulo, precio, moneda, operacion_slug, tipo_nombre, ciudad, estado, main_image_url, habitaciones, banos, area_total, destacado, destacado_hasta, vendedor_verificado, creado_en'
@@ -164,10 +159,10 @@ export async function generateMetadata({ params }: { params: { locale: string } 
       description: t('metaDescription'),
       images: [
         {
-          url: `${SITE_URL}/demo/villa-caracas.jpg`,
-          width: 1448,
-          height: 1086,
-          alt: 'Venezuela Inmuebles',
+          url: `${SITE_URL}/og-image.png`,
+          width: 1200,
+          height: 630,
+          alt: 'Venezuela Inmuebles — casas, apartamentos y terrenos en venta y alquiler en Venezuela',
         },
       ],
     },
@@ -230,6 +225,47 @@ export default async function HomePage() {
   const hasInventory = featuredListings.length + recent.length > 0
   const showcase = hasInventory ? (featuredListings.length ? featuredListings.slice(0, 3) : recent) : sampleListings(locale)
   const schema = listingSchema([...featuredListings, ...recent], locale)
+  const siteSchema = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'Organization',
+        '@id': `${SITE_URL}/#organization`,
+        name: 'Venezuela Inmuebles',
+        url: SITE_URL,
+        logo: `${SITE_URL}/logo-venezuela-inmuebles.png`,
+        description:
+          locale === 'en'
+            ? 'Marketplace for houses, apartments, land and commercial spaces for sale and rent in Venezuela.'
+            : 'Plataforma para comprar, vender y alquilar casas, apartamentos, terrenos y locales en Venezuela.',
+        contactPoint: [
+          {
+            '@type': 'ContactPoint',
+            contactType: 'Atención al cliente',
+            url: `${SITE_URL}/contacto`,
+            availableLanguage: ['Spanish', 'English'],
+          },
+        ],
+      },
+      {
+        '@type': 'WebSite',
+        '@id': `${SITE_URL}/#website`,
+        url: SITE_URL,
+        name: 'Venezuela Inmuebles',
+        description:
+          locale === 'en'
+            ? 'Houses, apartments and land for sale and rent in Venezuela.'
+            : 'Casas, apartamentos y terrenos en venta y alquiler en Venezuela.',
+        publisher: { '@id': `${SITE_URL}/#organization` },
+        inLanguage: locale === 'en' ? 'en-US' : 'es-VE',
+        potentialAction: {
+          '@type': 'SearchAction',
+          target: `${SITE_URL}/buscar?q={search_term_string}`,
+          'query-input': 'required name=search_term_string',
+        },
+      },
+    ],
+  }
 
   const cardLabels = {
     sale: t('cardSale'),
@@ -244,7 +280,8 @@ export default async function HomePage() {
 
   return (
     <div className={styles.page}>
-      {schema && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(siteSchema).replace(/</g, '\\u003c') }} />
+      {schema && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema).replace(/</g, '\\u003c') }} />}
 
       {/* ------------------------------------------------------------ Hero */}
       <section className={styles.hero}>

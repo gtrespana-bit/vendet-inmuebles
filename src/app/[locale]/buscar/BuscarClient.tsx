@@ -245,10 +245,10 @@ export default function BuscarClient({ searchParams: searchParamsPromise }: { se
         ) : categoria ? (
           <>
             <h1 className="text-2xl font-bold text-gray-900 mb-2">
-              {cat?.label || categoria} en Venezuela — Clasificados Venezuela Inmuebles
+              {cat?.label || categoria} en Venezuela — Venezuela Inmuebles
             </h1>
             <p className="text-gray-600">
-              Explora {cat?.label || categoria.toLowerCase()} en venta. Los mejores clasificados de {cat?.label || categoria.toLowerCase()} en Venezuela. 
+              Explora inmuebles de {cat?.label || categoria.toLowerCase()} en venta en Venezuela. 
               Publica gratis y conecta con compradores de todo el país.
             </p>
           </>

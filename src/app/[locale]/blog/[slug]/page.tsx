@@ -64,7 +64,7 @@ function generateStaticParams(): { slug: string }[] {
 async function generateMetadata(props: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await props.params
   const post = getPostBySlug(slug)
-  if (!post) return { title: 'Post not found — Venezuela Inmuebles' }
+  if (!post) return { title: 'Post not found — Venezuela Inmuebles', robots: { index: false, follow: false } }
 
   return {
     title: `${post.title} — Blog Venezuela Inmuebles`,
@@ -100,7 +100,7 @@ function generateArticleSchema(post: Post) {
       "url": "https://venezuela-inmuebles.online",
       "logo": {
         "@type": "ImageObject",
-        "url": "https://venezuela-inmuebles.online/logo.png"
+        "url": "https://venezuela-inmuebles.online/logo-venezuela-inmuebles.png"
       }
     },
     "mainEntityOfPage": {
@@ -113,10 +113,29 @@ function generateArticleSchema(post: Post) {
   }
 }
 
-function inlineFormat(text: string): string {
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+// Solo se permiten enlaces http(s), rutas relativas, anclas y mailto.
+function isSafeUrl(url: string): boolean {
+  return /^(https?:\/\/|\/|#|mailto:)/i.test(url) && !/^\s*javascript:/i.test(url)
+}
+
+function inlineFormat(rawText: string): string {
+  let text = escapeHtml(rawText)
   text = text.replace(/\*\*(.+?)\*\*/g, '<strong class="font-bold text-gray-900">$1</strong>')
   text = text.replace(/_(.+?)_/g, '<em>$1</em>')
-  text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-brand-primary font-semibold hover:underline underline-offset-2">$1</a>')
+  text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, label, url) =>
+    isSafeUrl(url.trim())
+      ? `<a href="${url.trim()}" class="text-brand-primary font-semibold hover:underline underline-offset-2" rel="noopener noreferrer">${label}</a>`
+      : label
+  )
   return text
 }
 
@@ -249,7 +268,7 @@ export default async function BlogPost(props: { params: Promise<{ slug: string }
       {/* Article Schema.org JSON-LD */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema).replace(/</g, '\\u003c') }}
       />
       
       {/* Breadcrumb */}

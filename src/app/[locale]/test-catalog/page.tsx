@@ -1,6 +1,8 @@
+import { devOnlyPage } from '@/lib/dev-only'
 import { supabase } from '@/lib/supabase'
 
 export default async function TestCatalogPage() {
+  devOnlyPage()
   try {
     // Test the same query as used in catalog page
     const { data, count, error } = await supabase

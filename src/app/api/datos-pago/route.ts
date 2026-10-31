@@ -1,40 +1,23 @@
-import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 
-// La consulta depende de datos de la base; no debe ejecutarse ni cachearse al compilar.
+// Datos de Pago Móvil PUBLICABLES (teléfono, cédula y banco del receptor).
+// Se configuran por variables de entorno del servidor (nunca en el código fuente
+// ni en variables NEXT_PUBLIC_ del bundle del cliente).
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if (!supabaseUrl || !supabaseKey) {
-    return NextResponse.json({ error: 'Supabase no está configurado' }, { status: 503 })
+  const pagoMovil = {
+    telefono: process.env.PAGO_MOVIL_TELEFONO?.trim() || '',
+    cedula: process.env.PAGO_MOVIL_CEDULA?.trim() || '',
+    banco: process.env.PAGO_MOVIL_BANCO?.trim() || '',
   }
 
-  const supabase = createClient(supabaseUrl, supabaseKey)
-  // Get the verified admin profile which has the payment data
-  const { data: admin } = await supabase
-    .from('perfiles')
-    .select('pago_movil_telefono, pago_movil_cedula, pago_movil_banco')
-    .eq('verificado', true)
-    .maybeSingle()
-
-  if (!admin || !admin.pago_movil_telefono) {
-    // Fallback if admin profile doesn't have payment data
-    return NextResponse.json({
-      pagoMovil: {
-        telefono: '04126443099',
-        cedula: 'V20794917',
-        banco: 'Banco Provincial BBVA'
-      }
-    })
+  if (!pagoMovil.telefono || !pagoMovil.cedula || !pagoMovil.banco) {
+    return NextResponse.json(
+      { error: 'Datos de pago no configurados' },
+      { status: 503 }
+    )
   }
 
-  return NextResponse.json({
-    pagoMovil: {
-      telefono: admin.pago_movil_telefono,
-      cedula: admin.pago_movil_cedula || 'V29394292',
-      banco: admin.pago_movil_banco || 'Banesco'
-    }
-  })
+  return NextResponse.json({ pagoMovil })
 }

@@ -51,7 +51,7 @@ export default async function ComoFuncionaPage() {
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }} />
       <div className="min-h-screen bg-gray-50">
         <div className="bg-gradient-to-r from-brand-primary to-brand-dark text-white py-16 px-4">
           <div className="max-w-3xl mx-auto text-center">

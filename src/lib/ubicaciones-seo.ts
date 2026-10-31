@@ -27,13 +27,15 @@ ESTADOS.forEach((estado) => {
       titulo: `Inmuebles en ${municipio.capital}, ${estado} | Venezuela Inmuebles`,
       descripcion: `Encuentra casas, apartamentos, terrenos y otros inmuebles en venta o alquiler en ${municipio.capital}, ${estado}.`,
       keywords: [
-        `clasificados ${municipio.capital}`,
-        `compra venta ${municipio.capital}`,
-        `marketplace ${estado}`,
-        `anuncios ${municipio.capital}`,
-        `vender en ${municipio.capital}`,
-        `productos usados ${municipio.capital}`,
-        `${municipio.capital} ${estado}`
+        `inmuebles en ${municipio.capital}`,
+        `casas en venta ${municipio.capital} ${estado}`,
+        `apartamentos en venta ${municipio.capital}`,
+        `apartamentos en alquiler ${municipio.capital}`,
+        `terrenos en venta ${municipio.capital} ${estado}`,
+        `locales comerciales ${municipio.capital}`,
+        `bienes raices ${municipio.capital} ${estado}`,
+        `propiedades ${municipio.capital} ${estado} venezuela`,
+        `inmobiliaria ${municipio.capital}`,
       ]
     })
   })

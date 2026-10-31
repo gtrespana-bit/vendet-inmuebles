@@ -174,7 +174,7 @@ export default function CatalogoClient({ initialProducts = [], initialCount = 0 
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema).replace(/</g, '\\u003c') }}
       />
       <div className="catalog-page home-shell py-8">
         <nav className="catalog-breadcrumbs" aria-label="Breadcrumb">

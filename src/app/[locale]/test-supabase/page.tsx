@@ -1,6 +1,8 @@
+import { devOnlyPage } from '@/lib/dev-only'
 import { supabase } from '@/lib/supabase'
 
 export default async function TestSupabasePage() {
+  devOnlyPage()
   try {
     // Test basic connection
     const { data, error } = await supabase

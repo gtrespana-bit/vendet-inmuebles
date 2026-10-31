@@ -1,6 +1,8 @@
+import { devOnlyPage } from '@/lib/dev-only'
 import { supabase } from '@/lib/supabase'
 
 export default async function TestProductPage() {
+  devOnlyPage()
   try {
     // First get a product ID
     const { data: products } = await supabase

@@ -1,12 +1,17 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { requireAdmin } from '@/lib/api-auth'
 import { limpiarAuditoriaAntigua } from '@/lib/auditoria'
 
 export const dynamic = 'force-dynamic'
 
-export async function POST() {
+// Solo administradores: usa la service role key para ejecutar el RPC de limpieza.
+export async function POST(request: NextRequest) {
+  const auth = await requireAdmin(request)
+  if (!auth.ok) return auth.response
+
   try {
     const resultado = await limpiarAuditoriaAntigua()
-    
+
     if (resultado.error) {
       return NextResponse.json(
         { error: resultado.error },
