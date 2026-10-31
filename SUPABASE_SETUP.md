@@ -49,3 +49,14 @@ Los secretos se deben guardar directamente como variables de entorno en Vercel, 
 - **Push/VAPID:** el par nuevo está configurado en Vercel para Production, Preview y Development; se incluyó en el deployment posterior al PR #4.
 
 R2 sigue pendiente de configurar y verificar. Cuando se despliegue el cambio de remitente y se confirme que `SMTP_PASS` contiene la clave de Resend, se pueden probar los correos de la aplicación; las pruebas completas de aceptación esperan también a R2. Telegram y Zoho se probarán cuando se retomen.
+
+## Avisos por correo del chat
+
+La migración `006_notificaciones_email.sql` (aplicada el 2026-10-31) añade la cola `notificaciones_email`,
+la preferencia `perfiles.email_notificaciones` y los triggers que programan y
+cancelan los avisos de mensajes sin leer. El envío real lo hace el cron
+`/api/cron/notificaciones-email`, programado en `vercel.json` cada 5 minutos y
+protegido con la variable `CRON_SECRET`.
+
+Detalles, alternativas de programación (Vercel Cron, Supabase pg_cron) y lista
+completa de correos transaccionales: [EMAIL_NOTIFICATIONS.md](EMAIL_NOTIFICATIONS.md).

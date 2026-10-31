@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { notifyUser } from '@/lib/push-notify'
 import { requireAdmin } from '@/lib/api-auth'
 import { requireUUIDs } from '@/lib/validation'
+import { notificarCreditosAgregados } from '@/lib/email-eventos'
 
 export async function POST(request: NextRequest) {
   try {
@@ -57,6 +58,7 @@ export async function POST(request: NextRequest) {
       icon: '/icon-192.png',
       click_url: '/creditos',
     })
+    await notificarCreditosAgregados(auth.supabaseAdmin, userId, creditos)
 
     return NextResponse.json({ ok: true, nuevoBalance })
   } catch (err: any) {

@@ -3,6 +3,7 @@ import { revalidatePath } from 'next/cache'
 import { notifyUser } from '@/lib/push-notify'
 import { requireAdmin } from '@/lib/api-auth'
 import { requireUUIDs } from '@/lib/validation'
+import { notificarPropiedadDestacada } from '@/lib/email-eventos'
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,7 +20,7 @@ export async function POST(request: NextRequest) {
 
     const { data: product, error: productError } = await auth.supabaseAdmin
       .from('inmuebles')
-      .select('usuario_id, titulo')
+      .select('usuario_id, titulo, slug')
       .eq('id', productId)
       .maybeSingle()
     if (productError) return NextResponse.json({ error: productError.message }, { status: 500 })
@@ -44,7 +45,12 @@ export async function POST(request: NextRequest) {
         body: `"${product.titulo}" ahora está destacado y llegará a más compradores.`,
         tag: 'destacado',
         icon: '/icon-192.png',
-        click_url: `/inmueble/${productId}`,
+        click_url: `/inmueble/${product.slug || productId}`,
+      })
+      await notificarPropiedadDestacada(auth.supabaseAdmin, {
+        usuarioId: product.usuario_id,
+        titulo: product.titulo,
+        slug: product.slug,
       })
     }
 

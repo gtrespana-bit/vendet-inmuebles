@@ -55,15 +55,30 @@ export const CatalogFilters = ({
     router.push(`${pathname}?${params.toString()}`)
   }
 
-  const applyPriceFilters = () => {
+  // Los campos de precio y área se editan en local: se envían juntos en la
+  // acción única del pie del panel, nunca repartidos entre las secciones.
+  const setNumericParam = (params: URLSearchParams, key: string, value: string) => {
+    const normalized = value.trim()
+    if (normalized && Number(normalized) >= 0) params.set(key, normalized)
+    else params.delete(key)
+  }
+
+  const applyPendingFilters = () => {
     const params = new URLSearchParams(searchParams.toString())
     params.delete('pagina')
-    if (minPrice) params.set('precioMin', minPrice)
-    else params.delete('precioMin')
-    if (maxPrice) params.set('precioMax', maxPrice)
-    else params.delete('precioMax')
+    setNumericParam(params, 'precioMin', minPrice)
+    setNumericParam(params, 'precioMax', maxPrice)
+    setNumericParam(params, 'areaMin', areaMin)
+    setNumericParam(params, 'areaMax', areaMax)
     router.push(`${pathname}?${params.toString()}`)
   }
+
+  const pendingChanges = [
+    minPrice !== (precioMin || ''),
+    maxPrice !== (precioMax || ''),
+    areaMin !== (searchParams.get('areaMin') || ''),
+    areaMax !== (searchParams.get('areaMax') || ''),
+  ].filter(Boolean).length
 
   const clearFilters = () => {
     setMinPrice('')
@@ -116,9 +131,6 @@ export const CatalogFilters = ({
           <label htmlFor="filter-max-price">{t('catalog.maxPrice')}</label>
           <input id="filter-max-price" type="number" min="0" inputMode="numeric" value={maxPrice} onChange={(event) => setMaxPrice(event.target.value)} placeholder="—" />
         </div>
-        <button type="button" onClick={applyPriceFilters}>
-          {t('catalog.applyFilters')} <ArrowRight size={15} aria-hidden="true" />
-        </button>
       </fieldset>
 
       {(['habitaciones', 'banos', 'estacionamientos'] as const).map((key) => (
@@ -140,14 +152,6 @@ export const CatalogFilters = ({
             <legend>{t('catalog.extra.area')}</legend>
             <div><label htmlFor="filter-min-area">{t('catalog.min')}</label><input id="filter-min-area" type="number" min="0" value={areaMin} onChange={(e) => setAreaMin(e.target.value)} placeholder="0" /></div>
             <div><label htmlFor="filter-max-area">{t('catalog.max')}</label><input id="filter-max-area" type="number" min="0" value={areaMax} onChange={(e) => setAreaMax(e.target.value)} placeholder="—" /></div>
-            <button type="button" onClick={() => {
-              const params = new URLSearchParams(searchParams.toString())
-              params.delete('pagina')
-              for (const [key, value] of [['areaMin', areaMin], ['areaMax', areaMax]]) {
-                if (value && Number(value) >= 0) params.set(key, value); else params.delete(key)
-              }
-              router.push(`${pathname}?${params.toString()}`)
-            }}>{t('catalog.applyFilters')} <ArrowRight size={15} aria-hidden="true" /></button>
           </fieldset>
           <div className="catalog-filter-panel__group">
             <label htmlFor="filter-condition">{t('catalog.extra.condition')}</label>
@@ -172,6 +176,26 @@ export const CatalogFilters = ({
             ))}
           </fieldset>
         </div>
+      </div>
+
+      {/* Acción única y ordenada al final del panel */}
+      <div className="catalog-filter-panel__actions">
+        <button type="button" className="catalog-filter-panel__apply" onClick={applyPendingFilters}>
+          <span>
+            {t('catalog.applyChanges')}
+            {pendingChanges > 0 && (
+              <span className="catalog-filter-panel__pending" title={t('catalog.pendingChanges', { count: pendingChanges })}>
+                {pendingChanges}
+              </span>
+            )}
+          </span>
+          <ArrowRight size={16} aria-hidden="true" />
+        </button>
+        {(hasAnyFilter || pendingChanges > 0) && (
+          <button type="button" className="catalog-filter-panel__reset" onClick={clearFilters}>
+            <RotateCcw size={14} aria-hidden="true" /> {t('catalog.clearFilters')}
+          </button>
+        )}
       </div>
     </section>
   )

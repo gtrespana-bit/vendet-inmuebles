@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { notifyUser } from '@/lib/push-notify'
 import { requireAdmin } from '@/lib/api-auth'
 import { requireUUIDs } from '@/lib/validation'
+import { notificarVerificacion } from '@/lib/email-eventos'
 
 export async function POST(request: NextRequest) {
   try {
@@ -26,6 +27,7 @@ export async function POST(request: NextRequest) {
       icon: '/icon-192.png',
       click_url: '/dashboard',
     })
+    await notificarVerificacion(auth.supabaseAdmin, userId, true)
 
     return NextResponse.json({ ok: true })
   } catch (err: any) {

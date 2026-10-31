@@ -11,7 +11,6 @@ import { ESTADOS, getMunicipiosNombres } from '@/lib/ubicaciones'
 import { Camera, X, UploadCloud, AlertCircle, Phone, Mail, MapPin, MessageSquare, ChevronLeft, ChevronRight } from 'lucide-react'
 import { verificarContenido, formatearAlertaModeracion } from '@/lib/moderacion'
 import { compressImage } from '@/lib/image-compress'
-import { emailProductoPublicado } from '@/lib/server-email'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 
@@ -394,14 +393,6 @@ export default function PublicarPage() {
         }
       }
 
-      // EMAIL: notificar que el producto fue publicado
-      const nombrePublicador = user?.email?.split('@')[0] || 'Usuario'
-      try {
-        await emailProductoPublicado(user?.email || '', nombrePublicador, titulo, precioUsd, producto.id)
-      } catch (e) {
-        console.error('Error email publicación:', e)
-      }
-      
       router.push(`/inmueble/${producto.id}?nuevo=1`)
     } catch (err) {
       console.error('Unexpected error:', err)

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuthenticatedUser } from '@/lib/api-auth'
 import { isValidUUID } from '@/lib/validation'
+import { notificarPropiedadVendida } from '@/lib/email-eventos'
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,7 +22,7 @@ export async function POST(request: NextRequest) {
 
     const { data: inmueble, error: fetchError } = await auth.supabaseAdmin
       .from('inmuebles')
-      .select('id, usuario_id, vendido')
+      .select('id, usuario_id, vendido, titulo')
       .eq('id', productoId)
       .maybeSingle()
     if (fetchError) return NextResponse.json({ error: fetchError.message }, { status: 500 })
@@ -41,6 +42,11 @@ export async function POST(request: NextRequest) {
       .update(updateData)
       .eq('id', productoId)
     if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 })
+
+    await notificarPropiedadVendida(auth.supabaseAdmin, {
+      usuarioId: inmueble.usuario_id,
+      titulo: inmueble.titulo || 'tu inmueble',
+    })
 
     return NextResponse.json({ ok: true })
   } catch (err: any) {

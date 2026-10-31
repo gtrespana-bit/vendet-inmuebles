@@ -604,7 +604,9 @@
       "habitaciones": "Habitaciones",
       "fincas": "Fincas"
     },
-    "applyFilters": "Aplicar filtros"
+    "applyFilters": "Aplicar filtros",
+    "applyChanges": "Aplicar cambios",
+    "pendingChanges": "{count, plural, one {# cambio sin aplicar} other {# cambios sin aplicar}}"
   },
   "productCard": {
     "featured": "Destacado",

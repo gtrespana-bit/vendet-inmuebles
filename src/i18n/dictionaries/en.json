@@ -606,7 +606,9 @@
       "habitaciones": "Rooms",
       "fincas": "Farms"
     },
-    "applyFilters": "Apply filters"
+    "applyFilters": "Apply filters",
+    "applyChanges": "Apply changes",
+    "pendingChanges": "{count, plural, one {# change not applied} other {# changes not applied}}"
   },
   "productCard": {
     "featured": "Featured",
