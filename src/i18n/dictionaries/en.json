@@ -766,6 +766,8 @@
     "contactTitle": "How can buyers contact you for this listing?",
     "contactDesc": "Contact methods are per listing. Choose the ones you want to show buyers.",
     "calls": "Calls",
+    "phoneCallsLabel": "Phone number for calls (optional)",
+    "whatsappLabel": "Phone number for WhatsApp (optional)",
     "chatAuto": "Internal chat enabled automatically",
     "addPhotos": "Add photos",
     "photosDesc": "Upload up to 10 photos. The first one will be the cover.",
@@ -794,7 +796,8 @@
     "conditionNew": "New",
     "conditionLikeNew": "Like new",
     "conditionGood": "Good",
-    "conditionUsed": "Used"
+    "conditionUsed": "Used",
+    "invalidPhone": "The phone number is invalid: use 7 to 15 digits, it may start with +."
   },
   "dashboard": {
     "passwordTitle": "Change password",
