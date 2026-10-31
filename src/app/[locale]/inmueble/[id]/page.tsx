@@ -23,6 +23,9 @@ import PropertyDetailActions from '@/components/PropertyDetailActions'
 import PropertyLocationMap from '@/components/map/PropertyLocationMap'
 import { jitterPoint, resolveListingGeo } from '@/lib/geo/venezuela'
 
+// Listing edits should appear immediately, not from a cached server fetch.
+export const dynamic = 'force-dynamic'
+
 interface PageProps {
   params: Promise<{ id: string; locale: string }>
 }
@@ -425,7 +428,7 @@ export default async function PropertyDetailPage({ params }: PageProps) {
 
               {ownerId && (
                 <Link href={chatHref} className="property-contact-card__primary">
-                  {isEnglish ? 'Message the owner' : 'Escribir al propietario'} <ArrowUpRight size={17} aria-hidden="true" />
+                  {isEnglish ? 'Open chat' : 'Abrir chat'} <ArrowUpRight size={17} aria-hidden="true" />
                 </Link>
               )}
               {property.propietario_telefono && (

@@ -1,7 +1,8 @@
 'use client';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { clientCache } from '@/lib/clientCache';
+import { applyCatalogExtraFilters } from '@/lib/catalog-extra-filters';
 
 interface ProductFilter {
   categoria?: string;
@@ -28,6 +29,7 @@ interface UseProductLoaderResult {
 export const useProductLoader = (
   initialFilters?: ProductFilter
 ): UseProductLoaderResult => {
+  const requestId = useRef(0);
   const [productos, setProductos] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,11 +37,13 @@ export const useProductLoader = (
 
   const loadProducts = useCallback(async (filters?: ProductFilter) => {
     const activeFilters = { ...initialFilters, ...filters };
+    const request = ++requestId.current;
 
     // Generar cache key
     const cacheKey = `productos_${JSON.stringify(activeFilters)}`;
     const cached = clientCache.get(cacheKey) as any;
     if (cached) {
+      setLoading(false);
       setProductos(cached.productos || []);
       setTotalCount(cached.totalCount || 0);
       return;
@@ -152,7 +156,8 @@ export const useProductLoader = (
       // Filtro por ubicación - ciudad (usar columnas reales)
       if (activeFilters.ubicacionCiudad) {
         query = query.eq('ciudad', activeFilters.ubicacionCiudad);
-      } else if (activeFilters.ubicacionEstado) {
+      }
+      if (activeFilters.ubicacionEstado) {
         query = query.eq('estado', activeFilters.ubicacionEstado);
       }
 
@@ -166,6 +171,8 @@ export const useProductLoader = (
         query = query.lte('precio', parseFloat(activeFilters.precioMax as string));
       }
 
+      query = applyCatalogExtraFilters(query, activeFilters as Record<string, string | undefined>);
+
       // Ordenar por fecha de creación, más recientes primero
       query = query.order('creado_en', { ascending: false }).limit(100);
 
@@ -175,6 +182,7 @@ export const useProductLoader = (
         throw new Error(fetchError.message);
       }
 
+      if (request !== requestId.current) return;
       const productosData = (data || []).map((product: any) => ({
         ...product,
         _isFeatured: Boolean(product.destacado && product.destacado_hasta && new Date(product.destacado_hasta).getTime() > Date.now()),
@@ -188,11 +196,12 @@ export const useProductLoader = (
         totalCount: count || 0,
       });
     } catch (err: any) {
+      if (request !== requestId.current) return;
       setError(err.message || 'Error al cargar productos');
       setProductos([]);
       setTotalCount(0);
     } finally {
-      setLoading(false);
+      if (request === requestId.current) setLoading(false);
     }
   }, [initialFilters]);
 

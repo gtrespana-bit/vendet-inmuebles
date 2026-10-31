@@ -159,11 +159,14 @@ export default function EditarInmueblePage({ params }: { params: { locale: strin
       const cars = ((data.inmueble_caracteristicas as Array<{ caracteristicas: { nombre: string } | null }>) || [])
         .map((r) => r.caracteristicas?.nombre)
         .filter(Boolean) as string[]
-      const has110 = cars.includes('Electricidad 110V')
-      const has220 = cars.includes('Electricidad 220V')
+      // Older catalogue entries may differ in casing; keep unknown features intact.
+      const knownNames = [...AMENIDADES, 'Electricidad 110V', 'Electricidad 220V', 'Agua 24 horas', 'Agua intermitente', 'Amueblado', 'Amueblado parcialmente']
+      const canonicalCars = cars.map((name) => knownNames.find((known) => known.toLocaleLowerCase('es') === name.trim().toLocaleLowerCase('es')) || name)
+      const has110 = canonicalCars.includes('Electricidad 110V')
+      const has220 = canonicalCars.includes('Electricidad 220V')
       setElectricidad(has110 && has220 ? 'ambas' : has110 ? '110v' : has220 ? '220v' : '')
-      setAgua(cars.includes('Agua 24 horas') ? '24h' : cars.includes('Agua intermitente') ? 'intermitente' : '')
-      setCaracteristicas(cars.filter((c) => !['Electricidad 110V', 'Electricidad 220V', 'Agua 24 horas', 'Agua intermitente'].includes(c)))
+      setAgua(canonicalCars.includes('Agua 24 horas') ? '24h' : canonicalCars.includes('Agua intermitente') ? 'intermitente' : '')
+      setCaracteristicas(canonicalCars.filter((c) => !['Electricidad 110V', 'Electricidad 220V', 'Agua 24 horas', 'Agua intermitente'].includes(c)))
 
       setLoading(false)
     }
@@ -225,7 +228,7 @@ export default function EditarInmueblePage({ params }: { params: { locale: strin
       setTimeout(() => router.push(`/${locale}/inmueble/${propertyId}`), 900)
     } catch (err) {
       console.error('Error guardando edición:', err)
-      setError(tp('createError'))
+      setError(t('saveError'))
     } finally {
       setSaving(false)
     }

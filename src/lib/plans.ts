@@ -20,6 +20,8 @@ export async function checkPlanLimits(userId: string) {
     .limit(1)
     .maybeSingle()
 
+  if (susError) throw new Error('No se pudo consultar el plan de la cuenta')
+
   // Default to 'gratuita' if no active subscription
   let currentPlanName = 'gratuita'
   let estado: string | null = null

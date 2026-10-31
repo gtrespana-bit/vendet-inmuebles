@@ -331,6 +331,8 @@
     }
   },
   "header": {
+    "chat": "Chat",
+    "chatUnread": "Chat, {count} mensajes sin leer",
     "map": "Mapa",
     "searchPlaceholder": "Buscar por ubicación, tipo o palabra clave",
     "searchAria": "Buscar inmuebles",
@@ -379,6 +381,38 @@
     "allRightsReserved": "Todos los derechos reservados."
   },
   "catalog": {
+    "extra": {
+      "mapFilterNote": "La vista de mapa solo aplica operación, ciudad y búsqueda; los demás filtros se aplican en la lista.",
+      "loadError": "No se pudieron cargar los inmuebles. Inténtalo de nuevo.",
+      "more": "Más opciones",
+      "any": "Cualquiera",
+      "habitaciones": "Habitaciones",
+      "banos": "Baños",
+      "estacionamientos": "Estacionamientos",
+      "area": "Área de terreno (m²)",
+      "condition": "Condición",
+      "new": "Nuevo",
+      "good": "Usado - buen estado",
+      "renovate": "Para remodelar",
+      "amenities": "Servicios y amenidades",
+      "amenitiesHint": "El inmueble debe tener todas las opciones seleccionadas.",
+      "amenity": {
+        "gas": "Gas doméstico",
+        "ventiladores": "Ventiladores",
+        "aire": "Aire acondicionado",
+        "generador": "Generador eléctrico",
+        "piscina": "Piscina",
+        "ascensor": "Ascensor",
+        "jardin": "Jardín",
+        "balcon": "Balcón o terraza",
+        "cisterna": "Cisterna",
+        "seguridad": "Seguridad 24 horas",
+        "agua24": "Agua 24 horas",
+        "electricidad110": "Electricidad 110V",
+        "electricidad220": "Electricidad 220V",
+        "amueblado": "Amueblado"
+      }
+    },
     "title": "Buscar inmuebles",
     "allProducts": "Todos los inmuebles",
     "results": "{count} resultados",
@@ -1660,7 +1694,17 @@
     "approxNote": "La ubicación exacta se coordina con el propietario.",
     "locationTitle": "Ubicación en el mapa"
   },
+  "planActions": {
+    "loading": "Comprobando tu cuenta…",
+    "current": "Tu plan actual",
+    "contact": "Solicitar cambio de plan",
+    "contactHint": "Indica el plan deseado a soporte. El cambio no es automático.",
+    "error": "No pudimos comprobar tu plan.",
+    "dashboard": "Ir a mi panel",
+    "register": "Crear cuenta"
+  },
   "editListing": {
+    "saveError": "No se pudieron guardar todos los cambios. Revisa el anuncio e inténtalo de nuevo.",
     "photoUploadPending": "Espera a que terminen las subidas y elimina las fotos que hayan fallado.",
     "parkingNone": "Ninguno",
     "waterLabel": "Agua",

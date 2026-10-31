@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase-server'
 import { checkPlanLimits } from '@/lib/plans'
+import { savePropertyFeatures } from '@/lib/property-features'
 
 export async function POST(req: NextRequest) {
   try {
@@ -154,49 +155,14 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Características del inmueble (amueblado, electricidad, amenidades…).
-    // Se resuelven contra el catálogo `caracteristicas` por nombre (case-insensitive);
-    // las que no existen se crean. Máximo 25 por inmueble.
-    if (Array.isArray(caracteristicas) && caracteristicas.length > 0) {
-      const nombres = Array.from(new Set(
-        caracteristicas
-          .filter((c: unknown): c is string => typeof c === 'string')
-          .map((c: string) => c.trim().slice(0, 60))
-          .filter((c: string) => c.length >= 2)
-      )).slice(0, 25)
-
-      if (nombres.length > 0) {
-        const { data: todas } = await supabase.from('caracteristicas').select('id, nombre').limit(500)
-        const porNombre = new Map<string, string | number>()
-        ;(todas || []).forEach((c: any) => porNombre.set(String(c.nombre).toLowerCase().trim(), c.id))
-
-        const ids: Array<string | number> = []
-        for (const nombre of nombres) {
-          let id = porNombre.get(nombre.toLowerCase())
-          if (!id) {
-            const { data: creada } = await supabase
-              .from('caracteristicas')
-              .insert({ nombre })
-              .select('id')
-              .single()
-            const creadoId = creada?.id ?? null
-            if (creadoId !== null && creadoId !== undefined) {
-              id = creadoId
-              porNombre.set(nombre.toLowerCase(), creadoId)
-            }
-          }
-          if (id) ids.push(id)
-        }
-
-        if (ids.length > 0) {
-          const { error: carError } = await supabase.from('inmueble_caracteristicas').insert(
-            ids.map((cid: string | number) => ({ inmueble_id: property.id, caracteristica_id: cid }))
-          )
-          if (carError) {
-            // No fatal: el inmueble ya existe; las características son optativas
-            console.error('Error al guardar características:', carError)
-          }
-        }
+    if (Array.isArray(caracteristicas)) {
+      try {
+        await savePropertyFeatures(supabase, property.id, caracteristicas)
+      } catch (featureError) {
+        console.error('Error al guardar características:', featureError)
+        const { error: rollbackError } = await supabase.from('inmuebles').delete().eq('id', property.id)
+        if (rollbackError) console.error('No se pudo revertir el inmueble:', rollbackError)
+        return NextResponse.json({ error: 'No se pudieron guardar las características del inmueble' }, { status: 500 })
       }
     }
 
@@ -305,46 +271,8 @@ export async function PATCH(req: NextRequest) {
       if (error) throw error
     }
 
-    // Características (reemplazo completo)
     if (Array.isArray(body.caracteristicas)) {
-      const limpias: string[] = Array.from(new Set(
-        (body.caracteristicas as unknown[])
-          .filter((c): c is string => typeof c === 'string')
-          .map((c) => c.trim().slice(0, 60))
-          .filter((c) => c.length >= 2)
-      )).slice(0, 25)
-
-      const { data: existentes } = await supabase.from('caracteristicas').select('id, nombre')
-      const mapa = new Map<string, string | number>()
-      for (const c of existentes || []) mapa.set(String(c.nombre).toLowerCase(), c.id)
-
-      const ids: Array<string | number> = []
-      for (const nombre of limpias) {
-        const found = mapa.get(nombre.toLowerCase())
-        if (found) {
-          ids.push(found)
-          continue
-        }
-        const { data: creada } = await supabase
-          .from('caracteristicas')
-          .insert({ nombre: nombre.slice(0, 60) })
-          .select('id')
-          .single()
-        const creadoId = creada?.id ?? null
-        if (creadoId !== null && creadoId !== undefined) {
-          mapa.set(nombre.toLowerCase(), creadoId)
-          ids.push(creadoId)
-        }
-      }
-
-      const { error: delErr } = await supabase.from('inmueble_caracteristicas').delete().eq('inmueble_id', id)
-      if (delErr) throw delErr
-      if (ids.length > 0) {
-        const { error: joinErr } = await supabase.from('inmueble_caracteristicas').insert(
-          ids.map((cid: string | number) => ({ inmueble_id: id, caracteristica_id: cid }))
-        )
-        if (joinErr) throw joinErr
-      }
+      await savePropertyFeatures(supabase, id, body.caracteristicas)
     }
 
     // Imágenes (lista completa: la primera es portada)

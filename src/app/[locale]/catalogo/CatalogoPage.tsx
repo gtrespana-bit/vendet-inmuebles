@@ -11,10 +11,8 @@ import UbicacionSelector from '@/components/UbicacionSelector'
 import { Pagination } from '@/components/Pagination'
 import { OptimizedProductGrid } from '@/components/OptimizedProductGrid'
 import { CatalogFilters } from '@/components/CatalogFilters'
-import { useProductPagination } from '@/hooks/useProductPagination'
 import { useProductLoader } from '@/hooks/useProductLoader'
 import { LoadingIndicator } from '@/components/LoadingIndicator'
-import { usePrefetch } from '@/hooks/usePrefetch'
 import type { CatalogPropertyRecord } from '@/types/property'
 
 interface CatalogoPageProps {
@@ -43,7 +41,8 @@ export default function CatalogoClient({ initialProducts = [], initialCount = 0 
   const router = useRouter()
 
   // Usar hook de paginación
-  const { currentPage, itemsPerPage } = useProductPagination({ itemsPerPage: 24 })
+  const currentPage = Math.max(1, Number.parseInt(searchParams.get('pagina') || '1', 10) || 1)
+  const itemsPerPage = 24
 
   const categoria = searchParams.get('categoria') || ''
   const subcategoria = searchParams.get('subcategoria') || ''
@@ -55,11 +54,17 @@ export default function CatalogoClient({ initialProducts = [], initialCount = 0 
   const ubicacionCiudad = searchParams.get('ciudad') || ''
 
   const operacion = searchParams.get('operacion') || ''
-  const hasActiveFilters = !!(categoria || subcategoria || marca || q || precioMin || precioMax || ubicacionEstado || ubicacionCiudad || operacion)
+  const habitaciones = searchParams.get('habitaciones') || ''
+  const banos = searchParams.get('banos') || ''
+  const estacionamientos = searchParams.get('estacionamientos') || ''
+  const areaMin = searchParams.get('areaMin') || ''
+  const areaMax = searchParams.get('areaMax') || ''
+  const condicion = searchParams.get('condicion') || ''
+  const amenidades = searchParams.get('amenidades') || ''
+  const hasActiveFilters = !!(categoria || subcategoria || marca || q || precioMin || precioMax || ubicacionEstado || ubicacionCiudad || operacion || habitaciones || banos || estacionamientos || areaMin || areaMax || condicion || amenidades)
 
   // Usar los hooks de carga y precarga de productos
-  const { productos: loadedProductos, loading, totalCount: loaderTotalCount, loadProducts } = useProductLoader();
-  const { prefetchPage } = usePrefetch();
+  const { productos: loadedProductos, loading, error: loaderError, totalCount: loaderTotalCount, loadProducts } = useProductLoader();
 
   // Determinar qué productos usar
   // Durante loading con filtros, mantener productos iniciales para evitar parpadeo
@@ -113,35 +118,10 @@ export default function CatalogoClient({ initialProducts = [], initialCount = 0 
         precioMax,
         ubicacionEstado,
         ubicacionCiudad,
-        operacionTipo: operacion
+        operacionTipo: operacion, habitaciones, banos, estacionamientos, areaMin, areaMax, condicion, amenidades
       });
     }
-  }, [categoria, subcategoria, marca, q, precioMin, precioMax, ubicacionEstado, ubicacionCiudad, hasActiveFilters, loadProducts, operacion]);
-
-  // Precargar la siguiente página cuando sea apropiado
-  useEffect(() => {
-    if (!loading && productosToUse.length > 0 && totalPages > currentPage) {
-      // Precargar la siguiente página después de un breve retraso
-      const prefetchTimer = setTimeout(() => {
-        prefetchPage(
-          currentPage + 1,
-          itemsPerPage,
-          {
-            categoria,
-            subcategoria,
-            marca,
-            q,
-            precioMin,
-            precioMax,
-            ubicacionEstado,
-            ubicacionCiudad
-          }
-        );
-      }, 2000); // Precargar después de 2 segundos para permitir la carga completa de la página actual
-
-      return () => clearTimeout(prefetchTimer);
-    }
-  }, [currentPage, totalPages, loading, productosToUse.length, categoria, subcategoria, marca, q, precioMin, precioMax, ubicacionEstado, ubicacionCiudad, itemsPerPage, prefetchPage]);
+  }, [categoria, subcategoria, marca, q, precioMin, precioMax, ubicacionEstado, ubicacionCiudad, hasActiveFilters, loadProducts, operacion, habitaciones, banos, estacionamientos, areaMin, areaMax, condicion, amenidades]);
 
   const tituloMostrar = q
     ? t('catalog.resultsFor', { q })
@@ -251,8 +231,7 @@ export default function CatalogoClient({ initialProducts = [], initialCount = 0 
                 </div>
 
                 <form action={pathname.startsWith('/en') ? '/en/catalogo' : '/catalogo'} method="GET" className="catalog-search">
-                  {operacion && <input type="hidden" name="operacion" value={operacion} />}
-                  {categoria && <input type="hidden" name="categoria" value={categoria} />}
+                  {Array.from(searchParams.entries()).filter(([key]) => key !== 'q' && key !== 'pagina').map(([key, value], index) => <input key={`${key}-${index}`} type="hidden" name={key} value={value} />)}
                   <input name="q" defaultValue={q} placeholder={`${t('common.search')}...`} aria-label={t('common.search')} />
                   <button type="submit" aria-label={t('common.search')}><Search size={17} /></button>
                 </form>
@@ -260,12 +239,17 @@ export default function CatalogoClient({ initialProducts = [], initialCount = 0 
             </div>
           </div>
 
+          {(categoria || ubicacionEstado || precioMin || precioMax || habitaciones || banos || estacionamientos || areaMin || areaMax || condicion || amenidades) && (
+            <p className="text-xs text-gray-600 mb-3">{t('catalog.extra.mapFilterNote')}</p>
+          )}
+
           <div className="mb-4">
             <UbicacionSelector
               estado={ubicacionEstado}
               ciudad={ubicacionCiudad}
               onChange={(estado, ciudad) => {
                 const params = new URLSearchParams(searchParams.toString())
+                params.delete('pagina')
                 if (estado) params.set('estado', estado); else params.delete('estado')
                 if (ciudad) params.set('ciudad', ciudad); else params.delete('ciudad')
                 router.push(`${pathname}?${params.toString()}`)
@@ -275,6 +259,8 @@ export default function CatalogoClient({ initialProducts = [], initialCount = 0 
 
           {loading ? (
             <LoadingIndicator count={6} />
+          ) : hasActiveFilters && loaderError ? (
+            <div className="catalog-empty" role="alert">{t('catalog.extra.loadError')}</div>
           ) : productosToUse.length === 0 ? (
             <div className="catalog-empty">
               <Search size={48} className="text-gray-300 mx-auto mb-4" />

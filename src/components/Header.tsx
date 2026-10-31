@@ -2,16 +2,18 @@
 
 import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
-import { ArrowUpRight, Globe, Menu, Search, X } from 'lucide-react'
+import { ArrowUpRight, Globe, Menu, Search, X, MessageCircle } from 'lucide-react'
 import LocalLink from '@/components/LocalLink'
 import { BrandMark } from '@/components/BrandMark'
 import { useAuth } from '@/components/AuthProvider'
+import { useUnreadMessages } from '@/hooks/useUnreadMessages'
 import { useLocalizedMessages } from '@/hooks/useLocalizedMessages'
 
 const publishRedirect = '/register?redirect=%2Fpublicar-inmueble'
 
 export function Header() {
   const { user } = useAuth()
+  const unread = useUnreadMessages(user?.id)
   const { t } = useLocalizedMessages()
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -77,6 +79,11 @@ export function Header() {
             <ArrowUpRight size={16} aria-hidden="true" />
           </LocalLink>
         </div>
+
+        <LocalLink href="/chat" className="site-header__chat" aria-label={unread > 0 ? t('header.chatUnread').replace('{count}', String(unread)) : t('header.chat')} title={t('header.chat')}>
+          <span className="site-header__chat-icon"><MessageCircle size={20} aria-hidden="true" />{unread > 0 && <span className="site-header__chat-badge" aria-hidden="true">{unread > 99 ? '99+' : unread}</span>}</span>
+          <span className="site-header__chat-label">{t('header.chat')}</span>
+        </LocalLink>
 
         <button
           type="button"
