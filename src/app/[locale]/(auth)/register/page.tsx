@@ -1,5 +1,6 @@
 'use client'
 
+import { trackEvent } from '@/lib/analytics-client'
 import { useEffect, useState } from 'react'
 import LocalLink from '@/components/LocalLink'
 import { useRouter, usePathname } from 'next/navigation'
@@ -85,6 +86,8 @@ export default function RegisterPage() {
       const redirect = safeInternalPath(new URLSearchParams(window.location.search).get('redirect'))
       if (redirect) localStorage.setItem('vi:after-auth-redirect', localizePath(redirect, locale))
       else localStorage.removeItem('vi:after-auth-redirect')
+
+      trackEvent('registro', { ruta: window.location.pathname, meta: { estado, ciudad } })
 
       sessionStorage.setItem('tempEmail', email)
       const confirmPath = locale === routing.defaultLocale ? '/confirmacion' : `/${locale}/confirmacion`

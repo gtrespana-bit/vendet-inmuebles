@@ -1,3 +1,5 @@
+import { registrarEvento, rutaDesdeReferer } from '@/lib/analytics-server'
+
 import { NextRequest, NextResponse } from 'next/server'
 import nodemailer from 'nodemailer'
 import { checkRateLimit } from '@/lib/rate-limit'
@@ -125,6 +127,13 @@ export async function POST(req: NextRequest) {
 
     // Telegram notification
     await sendTelegramAlert(asuntoClean, nombreClean, emailClean, mensajeClean, telefonoClean, solicitarLlamada)
+
+    await registrarEvento('contacto', {
+      ruta: '/contacto',
+      titulo: asuntoClean,
+      meta: { asunto: asuntoClean, solicita_llamada: !!solicitarLlamada, email: emailClean },
+      req,
+    })
 
     return NextResponse.json({ success: true })
   } catch (e: any) {

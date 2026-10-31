@@ -38,6 +38,17 @@ Migraciones aplicadas al proyecto nuevo el 2026-10-29, en este orden:
 
 La primera crea 25 tablas con RLS, funciones, catálogos y tres buckets de Storage; la segunda crea las vistas públicas de propiedades y perfiles. Verificación remota: 24 estados, 316 ciudades, 2 operaciones, 10 tipos de inmueble, 9 categorías y 10 características; 52 políticas en `public`, 11 en `storage.objects`. Las vistas tienen lectura concedida a `anon`, `authenticated` y `service_role`. Los buckets `cedulas` y `comprobantes` deben mantenerse privados; `foto_perfil` es público. La migración inicial ya aplicada se conserva intacta para respetar el historial; su nombre interno del trigger mantiene el identificador histórico y no aparece en la interfaz. Cualquier cambio en la base debe añadirse como una migración nueva, no reescribiendo esa migración.
 
+### Migración pendiente de aplicar: 007 (analítica interna)
+
+`supabase/migrations/007_analytics_eventos.sql` crea la tabla `public.eventos_web`
+(RLS: insert público con `user_id` verificado, select/delete solo admin), la función
+`registrar_visita_inmueble(uuid)` y los RPCs `admin_analytics_resumen`,
+`admin_analytics_trafico`, `admin_analytics_usuarios`, `admin_analytics_contenido`,
+`admin_analytics_actividad` y `limpiar_eventos_antiguos` (retención 180 días, llamada
+desde el cron `/api/cron/notificaciones-email`). Aplicar con `supabase db push` o
+pegando el archivo en el SQL editor. El panel admin (`/admin?tab=dashboard`) muestra
+estas métricas en las pestañas Resumen / Tráfico / Usuarios / Contenido / Actividad.
+
 ## Integraciones: estado actual
 
 Los secretos se deben guardar directamente como variables de entorno en Vercel, no en el repositorio ni en el chat.

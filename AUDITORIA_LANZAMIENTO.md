@@ -204,5 +204,49 @@ Todas las correcciones marcadas como ✅ ya están aplicadas en esta rama.
 - [ ] Revisión visual móvil ES/EN con inventario real
 - [ ] Actualizar `/planes` según la matriz aprobada (ver ROADMAP)
 
-**Veredicto: el proyecto está en muy buen estado técnico; con las correcciones de esta
-rama y las variables de entorno configuradas, está listo para lanzar.**
+
+---
+
+## 6. PANEL ADMIN PROFESIONAL (2026-10-31, segunda pasada)
+
+Se reconstruyó la pestaña Dashboard del admin como un **panel de analítica interna real**:
+
+### Infraestructura de tracking (nueva)
+- Migración `007_analytics_eventos.sql`: tabla `eventos_web` con RLS (insert público,
+  lectura solo admin), índices por fecha/tipo/ruta/sesión/usuario/UTM, y RPCs
+  `SECURITY DEFINER` que agregan todo en el servidor (el cliente nunca descarga tablas).
+- Endpoint público `POST /api/track` (204 fire-and-forget, rate limit 300/h por IP,
+  whitelist de tipos, sanitización de ruta/meta, detección de bots, UTM first-touch,
+  dispositivo/navegador/país desde headers) + `POST /api/inmueble/visita` (incrementa
+  el contador `visitas` vía RPC `registrar_visita_inmueble`).
+- Eventos instrumentados: pageview (cada navegación, vía `TrackPageView` en el layout),
+  `registro`, `login`, `publicacion_creada`, `mensaje_enviado`, `inicio_chat`,
+  `favorito`, `busqueda` (términos buscados), `contacto`, `compra_creditos`,
+  `vista_inmueble`.
+
+### Panel (`/admin?tab=dashboard` → "Analítica")
+- 5 sub-pestañas con datos agregados vía `/api/admin/analytics/*` (todas `requireAdmin`,
+  verificado 401 sin sesión):
+  - **Resumen**: 12 KPIs con delta vs periodo anterior (▲/▼ %), gráfica de evolución
+    diaria multi-serie (pageviews, sesiones, registros, publicaciones, mensajes,
+    compras), embudo de conversión (pageview→registro→publicación, contacto→compra),
+    créditos vendidos e ingresos.
+  - **Tráfico**: top páginas, referrers, campañas UTM, búsquedas internas más frecuentes,
+    dispositivos y navegadores (donut), países por IP, horas pico (hora Venezuela).
+  - **Usuarios**: registros/logins/activos por día, totales, nuevos, activos, verificados,
+    tipo de cuenta, planes activos, saldo de créditos en circulación, top estados/ciudades.
+  - **Contenido**: publicaciones por día/estado/ciudad/tipo/operación, alerta de
+    moderación pendiente + tiempo medio de moderación, inmuebles más vistos, vendedores
+    con más mensajes, estadísticas de chat (conversaciones, mensajes, no leídos, tasa de
+    respuesta).
+  - **Actividad**: feed unificado en vivo (auditoría admin + registros, publicaciones,
+    compras, contactos).
+- Selector de periodo (Hoy / 7 / 30 / 90 días), auto-refresh 60 s, indicador
+  "actualizado hace…", gráficas SVG propias sin librerías (bundle sin peso extra).
+- Gráficas y KPIs calculados en PostgreSQL (una llamada por vista), no en el cliente.
+
+---
+
+**Veredicto final: con las correcciones de seguridad/SEO de la sección 5, el panel admin
+profesional de la sección 6, la migración 007 aplicada en Supabase y las variables de
+entorno configuradas en Vercel, el proyecto está listo para lanzar.**

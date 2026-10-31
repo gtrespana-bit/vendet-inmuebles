@@ -40,7 +40,13 @@ async function procesar(request: NextRequest) {
     const supabase = createServerClient()
     const resultado = await procesarNotificacionesEmailPendientes(supabase)
     const limpiadas = await limpiarNotificacionesEmailAntiguas(supabase)
-    return NextResponse.json({ ok: true, ...resultado, limpiadas })
+    // Retención de eventos de analítica (>180 días) — best effort
+    let eventosLimpiados = 0
+    try {
+      const { data: ev } = await supabase.rpc('limpiar_eventos_antiguos')
+      eventosLimpiados = Number(ev || 0)
+    } catch { /* la tabla puede no existir aún si falta la migración 007 */ }
+    return NextResponse.json({ ok: true, ...resultado, limpiadas, eventosLimpiados })
   } catch (error: any) {
     console.error('Cron notificaciones-email:', error)
     return NextResponse.json({ ok: false, error: error.message }, { status: 500 })

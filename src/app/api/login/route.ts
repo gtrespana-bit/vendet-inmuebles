@@ -1,3 +1,5 @@
+import { registrarEvento } from '@/lib/analytics-server'
+
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { checkRateLimit } from '@/lib/rate-limit'
@@ -60,6 +62,8 @@ export async function POST(req: NextRequest) {
     responseCookies.forEach(({ name, value, options }) => {
       response.cookies.set(name, value, options)
     })
+
+    await registrarEvento('login', { ruta: '/login', userId: result.user?.id, req })
 
     return response
   } catch (e: any) {

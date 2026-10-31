@@ -1,5 +1,6 @@
 'use client'
 
+import { trackEvent } from '@/lib/analytics-client'
 import LocalLink from '@/components/LocalLink'
 import { Search, ChevronRight, XCircle, Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -159,6 +160,20 @@ export default function BuscarClient({ searchParams: searchParamsPromise }: { se
   }, [searchParams, router])
 
   const clearAll = () => router.push('/buscar')
+
+  // Registrar búsqueda en analítica interna (solo con texto >= 2 caracteres)
+  useEffect(() => {
+    const q = query.trim()
+    if (q.length < 2) return
+    const timer = setTimeout(() => {
+      trackEvent('busqueda', {
+        ruta: '/buscar' + window.location.search,
+        meta: { q, categoria, tipo_slug, estado: ubicacionEstado, ciudad: ubicacionCiudad, precio_min: precioMin, precio_max: precioMax },
+      })
+    }, 800)
+    return () => clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query])
 
   useEffect(() => {
     let cancelled = false

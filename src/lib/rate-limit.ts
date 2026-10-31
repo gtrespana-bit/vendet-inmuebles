@@ -45,6 +45,10 @@ const LIMITS: Record<string, { max: number; windowMs: number }> = {
   'telegram:webhook': { max: 120, windowMs: 60 * 60 * 1000 },
   // Mejora de descripciones con IA (Gemini gratuito): 20 por hora por usuario
   'ai-descripcion': { max: 20, windowMs: 60 * 60 * 1000 },
+  // Eventos de analítica (pageviews): 300 por hora por IP
+  'track:evento': { max: 300, windowMs: 60 * 60 * 1000 },
+  // Visita a ficha de inmueble: 60 por hora por IP
+  'inmueble:visita': { max: 60, windowMs: 60 * 60 * 1000 },
 }
 
 function getSupabaseClient() {

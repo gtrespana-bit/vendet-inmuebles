@@ -1,3 +1,5 @@
+import { registrarEvento, rutaDesdeReferer } from '@/lib/analytics-server'
+
 import { NextRequest, NextResponse } from 'next/server'
 import { revalidatePath } from 'next/cache'
 import { checkRateLimit } from '@/lib/rate-limit'
@@ -136,6 +138,14 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: imageError.message }, { status: 500 })
       }
     }
+
+    await registrarEvento('publicacion_creada', {
+      ruta: `/inmueble/${property.slug || property.id}`,
+      titulo: property.titulo,
+      meta: { inmueble_id: property.id, moderacion: moderationState, estado, ciudad, precio },
+      userId: auth.user.id,
+      req,
+    })
 
     revalidatePath('/')
     revalidatePath('/catalogo')

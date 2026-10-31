@@ -1,3 +1,5 @@
+import { registrarEvento, rutaDesdeReferer } from '@/lib/analytics-server'
+
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuthenticatedUser } from '@/lib/api-auth'
 import { isValidUUID } from '@/lib/validation'
@@ -60,6 +62,13 @@ export async function POST(req: NextRequest) {
       if (duplicate) return NextResponse.json(duplicate)
     }
     if (error || !conversation) return NextResponse.json({ error: error?.message || 'No se pudo crear la conversación' }, { status: 500 })
+    await registrarEvento('inicio_chat', {
+      ruta: '/chat',
+      meta: { conversacion_id: conversation.id, producto_id: productoId },
+      userId: auth.user.id,
+      req,
+    })
+
     return NextResponse.json(conversation, { status: 201 })
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 })
