@@ -11,6 +11,8 @@ import LocationPicker from '@/components/map/LocationPicker'
 import { ESTADOS, getMunicipiosNombres } from '@/lib/ubicaciones'
 import { resolveListingGeo } from '@/lib/geo/venezuela'
 import { compressImage } from '@/lib/image-compress'
+import { limpiarMetodosContacto, tieneMetodosConfigurados, validarMetodosContacto } from '@/lib/contact-methods'
+import ContactMethodsFields, { type MetodosContactoForm } from '@/components/ContactMethodsFields'
 
 /** Misma lista de amenidades que el formulario de publicación */
 const AMENIDADES = [
@@ -89,6 +91,8 @@ export default function EditarInmueblePage({ params }: { params: { locale: strin
   const [caracteristicas, setCaracteristicas] = useState<string[]>([])
   const [lat, setLat] = useState<number | null>(null)
   const [lng, setLng] = useState<number | null>(null)
+  const [metodosContacto, setMetodosContacto] = useState<MetodosContactoForm>({})
+  const [metodosConfigurados, setMetodosConfigurados] = useState(false)
 
   const [tipos, setTipos] = useState<TipoRow[]>([])
   const [imagenes, setImagenes] = useState<ImagenEdit[]>([])
@@ -117,7 +121,7 @@ export default function EditarInmueblePage({ params }: { params: { locale: strin
         .select(`
           id, usuario_id, titulo, precio, descripcion, ciudad, estado,
           area_construida, area_total, puestos_estacionamiento,
-          condicion, latitud, longitud,
+          condicion, latitud, longitud, metodos_contacto,
           tipo:tipo_id ( slug ),
           inmueble_imagenes ( id, url_imagen, orden ),
           inmueble_caracteristicas ( caracteristicas ( nombre ) )
@@ -150,6 +154,34 @@ export default function EditarInmueblePage({ params }: { params: { locale: strin
       setCondicion(data.condicion || '')
       setLat(data.latitud != null ? Number(data.latitud) : null)
       setLng(data.longitud != null ? Number(data.longitud) : null)
+
+      const metodos = data.metodos_contacto as Record<string, unknown> | null
+      const configurados = tieneMetodosConfigurados(metodos)
+      const formulario: MetodosContactoForm = {}
+      if (configurados) {
+        for (const clave of ['telefono', 'whatsapp', 'email', 'messenger'] as const) {
+          const valor = (metodos as Record<string, unknown>)[clave]
+          if (typeof valor === 'string') formulario[clave] = valor
+        }
+      } else {
+        // Publicación antigua: la ficha muestra el teléfono del perfil. Lo
+        // marcamos para que al guardar no se pierdan los botones de contacto.
+        const { data: perfil } = await supabase
+          .from('perfiles')
+          .select('telefono, email, email_visible')
+          .eq('id', user.id)
+          .maybeSingle()
+        const telPerfil = typeof perfil?.telefono === 'string' ? perfil.telefono.trim() : ''
+        if (telPerfil) {
+          formulario.telefono = telPerfil
+          formulario.whatsapp = telPerfil
+        }
+        if (perfil?.email_visible && typeof perfil.email === 'string' && perfil.email) {
+          formulario.email = perfil.email
+        }
+      }
+      setMetodosContacto(formulario)
+      setMetodosConfigurados(configurados)
 
       const imgs = [...((data.inmueble_imagenes as Array<{ id: string; url_imagen: string; orden: number }>) || [])]
         .sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0))
@@ -187,6 +219,15 @@ export default function EditarInmueblePage({ params }: { params: { locale: strin
       setError(t('photoUploadPending'))
       return
     }
+    const campoInvalido = validarMetodosContacto(metodosContacto)
+    if (campoInvalido) {
+      setError(
+        campoInvalido === 'telefono' || campoInvalido === 'whatsapp'
+          ? t('invalidPhone')
+          : campoInvalido === 'email' ? t('invalidEmail') : t('invalidMessenger')
+      )
+      return
+    }
 
     setSaving(true)
     setError('')
@@ -216,6 +257,7 @@ export default function EditarInmueblePage({ params }: { params: { locale: strin
             ...(agua === '24h' ? ['Agua 24 horas'] : agua === 'intermitente' ? ['Agua intermitente'] : []),
           ],
           imagenes: imagenes.map((img) => ({ id: img.id, url: img.url })),
+          metodos_contacto: limpiarMetodosContacto(metodosContacto),
         }),
       })
 
@@ -692,6 +734,23 @@ export default function EditarInmueblePage({ params }: { params: { locale: strin
             placeLabel={tp('mapPlace')}
           />
         </section>
+
+        {/* Métodos de contacto del anuncio (Llamar / WhatsApp / email / Messenger) */}
+        <ContactMethodsFields
+          value={metodosContacto}
+          onChange={setMetodosContacto}
+          idPrefix="edit-contact"
+          labels={{
+            title: t('contactTitle'),
+            desc: t('contactDesc'),
+            whatsappLabel: t('whatsappLabel'),
+            phoneCallsLabel: t('phoneCallsLabel'),
+            emailLabel: t('emailLabel'),
+            messengerLabel: t('messengerLabel'),
+            chatAuto: t('chatAuto'),
+            legacyHint: metodosConfigurados ? undefined : t('contactLegacyHint'),
+          }}
+        />
 
         {/* Descripción */}
         <section className="space-y-3">

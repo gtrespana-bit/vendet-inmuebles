@@ -81,6 +81,7 @@ SELECT
   i.creado_en,
   i.actualizado_en,
   i.publicado_en,
+  i.metodos_contacto,
   
   -- Imágenes como JSON array ordenado (urls solas)
   COALESCE(

@@ -762,11 +762,13 @@
     "municipality": "Municipio",
     "municipalityPlaceholder": "Municipio...",
     "contactTitle": "¿Cómo te contactan en esta publicación?",
-    "contactDesc": "Los métodos de contacto son por publicación. Elige los que quieras mostrar a los compradores.",
+    "contactDesc": "Los métodos de contacto son por publicación. Elige los que quieras mostrar a los compradores; si no marcas ningún teléfono solo se mostrará el chat interno.",
     "calls": "Llamadas",
     "phoneCallsLabel": "Teléfono para llamadas (opcional)",
     "whatsappLabel": "Teléfono para WhatsApp (opcional)",
-    "chatAuto": "Chat interno activado automáticamente",
+    "chatAuto": "El chat interno siempre está activo en todos los anuncios.",
+    "emailLabel": "Email de contacto (opcional)",
+    "messengerLabel": "Facebook Messenger (opcional)",
     "addPhotos": "Añade fotos",
     "photosDesc": "Sube hasta 10 fotos. La primera será la portada.",
     "cover": "Portada",
@@ -795,7 +797,9 @@
     "conditionLikeNew": "Como nuevo",
     "conditionGood": "Bueno",
     "conditionUsed": "Usado",
-    "invalidPhone": "El número de teléfono no es válido: usa 7 a 15 dígitos, puede empezar con +."
+    "invalidPhone": "El número de teléfono no es válido: usa 7 a 15 dígitos, puede empezar con +.",
+    "invalidEmail": "El email de contacto no es válido.",
+    "invalidMessenger": "El enlace de Messenger debe empezar por http:// o https://."
   },
   "dashboard": {
     "passwordTitle": "Cambiar contraseña",
@@ -1535,7 +1539,18 @@
     "mapPinSet": "📍 Ubicación exacta fijada en el mapa",
     "uploadTooLarge": "Una de las imágenes pesa demasiado. La comprimimos igual, pero si persiste, prueba con otra foto (máx. 8 MB).",
     "aiError": "La IA no respondió. Inténtalo de nuevo en unos segundos.",
-    "aiTooShort": "Escribe al menos unas palabras del borrador antes de pedir la mejora con IA."
+    "aiTooShort": "Escribe al menos unas palabras del borrador antes de pedir la mejora con IA.",
+    "contactSection": "Contacto",
+    "contactTitle": "¿Cómo te contactan en este anuncio?",
+    "contactDesc": "Los métodos de contacto son por anuncio. Marca los que quieras mostrar a los compradores; si no marcas ningún teléfono solo se mostrará el chat interno.",
+    "whatsappLabel": "Teléfono para WhatsApp (opcional)",
+    "phoneCallsLabel": "Teléfono para llamadas (opcional)",
+    "emailLabel": "Email de contacto (opcional)",
+    "messengerLabel": "Facebook Messenger (opcional)",
+    "chatAuto": "El chat interno siempre está activo en todos los anuncios.",
+    "invalidPhone": "El número de teléfono no es válido: usa 7 a 15 dígitos, puede empezar con +.",
+    "invalidEmail": "El email de contacto no es válido.",
+    "invalidMessenger": "El enlace de Messenger debe empezar por http:// o https://."
   },
   "pushBanner": {
     "title": "Mantente al día",
@@ -1726,7 +1741,18 @@
     "cancel": "Cancelar",
     "loadError": "No se pudo cargar el anuncio. Inténtalo de nuevo más tarde.",
     "notFound": "Anuncio no encontrado o no eres su propietario",
-    "goDashboard": "Ir a mi panel"
+    "goDashboard": "Ir a mi panel",
+    "contactTitle": "¿Cómo te contactan en este anuncio?",
+    "contactDesc": "Los métodos de contacto son por anuncio. Marca los que quieras mostrar a los compradores; si no marcas ningún teléfono solo se mostrará el chat interno.",
+    "contactLegacyHint": "Este anuncio aún no tiene métodos configurados: ahora se muestra el teléfono de tu perfil. Marca abajo los que quieras usar en esta publicación.",
+    "whatsappLabel": "Teléfono para WhatsApp (opcional)",
+    "phoneCallsLabel": "Teléfono para llamadas (opcional)",
+    "emailLabel": "Email de contacto (opcional)",
+    "messengerLabel": "Facebook Messenger (opcional)",
+    "chatAuto": "El chat interno siempre está activo en todos los anuncios.",
+    "invalidPhone": "El número de teléfono no es válido: usa 7 a 15 dígitos, puede empezar con +.",
+    "invalidEmail": "El email de contacto no es válido.",
+    "invalidMessenger": "El enlace de Messenger debe empezar por http:// o https://."
   },
   "diagnostico": {
     "title": "Diagnóstico de fotos e IA",

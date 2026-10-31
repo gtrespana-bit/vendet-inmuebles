@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase-server'
 import { checkPlanLimits } from '@/lib/plans'
 import { savePropertyFeatures } from '@/lib/property-features'
+import { sanitizarMetodosContacto } from '@/lib/contact-methods'
 
 export async function POST(req: NextRequest) {
   try {
@@ -24,6 +25,7 @@ export async function POST(req: NextRequest) {
       imagenes,
       latitud,
       longitud,
+      metodos_contacto,
       userId,
     } = body
 
@@ -122,6 +124,9 @@ export async function POST(req: NextRequest) {
       latitud: hasCoords ? Number(lat.toFixed(7)) : null,
       longitud: hasCoords ? Number(lng.toFixed(7)) : null,
       imagen_url: imageUrls[0] || null,
+      // Métodos de contacto por publicación (Llamar/WhatsApp/email/Messenger).
+      // `{}` = solo chat interno; `null` = sin configurar.
+      metodos_contacto: sanitizarMetodosContacto(metodos_contacto),
       activo: true,
       estado_moderacion: 'aprobado',
       publicado_en: new Date().toISOString(),
@@ -181,7 +186,8 @@ export async function POST(req: NextRequest) {
  * Body: { id, titulo?, descripcion?, precio?, tipo? (slug), ciudad?, estado?,
  *         area_construida?, area_total?, puestos_estacionamiento?, condicion?,
  *         latitud?, longitud?, caracteristicas?: string[],
- *         imagenes?: Array<{ id?: string, url: string }> }
+ *         imagenes?: Array<{ id?: string, url: string }>,
+ *         metodos_contacto?: { telefono?, whatsapp?, email?, messenger? } | null }
  * Las imágenes se envían como lista completa (la primera = portada).
  */
 export async function PATCH(req: NextRequest) {
@@ -243,6 +249,11 @@ export async function PATCH(req: NextRequest) {
     for (const [key, limit] of [['latitud', 90], ['longitud', 180]] as const) {
       const value = body[key]
       if (value === null || (typeof value === 'number' && Number.isFinite(value) && Math.abs(value) <= limit)) cambios[key] = value
+    }
+    // Métodos de contacto por publicación (Llamar/WhatsApp/email/Messenger).
+    // `{}` = solo chat interno; `null` = sin configurar (se usa el teléfono del perfil).
+    if ('metodos_contacto' in body) {
+      cambios.metodos_contacto = sanitizarMetodosContacto(body.metodos_contacto)
     }
 
     if (estado && ciudad) {

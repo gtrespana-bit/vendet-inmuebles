@@ -4,12 +4,13 @@ import { useState, useEffect, useRef } from 'react'
 import LocalLink from '@/components/LocalLink'
 import { useRouter } from 'next/navigation'
 import { supabase, isSupabaseConfigured } from '@/lib/supabase'
-import { normalizarTelefono } from '@/lib/contact-methods'
+import { limpiarMetodosContacto, validarMetodosContacto } from '@/lib/contact-methods'
 import { getSupabaseAuthHeaders } from '@/lib/supabase-auth-headers'
 import { useAuth } from '@/components/AuthProvider'
+import ContactMethodsFields, { type MetodosContactoForm } from '@/components/ContactMethodsFields'
 import { categoriasData } from '@/lib/categorias'
 import { ESTADOS, getMunicipiosNombres } from '@/lib/ubicaciones'
-import { Camera, X, UploadCloud, AlertCircle, Phone, Mail, MapPin, MessageSquare, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Camera, X, UploadCloud, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react'
 import { verificarContenido, formatearAlertaModeracion } from '@/lib/moderacion'
 import { compressImage } from '@/lib/image-compress'
 import { useTranslations } from 'next-intl'
@@ -82,10 +83,7 @@ export default function PublicarPage() {
   const [uploadProgress, setUploadProgress] = useState(0)
   const [error, setError] = useState('')
   const [specs, setSpecs] = useState<Record<string, string>>({})
-  const [contactEmail, setContactEmail] = useState('')
-  const [contactPhone, setContactPhone] = useState('')
-  const [contactWhatsApp, setContactWhatsApp] = useState('')
-  const [contactMessenger, setContactMessenger] = useState('')
+  const [metodosContacto, setMetodosContacto] = useState<MetodosContactoForm>({})
   const [moderacionResultado, setModeracionResultado] = useState<{ nivel: string; palabras: string[] } | null>(null)
   const [showEmprendedor, setShowEmprendedor] = useState(false)
   const [pubCount, setPubCount] = useState(0)
@@ -265,14 +263,13 @@ export default function PublicarPage() {
       return
     }
 
-    // Validar teléfonos de contacto opcionales (7-15 dígitos, puede llevar +)
-    if (contactPhone && !normalizarTelefono(contactPhone)) {
-      setError(t('invalidPhone') || 'El teléfono para llamadas no es válido (7-15 dígitos, puede incluir +).')
-      setLoading(false)
-      return
-    }
-    if (contactWhatsApp && !normalizarTelefono(contactWhatsApp)) {
-      setError(t('invalidPhone') || 'El teléfono para WhatsApp no es válido (7-15 dígitos, puede incluir +).')
+    // Validar los métodos de contacto opcionales (teléfonos 7-15 dígitos, email y URL)
+    const campoInvalido = validarMetodosContacto(metodosContacto)
+    if (campoInvalido) {
+      const claveError = campoInvalido === 'telefono' || campoInvalido === 'whatsapp'
+        ? 'invalidPhone'
+        : campoInvalido === 'email' ? 'invalidEmail' : 'invalidMessenger'
+      setError(t(claveError))
       setLoading(false)
       return
     }
@@ -312,12 +309,9 @@ export default function PublicarPage() {
         .eq('nombre', categoria)
         .single()
 
-      // Build metodos_contacto JSON
-      const metodosContacto: Record<string, any> = {}
-      if (contactEmail) metodosContacto.email = contactEmail
-      if (contactPhone) metodosContacto.telefono = contactPhone
-      if (contactWhatsApp) metodosContacto.whatsapp = contactWhatsApp
-      if (contactMessenger) metodosContacto.messenger = contactMessenger
+      // Métodos de contacto elegidos (si no se marca ninguno se envía {} =
+      // solo chat interno; el servidor lo distingue de "sin configurar").
+      const metodosElegidos = limpiarMetodosContacto(metodosContacto)
 
       // Alerta al admin si contenido sospechoso (envía notificación Telegram)
       if (estadoModeracion === 'pendiente') {
@@ -363,7 +357,7 @@ export default function PublicarPage() {
           ubicacion_ciudad: ubicacionCiudad,
           imagen_url: imagenUrl,
           imagenes: imagenesArray,
-          metodos_contacto: Object.keys(metodosContacto).length > 0 ? metodosContacto : null,
+          metodos_contacto: metodosElegidos,
           activo: true,
           destacado: false,
         }),
@@ -619,58 +613,20 @@ export default function PublicarPage() {
               </div>
             </div>
 
-            {/* Metodos de contacto por publicacion */}
-            <div className="bg-blue-50/60 border border-blue-200 rounded-xl p-5 space-y-4">
-              <h3 className="font-bold text-gray-900 flex items-center gap-2">
-                <MapPin size={18} />
-                {t('contactTitle')}
-              </h3>
-              <p className="text-xs text-gray-500">{t('contactDesc')}</p>
-
-              <div className="space-y-3">
-                {/* WhatsApp */}
-                <div className="flex items-start gap-3 bg-white border border-gray-200 rounded-lg p-3">
-                  <input type="checkbox" id="useWhatsApp" checked={!!contactWhatsApp} onChange={e => setContactWhatsApp(e.target.checked ? '+' : '')} className="mt-1 rounded text-brand-primary" />
-                  <label htmlFor="useWhatsApp" className="flex-1">
-                    <span className="text-sm font-medium flex items-center gap-1.5">💚 {t('whatsappLabel')}</span>
-                    {contactWhatsApp && <input type="tel" value={contactWhatsApp} onChange={e => setContactWhatsApp(e.target.value)} placeholder="+58 412 1234567" className="mt-1 w-full border border-gray-200 rounded px-2 py-1.5 text-sm" />}
-                  </label>
-                </div>
-
-                {/* Telefono */}
-                <div className="flex items-start gap-3 bg-white border border-gray-200 rounded-lg p-3">
-                  <input type="checkbox" id="usePhone" checked={!!contactPhone} onChange={e => setContactPhone(e.target.checked ? '+' : '')} className="mt-1 rounded text-brand-primary" />
-                  <label htmlFor="usePhone" className="flex-1">
-                    <span className="text-sm font-medium flex items-center gap-1.5"><Phone size={14} /> {t('phoneCallsLabel')}</span>
-                    {contactPhone && <input type="tel" value={contactPhone} onChange={e => setContactPhone(e.target.value)} placeholder="+58 412 1234567" className="mt-1 w-full border border-gray-200 rounded px-2 py-1.5 text-sm" />}
-                  </label>
-                </div>
-
-                {/* Email */}
-                <div className="flex items-start gap-3 bg-white border border-gray-200 rounded-lg p-3">
-                  <input type="checkbox" id="useEmail" checked={!!contactEmail} onChange={e => setContactEmail(e.target.checked ? '+' : '')} className="mt-1 rounded text-brand-primary" />
-                  <label htmlFor="useEmail" className="flex-1">
-                    <span className="text-sm font-medium flex items-center gap-1.5"><Mail size={14} /> Email</span>
-                    {contactEmail && <input type="email" value={contactEmail} onChange={e => setContactEmail(e.target.value)} placeholder="tu@email.com" className="mt-1 w-full border border-gray-200 rounded px-2 py-1.5 text-sm" />}
-                  </label>
-                </div>
-
-                {/* Messenger */}
-                <div className="flex items-start gap-3 bg-white border border-gray-200 rounded-lg p-3">
-                  <input type="checkbox" id="useMessenger" checked={!!contactMessenger} onChange={e => setContactMessenger(e.target.checked ? '+' : '')} className="mt-1 rounded text-brand-primary" />
-                  <label htmlFor="useMessenger" className="flex-1">
-                    <span className="text-sm font-medium flex items-center gap-1.5"><MessageSquare size={14} /> Facebook Messenger</span>
-                    {contactMessenger && <input type="url" value={contactMessenger} onChange={e => setContactMessenger(e.target.value)} placeholder="https://m.me/tuusuario" className="mt-1 w-full border border-gray-200 rounded px-2 py-1.5 text-sm" />}
-                  </label>
-                </div>
-              </div>
-
-              {/* Chat interno siempre activo */}
-              <div className="flex items-center gap-2 text-xs text-gray-500">
-                <MessageSquare size={12} />
-                <span>{t('chatAuto')}</span>
-              </div>
-            </div>
+            {/* Métodos de contacto por publicación (mismo bloque que en editar) */}
+            <ContactMethodsFields
+              value={metodosContacto}
+              onChange={setMetodosContacto}
+              labels={{
+                title: t('contactTitle'),
+                desc: t('contactDesc'),
+                whatsappLabel: t('whatsappLabel'),
+                phoneCallsLabel: t('phoneCallsLabel'),
+                emailLabel: t('emailLabel'),
+                messengerLabel: t('messengerLabel'),
+                chatAuto: t('chatAuto'),
+              }}
+            />
 
             <div className="flex gap-3">
               <button onClick={() => setStep(1)} className="px-6 py-3 rounded-lg font-medium border border-gray-200 hover:bg-gray-50">{t('back')}</button>
@@ -787,19 +743,17 @@ export default function PublicarPage() {
                 <p><span className="text-gray-500">{t('location')}:</span> {ubicacionCiudad}, {ubicacionEstado}</p>
               </div>
 
-              {/* Metodos contacto resumen */}
-              {(contactEmail || contactPhone || contactWhatsApp || contactMessenger) && (
-                <div className="mt-3 p-3 bg-blue-50 rounded-lg">
-                  <p className="text-xs font-semibold text-gray-500 mb-1">{t('contactMethods')}</p>
-                  <div className="flex flex-wrap gap-2 text-xs">
-                    {contactEmail && <span className="bg-white px-2 py-1 rounded border">📧 {contactEmail}</span>}
-                    {contactPhone && <span className="bg-white px-2 py-1 rounded border">📞 {contactPhone}</span>}
-                    {contactWhatsApp && <span className="bg-white px-2 py-1 rounded border">💚 WhatsApp</span>}
-                    {contactMessenger && <span className="bg-white px-2 py-1 rounded border">👤 Messenger</span>}
-                    <span className="bg-white px-2 py-1 rounded border">{t('internalChat')}</span>
-                  </div>
+              {/* Métodos de contacto elegidos */}
+              <div className="mt-3 p-3 bg-blue-50 rounded-lg">
+                <p className="text-xs font-semibold text-gray-500 mb-1">{t('contactMethods')}</p>
+                <div className="flex flex-wrap gap-2 text-xs">
+                  {metodosContacto.email && <span className="bg-white px-2 py-1 rounded border">📧 {metodosContacto.email}</span>}
+                  {metodosContacto.telefono && <span className="bg-white px-2 py-1 rounded border">📞 {metodosContacto.telefono}</span>}
+                  {metodosContacto.whatsapp && <span className="bg-white px-2 py-1 rounded border">💚 WhatsApp</span>}
+                  {metodosContacto.messenger && <span className="bg-white px-2 py-1 rounded border">👤 Messenger</span>}
+                  <span className="bg-white px-2 py-1 rounded border">{t('internalChat')}</span>
                 </div>
-              )}
+              </div>
 
               <div className="mt-4 p-4 bg-gray-50 rounded-lg"><p className="text-sm text-gray-600"><strong>{t('description')}:</strong></p><p className="text-sm text-gray-700 mt-1">{descripcion}</p></div>
             </div>
