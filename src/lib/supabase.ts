@@ -34,9 +34,14 @@ let cliente: any = null
 function crearCliente() {
   if (cliente) return cliente
   if (esNavegador()) {
-    const opciones: Record<string, unknown> = {}
+    // OJO (@supabase/ssr 0.0.10): si se pasa un objeto de opciones SIN la
+    // propiedad `cookies`, su destructuring deja cookies = undefined y
+    // storage.getItem() lanza "TypeError: reading 'get'" en TODA llamada de
+    // auth del navegador (getSession/setSession) -> el login mostraba
+    // "Error de conexión". Hay que pasar siempre cookies: {}.
+    const opciones: Record<string, unknown> = { cookies: {} }
     if (!configured) opciones.global = { fetch: unavailableFetch }
-    cliente = createBrowserClient(supabaseUrl, supabaseAnonKey, opciones)
+    cliente = createBrowserClient(supabaseUrl, supabaseAnonKey, opciones as any)
   } else {
     cliente = createClient(supabaseUrl, supabaseAnonKey, {
       ...(configured ? {} : { global: { fetch: unavailableFetch } }),

@@ -48,29 +48,51 @@ export default function LoginPage() {
     setError('')
     setLoading(true)
 
+    // Cada paso con su propio manejo de error para no enmascarar la causa real.
+    let res: Response
     try {
-      const res = await fetch('/api/login', {
+      res = await fetch('/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       })
-      const data = await res.json()
+    } catch {
+      setError(locale === 'en' ? 'Connection error. Please try again.' : 'Error de conexión. Intenta de nuevo.')
+      setLoading(false)
+      return
+    }
 
-      if (!res.ok) {
-        setError(data.error === 'Invalid login credentials'
-          ? (locale === 'en' ? 'The email or password is incorrect. Check your details and try again.' : 'Email o contraseña incorrectos. Verifica tus datos.')
-          : data.error)
-        return
-      }
+    let data: any = null
+    try {
+      data = await res.json()
+    } catch {
+      data = null
+    }
 
-      if (data.session?.access_token && data.session?.refresh_token) {
+    if (!res.ok) {
+      setError(data?.error === 'Invalid login credentials'
+        ? (locale === 'en' ? 'The email or password is incorrect. Check your details and try again.' : 'Email o contraseña incorrectos. Verifica tus datos.')
+        : (data?.error || (locale === 'en' ? `Server error (HTTP ${res.status}). Try again.` : `Error del servidor (HTTP ${res.status}). Intenta de nuevo.`)))
+      setLoading(false)
+      return
+    }
+
+    // setSession es best-effort: /api/login ya fijó la cookie de sesión en la
+    // respuesta y el cliente del navegador (ssr) lee la sesión de esa cookie.
+    // Si setSession falla no debe impedir el login.
+    if (data?.session?.access_token && data?.session?.refresh_token) {
+      try {
         await supabase.auth.setSession({
           access_token: data.session.access_token,
           refresh_token: data.session.refresh_token,
         })
         await new Promise((resolve) => setTimeout(resolve, 100))
+      } catch {
+        // continuar: la cookie del servidor ya está puesta
       }
+    }
 
+    try {
       const queryRedirect = safeInternalPath(new URLSearchParams(window.location.search).get('redirect'))
       const storedRedirect = safeInternalPath(localStorage.getItem('vi:after-auth-redirect'))
       const target = localizePath(queryRedirect || storedRedirect || '/dashboard', locale)
