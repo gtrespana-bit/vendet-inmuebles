@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { requireAuthenticatedUser } from '@/lib/api-auth'
 import { sanitizeString } from '@/lib/validation'
+import { sanitizarMetodosContacto } from '@/lib/contact-methods'
 import { checkPlanLimits } from '@/lib/plans'
 import { emailProductoPublicado, emailPropiedadEnRevision } from '@/lib/server-email'
 
@@ -108,7 +109,7 @@ export async function POST(req: NextRequest) {
       precio,
       moneda: 'USD',
       imagen_url: firstImage,
-      metodos_contacto: body.metodos_contacto && typeof body.metodos_contacto === 'object' ? body.metodos_contacto : null,
+      metodos_contacto: sanitizarMetodosContacto(body.metodos_contacto),
       activo: true,
       estado_moderacion: moderationState,
       motivo_moderacion: moderationState === 'pendiente' ? sanitizeString(body.motivo_moderacion || '', 500) || null : null,

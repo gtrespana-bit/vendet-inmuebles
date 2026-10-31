@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import LocalLink from '@/components/LocalLink'
 import { useRouter } from 'next/navigation'
 import { supabase, isSupabaseConfigured } from '@/lib/supabase'
+import { normalizarTelefono } from '@/lib/contact-methods'
 import { getSupabaseAuthHeaders } from '@/lib/supabase-auth-headers'
 import { useAuth } from '@/components/AuthProvider'
 import { categoriasData } from '@/lib/categorias'
@@ -260,6 +261,18 @@ export default function PublicarPage() {
 
     if (!isSupabaseConfigured()) {
       setError('Supabase no esta configurado. Agrega las variables de entorno.')
+      setLoading(false)
+      return
+    }
+
+    // Validar teléfonos de contacto opcionales (7-15 dígitos, puede llevar +)
+    if (contactPhone && !normalizarTelefono(contactPhone)) {
+      setError(t('invalidPhone') || 'El teléfono para llamadas no es válido (7-15 dígitos, puede incluir +).')
+      setLoading(false)
+      return
+    }
+    if (contactWhatsApp && !normalizarTelefono(contactWhatsApp)) {
+      setError(t('invalidPhone') || 'El teléfono para WhatsApp no es válido (7-15 dígitos, puede incluir +).')
       setLoading(false)
       return
     }
@@ -619,7 +632,7 @@ export default function PublicarPage() {
                 <div className="flex items-start gap-3 bg-white border border-gray-200 rounded-lg p-3">
                   <input type="checkbox" id="useWhatsApp" checked={!!contactWhatsApp} onChange={e => setContactWhatsApp(e.target.checked ? '+' : '')} className="mt-1 rounded text-brand-primary" />
                   <label htmlFor="useWhatsApp" className="flex-1">
-                    <span className="text-sm font-medium flex items-center gap-1.5">💚 WhatsApp</span>
+                    <span className="text-sm font-medium flex items-center gap-1.5">💚 {t('whatsappLabel')}</span>
                     {contactWhatsApp && <input type="tel" value={contactWhatsApp} onChange={e => setContactWhatsApp(e.target.value)} placeholder="+58 412 1234567" className="mt-1 w-full border border-gray-200 rounded px-2 py-1.5 text-sm" />}
                   </label>
                 </div>
@@ -628,7 +641,7 @@ export default function PublicarPage() {
                 <div className="flex items-start gap-3 bg-white border border-gray-200 rounded-lg p-3">
                   <input type="checkbox" id="usePhone" checked={!!contactPhone} onChange={e => setContactPhone(e.target.checked ? '+' : '')} className="mt-1 rounded text-brand-primary" />
                   <label htmlFor="usePhone" className="flex-1">
-                    <span className="text-sm font-medium flex items-center gap-1.5"><Phone size={14} /> {t('calls')}</span>
+                    <span className="text-sm font-medium flex items-center gap-1.5"><Phone size={14} /> {t('phoneCallsLabel')}</span>
                     {contactPhone && <input type="tel" value={contactPhone} onChange={e => setContactPhone(e.target.value)} placeholder="+58 412 1234567" className="mt-1 w-full border border-gray-200 rounded px-2 py-1.5 text-sm" />}
                   </label>
                 </div>

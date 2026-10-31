@@ -764,6 +764,8 @@
     "contactTitle": "¿Cómo te contactan en esta publicación?",
     "contactDesc": "Los métodos de contacto son por publicación. Elige los que quieras mostrar a los compradores.",
     "calls": "Llamadas",
+    "phoneCallsLabel": "Teléfono para llamadas (opcional)",
+    "whatsappLabel": "Teléfono para WhatsApp (opcional)",
     "chatAuto": "Chat interno activado automáticamente",
     "addPhotos": "Añade fotos",
     "photosDesc": "Sube hasta 10 fotos. La primera será la portada.",
@@ -792,7 +794,8 @@
     "conditionNew": "Nuevo",
     "conditionLikeNew": "Como nuevo",
     "conditionGood": "Bueno",
-    "conditionUsed": "Usado"
+    "conditionUsed": "Usado",
+    "invalidPhone": "El número de teléfono no es válido: usa 7 a 15 dígitos, puede empezar con +."
   },
   "dashboard": {
     "passwordTitle": "Cambiar contraseña",
