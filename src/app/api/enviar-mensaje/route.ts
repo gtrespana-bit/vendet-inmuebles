@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
       click_url: `/chat?conversation=${conversacion_id}`,
     })
 
-    await registrarEvento('mensaje_enviado', {
+    void registrarEvento('mensaje_enviado', {
       ruta: '/chat',
       meta: { conversacion_id, destinatario_id },
       userId: auth.user.id,

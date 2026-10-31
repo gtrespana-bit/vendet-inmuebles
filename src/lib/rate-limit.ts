@@ -66,6 +66,24 @@ export async function checkRateLimit(
   const limit = LIMITS[key]
   if (!limit) return { ok: true, remaining: 999, resetIn: 0, limit: 0 }
 
+  // Timeout de seguridad: si la DB tarda o no responde, se permite el paso
+  // (fail-open). NUNCA se debe bloquear una operación crítica (p. ej. login)
+  // por un rate limiter lento.
+  const falloApertura = { ok: true, remaining: 999, resetIn: 0, limit: limit.max }
+  return await Promise.race([
+    checkRateLimitInner(key, identifier, extraData),
+    new Promise<typeof falloApertura>((resolve) => setTimeout(() => resolve(falloApertura), 2500)),
+  ])
+}
+
+async function checkRateLimitInner(
+  key: string,
+  identifier: string, // userId o IP
+  extraData?: { ip?: string }
+): Promise<{ ok: boolean; remaining: number; resetIn: number; limit: number }> {
+  const limit = LIMITS[key]
+  if (!limit) return { ok: true, remaining: 999, resetIn: 0, limit: 0 }
+
   const now = Date.now()
   const windowStart = new Date(now - limit.windowMs).toISOString()
 

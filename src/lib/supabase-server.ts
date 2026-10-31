@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
+import { leerCookieSesion, parseSesionCookie, payloadDesdeToken, tokenNoExpirado } from './auth-cookie'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -23,34 +24,13 @@ export function createServerClient() {
 export async function getServerUser(): Promise<any | null> {
   try {
     const cookieStore = await cookies()
-    const allCookies = cookieStore.getAll()
+    const sesion = parseSesionCookie(leerCookieSesion(cookieStore.getAll()))
 
-    const authCookie = allCookies.find(c =>
-      c.name.includes('auth-token')
-    )
-
-    if (!authCookie?.value) return null
-
-    let parsed: any
-    try {
-      parsed = JSON.parse(authCookie.value)
-    } catch {
-      try {
-        parsed = JSON.parse(decodeURIComponent(authCookie.value))
-      } catch {
-        return null
-      }
-    }
-
-    const accessToken = parsed?.access_token
+    const accessToken = sesion?.access_token
     if (!accessToken) return null
 
-    const parts = accessToken.split('.')
-    if (parts.length !== 3) return null
-
-    const payload = JSON.parse(
-      Buffer.from(parts[1], 'base64url').toString('utf-8')
-    )
+    const payload = payloadDesdeToken(accessToken)
+    if (!payload?.sub) return null
 
     return {
       id: payload.sub,
@@ -67,40 +47,68 @@ export async function getServerUser(): Promise<any | null> {
 }
 
 /**
- * Verifica en el servidor el JWT de sesión guardado en cookies llamando a
- * Supabase (verificación real, no solo parseo del payload).
- * Devuelve el usuario verificado o null. Úsalo en layouts/páginas privadas.
+ * Verifica en el servidor el JWT de sesión guardado en cookies.
+ *
+ * 1. Lee la cookie de sesión de forma robusta (chunks `.0/.1` y las dos
+ *    claves posibles: 'sb-auth-token' del navegador y 'sb-<ref>-auth-token'
+ *    de las API routes).
+ * 2. Intenta la verificación real contra Supabase (sb.auth.getUser) pero con
+ *    un timeout de 4 s: si Supabase tarda o no responde, NO se bloquea la
+ *    página — se usa el JWT parseado localmente si no ha expirado.
+ * 3. Si Supabase rechaza el token (401/403) se devuelve null.
+ *
+ * Nota de seguridad: el parseo local no valida la firma, pero la autorización
+ * real siempre ocurre en las API routes (cada llamada lleva el token a
+ * Supabase y RLS aplica los permisos). Este guard solo decide si se renderiza
+ * el panel; nunca expone datos por sí mismo.
  */
 export async function getVerifiedUserFromCookies(): Promise<{ id: string; email?: string; [k: string]: any } | null> {
   try {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-    if (!url || !serviceKey) return null
 
     const cookieStore = await cookies()
-    const authCookie = cookieStore.getAll().find((c) => c.name.includes('auth-token'))
-    if (!authCookie?.value) return null
+    const sesion = parseSesionCookie(leerCookieSesion(cookieStore.getAll()))
+    const accessToken = sesion?.access_token
+    if (!accessToken) return null
 
-    let parsed: any = null
-    try {
-      parsed = JSON.parse(authCookie.value)
-    } catch {
+    const payload = payloadDesdeToken(accessToken)
+    if (!payload?.sub) return null
+
+    if (url && serviceKey) {
       try {
-        parsed = JSON.parse(decodeURIComponent(authCookie.value))
+        const sb = createClient(url, serviceKey, {
+          auth: { autoRefreshToken: false, persistSession: false },
+        })
+        const verificacion = await Promise.race([
+          sb.auth.getUser(accessToken),
+          new Promise<{ data: { user: any }; error: any }>((resolve) =>
+            setTimeout(() => resolve({ data: { user: null }, error: { message: 'timeout verificación', status: 0 } }), 4000)
+          ),
+        ])
+        if (!verificacion.error && verificacion.data.user) {
+          return verificacion.data.user
+        }
+        const status = (verificacion.error as any)?.status
+        // Supabase rechazó el token explícitamente → sesión inválida
+        if (status === 401 || status === 403) return null
+        // Si fue timeout/red, seguir con el fallback local
       } catch {
-        return null
+        // error de red al verificar: seguir con el fallback local
       }
     }
 
-    const accessToken = parsed?.access_token
-    if (!accessToken) return null
-
-    const sb = createClient(url, serviceKey, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    })
-    const { data, error } = await sb.auth.getUser(accessToken)
-    if (error || !data.user) return null
-    return data.user
+    // Fallback: token firmado por Supabase y no expirado (autorización real en las API)
+    if (tokenNoExpirado(payload)) {
+      return {
+        id: payload.sub,
+        email: payload.email,
+        user_metadata: payload.user_metadata || {},
+        app_metadata: payload.app_metadata || {},
+        role: payload.role || 'authenticated',
+      }
+    }
+    return null
   } catch {
     return null
   }

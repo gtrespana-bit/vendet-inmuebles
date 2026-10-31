@@ -128,7 +128,7 @@ export async function POST(req: NextRequest) {
     // Telegram notification
     await sendTelegramAlert(asuntoClean, nombreClean, emailClean, mensajeClean, telefonoClean, solicitarLlamada)
 
-    await registrarEvento('contacto', {
+    void registrarEvento('contacto', {
       ruta: '/contacto',
       titulo: asuntoClean,
       meta: { asunto: asuntoClean, solicita_llamada: !!solicitarLlamada, email: emailClean },

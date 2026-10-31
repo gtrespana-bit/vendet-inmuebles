@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
       if (duplicate) return NextResponse.json(duplicate)
     }
     if (error || !conversation) return NextResponse.json({ error: error?.message || 'No se pudo crear la conversación' }, { status: 500 })
-    await registrarEvento('inicio_chat', {
+    void registrarEvento('inicio_chat', {
       ruta: '/chat',
       meta: { conversacion_id: conversation.id, producto_id: productoId },
       userId: auth.user.id,

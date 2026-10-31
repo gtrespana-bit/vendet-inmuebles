@@ -63,7 +63,10 @@ export async function POST(req: NextRequest) {
       response.cookies.set(name, value, options)
     })
 
-    await registrarEvento('login', { ruta: '/login', userId: result.user?.id, req })
+    // Analítica "fire-and-forget": NUNCA se hace await aquí. La respuesta con
+    // las cookies de sesión debe salir YA; si registrarEvento tardara o fallara,
+    // el login parecería roto. (registrarEvento además tiene timeout interno.)
+    void registrarEvento('login', { ruta: '/login', userId: result.user?.id, req })
 
     return response
   } catch (e: any) {
