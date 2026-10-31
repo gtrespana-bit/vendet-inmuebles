@@ -31,7 +31,21 @@ import {
   ChevronLeft, ChevronRight, AlertCircle,
 } from 'lucide-react'
 
-const CONDICIONES = ['nueva', 'como_nueva', 'buen_estado', 'remodelar'] as const
+const CONDICIONES = [
+  { value: 'Nuevo', key: 'conditionNew' },
+  { value: 'Usado - buen estado', key: 'conditionGood' },
+  { value: 'Para remodelar', key: 'conditionRenovate' },
+  { value: 'nueva', key: 'conditionNew' },
+  { value: 'como_nueva', key: 'conditionLikeNew' },
+  { value: 'buen_estado', key: 'conditionGood' },
+  { value: 'remodelar', key: 'conditionRenovate' },
+] as const
+
+const TIPO_KEYS: Record<string, string> = {
+  casa: 'typeHouse', apartamento: 'typeApartment', townhouse: 'typeTownhouse',
+  terreno: 'typeLand', 'local-comercial': 'typeCommercial', oficina: 'typeOffice',
+  galpon: 'typeWarehouse', habitacion: 'typeRoom', finca: 'typeFarm', edificio: 'typeBuilding',
+}
 const ELECTRICIDAD = ['110v', '220v', 'ambas'] as const
 const AGUA = ['24h', 'intermitente'] as const
 
@@ -42,7 +56,7 @@ interface ImagenEdit {
   error?: boolean
 }
 
-interface TipoRow { id: number; slug: string }
+interface TipoRow { id: number; slug: string; nombre: string }
 
 export default function EditarInmueblePage({ params }: { params: { locale: string; id: string } }) {
   const { locale, id: propertyId } = params as { locale: string; id: string }
@@ -85,7 +99,7 @@ export default function EditarInmueblePage({ params }: { params: { locale: strin
   const dragIndexRef = useRef<number | null>(null)
 
   const cargarTipos = useCallback(async () => {
-    const { data } = await supabase.from('tipos_inmueble').select('id, slug').order('id')
+    const { data } = await supabase.from('tipos_inmueble').select('id, slug, nombre').order('id')
     setTipos((data as TipoRow[]) || [])
   }, [])
 
@@ -162,12 +176,12 @@ export default function EditarInmueblePage({ params }: { params: { locale: strin
   const guardar = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!titulo.trim() || !precio || !descripcion.trim()) {
-      setError(tp('required'))
+      setError(tp('requiredError'))
       return
     }
     const subiendo = imagenes.some((img) => img.uploading)
     if (subiendo || imagenes.some((img) => img.error)) {
-      setError(tp('uploadingPhotos'))
+      setError(t('photoUploadPending'))
       return
     }
 
@@ -211,7 +225,7 @@ export default function EditarInmueblePage({ params }: { params: { locale: strin
       setTimeout(() => router.push(`/${locale}/inmueble/${propertyId}`), 900)
     } catch (err) {
       console.error('Error guardando edición:', err)
-      setError(tp('error'))
+      setError(tp('createError'))
     } finally {
       setSaving(false)
     }
@@ -230,7 +244,7 @@ export default function EditarInmueblePage({ params }: { params: { locale: strin
         continue
       }
       if (file.size > 8 * 1024 * 1024) {
-        setError(tp('fileSizeError'))
+        setError(tp('fileTypeError'))
         continue
       }
 
@@ -392,7 +406,7 @@ export default function EditarInmueblePage({ params }: { params: { locale: strin
       <form onSubmit={guardar} className="space-y-8 listing-form">
         {/* Fotos */}
         <section>
-          <h2 className="text-lg font-semibold text-gray-900 mb-3">{tp('photosSection')}</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-3">{tp('sectionPhotos')}</h2>
           {imagenes.length > 0 && (
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 mb-3">
               {imagenes.map((img, index) => (
@@ -465,7 +479,7 @@ export default function EditarInmueblePage({ params }: { params: { locale: strin
             className="w-full listing-upload p-6 rounded-xl border-2 border-dashed text-sm font-medium flex flex-col items-center gap-2"
           >
             <Camera size={24} />
-            {tp('addPhotos')}
+            {tp('uploadPrompt')}
           </button>
           <input
             ref={fileInputRef}
@@ -479,10 +493,10 @@ export default function EditarInmueblePage({ params }: { params: { locale: strin
 
         {/* Datos básicos */}
         <section className="space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900">{tp('basicData')}</h2>
+          <h2 className="text-lg font-semibold text-gray-900">{tp('sectionBasics')}</h2>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{tp('tituloLabel')}</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{tp('titleField')}</label>
             <input
               type="text"
               value={titulo}
@@ -494,7 +508,7 @@ export default function EditarInmueblePage({ params }: { params: { locale: strin
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{tp('tipoLabel')}</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{tp('propertyType')}</label>
               <select
                 value={tipo}
                 onChange={(e) => setTipo(e.target.value)}
@@ -502,13 +516,13 @@ export default function EditarInmueblePage({ params }: { params: { locale: strin
               >
                 {tipos.map((tRow) => (
                   <option key={tRow.id} value={tRow.slug}>
-                    {tp(`type${tRow.slug.replace(/(^|-)(\w)/g, (_, __, c) => c.toUpperCase())}` as any) || tRow.slug}
+                    {TIPO_KEYS[tRow.slug] ? tp(TIPO_KEYS[tRow.slug]) : tRow.nombre || tRow.slug}
                   </option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{tp('precioLabel')}</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{tp('price')}</label>
               <input
                 type="number"
                 value={precio}
@@ -521,7 +535,7 @@ export default function EditarInmueblePage({ params }: { params: { locale: strin
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{tp('areaConstruida')}</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{tp('builtArea')}</label>
               <input
                 type="number"
                 value={areaConstruida}
@@ -532,7 +546,7 @@ export default function EditarInmueblePage({ params }: { params: { locale: strin
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{tp('areaTerreno')}</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{tp('landArea')}</label>
               <input
                 type="number"
                 value={areaTerreno}
@@ -548,25 +562,26 @@ export default function EditarInmueblePage({ params }: { params: { locale: strin
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">{tp('parking')}</label>
               <select value={puestos} onChange={(e) => setPuestos(e.target.value)} className="w-full px-3 py-3 rounded-xl border border-gray-300 bg-white">
-                <option value="">{tp('parkingNone')}</option>
+                <option value="">{t('parkingNone')}</option>
                 {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
                   <option key={n} value={n}>{n}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{tp('conditionLabel')}</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{tp('condition')}</label>
               <select value={condicion} onChange={(e) => setCondicion(e.target.value)} className="w-full px-3 py-3 rounded-xl border border-gray-300 bg-white">
-                <option value="">{tp('conditionPlaceholder')}</option>
-                {CONDICIONES.map((c) => (
-                  <option key={c} value={c}>{tp(`condition${c.replace(/(^_|_)(\w)/g, (_, __, ch) => ch.toUpperCase())}` as any)}</option>
+                <option value="">{tp('selectOptional')}</option>
+                {condicion && !CONDICIONES.some((c) => c.value === condicion) && <option value={condicion}>{condicion}</option>}
+                {CONDICIONES.filter((c) => !['nueva', 'como_nueva', 'buen_estado', 'remodelar'].includes(c.value) || c.value === condicion).map((c) => (
+                  <option key={c.value} value={c.value}>{c.key === 'conditionLikeNew' ? t('conditionLikeNew') : tp(c.key)}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{tp('electricityLabel')}</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{tp('electricity')}</label>
               <select value={electricidad} onChange={(e) => setElectricidad(e.target.value)} className="w-full px-3 py-3 rounded-xl border border-gray-300 bg-white">
-                <option value="">{tp('electricityPlaceholder')}</option>
+                <option value="">{tp('selectOptional')}</option>
                 <option value="110v">{tp('power110')}</option>
                 <option value="220v">{tp('power220')}</option>
                 <option value="ambas">{tp('powerBoth')}</option>
@@ -576,30 +591,33 @@ export default function EditarInmueblePage({ params }: { params: { locale: strin
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{tp('waterLabel')}</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('waterLabel')}</label>
               <select value={agua} onChange={(e) => setAgua(e.target.value)} className="w-full px-3 py-3 rounded-xl border border-gray-300 bg-white">
-                <option value="">{tp('waterPlaceholder')}</option>
+                <option value="">{tp('selectOptional')}</option>
                 <option value="24h">{tp('water24h')}</option>
-                <option value="intermitente">{tp('waterIntermitente')}</option>
+                <option value="intermitente">{t('waterIntermitente')}</option>
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{tp('furnishedLabel')}</label>
-              <div className="flex gap-2 pt-1">
-                <button
-                  type="button"
-                  onClick={() => setCaracteristicas((prev) => prev.includes(tp('furnishedYes')) ? prev.filter((v) => v !== tp('furnishedYes')) : [...prev, tp('furnishedYes')])}
-                  className={`px-4 py-2 rounded-lg text-sm border-2 ${caracteristicas.includes(tp('furnishedYes')) ? 'border-brand-primary bg-brand-primary/10 font-semibold' : 'border-gray-200'}`}
-                >
-                  {tp('furnishedYes')}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setCaracteristicas((prev) => prev.includes(tp('furnishedNo')) ? prev.filter((v) => v !== tp('furnishedNo')) : [...prev, tp('furnishedNo')])}
-                  className={`px-4 py-2 rounded-lg text-sm border-2 ${caracteristicas.includes(tp('furnishedNo')) ? 'border-brand-primary bg-brand-primary/10 font-semibold' : 'border-gray-200'}`}
-                >
-                  {tp('furnishedNo')}
-                </button>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{tp('furnished')}</label>
+              <div className="flex flex-wrap gap-2 pt-1">
+                {[
+                  { value: '', label: tp('furnishedNone') },
+                  { value: 'Amueblado parcialmente', label: tp('furnishedPartial') },
+                  { value: 'Amueblado', label: tp('furnishedFull') },
+                ].map((option) => {
+                  const selected = option.value ? caracteristicas.includes(option.value) : !caracteristicas.includes('Amueblado') && !caracteristicas.includes('Amueblado parcialmente')
+                  return (
+                    <button key={option.value} type="button" aria-pressed={selected}
+                      onClick={() => setCaracteristicas((prev) => [
+                        ...prev.filter((v) => v !== 'Amueblado' && v !== 'Amueblado parcialmente'),
+                        ...(option.value ? [option.value] : []),
+                      ])}
+                      className={`px-4 py-2 rounded-lg text-sm border-2 ${selected ? 'border-brand-primary bg-brand-primary/10 font-semibold' : 'border-gray-200'}`}>
+                      {option.label}
+                    </button>
+                  )
+                })}
               </div>
             </div>
           </div>
@@ -607,10 +625,10 @@ export default function EditarInmueblePage({ params }: { params: { locale: strin
 
         {/* Ubicación */}
         <section className="space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900">{tp('locationSection')}</h2>
+          <h2 className="text-lg font-semibold text-gray-900">{tp('sectionLocation')}</h2>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{tp('estadoLabel')}</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{tp('state')}</label>
               <select
                 value={estado}
                 onChange={(e) => {
@@ -621,21 +639,21 @@ export default function EditarInmueblePage({ params }: { params: { locale: strin
                 }}
                 className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white"
               >
-                <option value="">{tp('selectEstado')}</option>
+                <option value="">{tp('selectState')}</option>
                 {ESTADOS.map((e2) => (
                   <option key={e2} value={e2}>{e2}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{tp('ciudadLabel')}</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{tp('city')}</label>
               <select
                 value={ciudad}
                 onChange={(e) => setCiudad(e.target.value)}
                 disabled={!estado}
                 className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white disabled:bg-gray-50"
               >
-                <option value="">{estado ? tp('selectCiudad') : tp('selectEstadoFirst')}</option>
+                <option value="">{estado ? tp('selectCity') : t('selectEstadoFirst')}</option>
                 {getMunicipiosNombres(estado).map((c) => (
                   <option key={c} value={c}>{c}</option>
                 ))}
@@ -675,7 +693,7 @@ export default function EditarInmueblePage({ params }: { params: { locale: strin
         {/* Descripción */}
         <section className="space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">{tp('descriptionSection')}</h2>
+            <h2 className="text-lg font-semibold text-gray-900">{tp('description')}</h2>
             <button
               type="button"
               onClick={mejorarDescripcion}
@@ -700,7 +718,7 @@ export default function EditarInmueblePage({ params }: { params: { locale: strin
         {/* Características */}
         <section>
           <h2 className="text-lg font-semibold text-gray-900 mb-1">{tp('amenities')}</h2>
-          <p className="text-xs text-gray-500 mb-3">{tp('amenitiesHint')}</p>
+          <p className="text-xs text-gray-500 mb-3">{t('amenitiesHint')}</p>
           <div className="flex flex-wrap gap-2">
             {AMENIDADES.map((valor) => {
               const activo = caracteristicas.includes(valor)

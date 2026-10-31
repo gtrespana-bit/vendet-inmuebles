@@ -1661,6 +1661,13 @@
     "locationTitle": "Ubicación en el mapa"
   },
   "editListing": {
+    "photoUploadPending": "Espera a que terminen las subidas y elimina las fotos que hayan fallado.",
+    "parkingNone": "Ninguno",
+    "waterLabel": "Agua",
+    "waterIntermitente": "Agua intermitente",
+    "selectEstadoFirst": "Selecciona primero un estado",
+    "amenitiesHint": "Selecciona las amenidades que ofrece el inmueble.",
+    "conditionLikeNew": "Como nuevo",
     "title": "Editar anuncio",
     "subtitle": "Actualiza los datos, fotos y su orden. La primera foto es la portada.",
     "save": "Guardar cambios",

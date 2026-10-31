@@ -1663,6 +1663,13 @@
     "locationTitle": "Location on the map"
   },
   "editListing": {
+    "photoUploadPending": "Wait for uploads to finish and remove any failed photos.",
+    "parkingNone": "None",
+    "waterLabel": "Water",
+    "waterIntermitente": "Intermittent water",
+    "selectEstadoFirst": "Select a state first",
+    "amenitiesHint": "Select the amenities offered by the property.",
+    "conditionLikeNew": "Like new",
     "title": "Edit listing",
     "subtitle": "Update the details, photos and their order. The first photo is the cover.",
     "save": "Save changes",
