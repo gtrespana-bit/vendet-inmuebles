@@ -24,7 +24,7 @@ const box = (text) =>
   `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 18px;background:#F8F5EE;border:1px solid #EDE6DA;border-left:3px solid #B08542;border-radius:8px;"><tr><td style="padding:14px 16px;${SANS};font-size:13px;line-height:1.6;color:#475569;">${text}</td></tr></table>`
 
 const button = (label, url) =>
-  `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:22px 0 14px;"><tr><td style="background:#16294B;border-radius:8px;"><a href="${url}" target="_blank" rel="noopener" style="display:inline-block;padding:15px 34px;${SANS};font-size:15px;font-weight:700;color:#FFFFFF;text-decoration:none;">${label}</a></td></tr></table>`
+  `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:22px 0 14px;"><tr><td style="background:#16294B;border-radius:8px;"><a href="${url}" target="_blank" rel="noopener" style="display:inline-block;padding:15px 28px;${SANS};font-size:15px;font-weight:700;color:#FFFFFF;text-decoration:none;">${label}</a></td></tr></table>`
 
 const fallback = (url) =>
   `<p style="margin:0 0 18px;${SANS};font-size:12px;line-height:1.6;color:#64748B;">Si el botón no funciona, copia y pega este enlace en tu navegador:<br><a href="${url}" target="_blank" rel="noopener" style="color:#16294B;word-break:break-all;">${url}</a></p>`
@@ -62,7 +62,7 @@ const templates = {
       button('Confirmar nuevo correo', '{{ .ConfirmationURL }}') +
       fallback('{{ .ConfirmationURL }}') +
       box('Si no solicitaste este cambio, ignora este correo. Tu dirección actual seguirá siendo la misma y nadie podrá modificarla sin confirmar este enlace.'),
-    note: 'Aviso enviado a {{ .Email }}.',
+    note: 'Por seguridad, el cambio debe confirmarse desde el enlace. Si no lo solicitaste, ignora este correo.',
   },
 
   invite: {
@@ -113,7 +113,7 @@ const templates = {
     eyebrow: 'Acceso',
     heading: 'Restablece tu contraseña',
     body:
-      paragraph('Recibimos una solicitud para restablecer la contraseña de tu cuenta. Pulsa el botón para crear una nueva.') +
+      paragraph('Recibimos una solicitud para restablecer la contraseña de tu cuenta. Pulsa el botón para crear una nueva. El enlace caduca en 1 hora.') +
       button('Crear nueva contraseña', '{{ .ConfirmationURL }}') +
       fallback('{{ .ConfirmationURL }}') +
       box('Si no solicitaste el cambio, ignora este correo: tu contraseña actual sigue siendo válida y nadie más puede modificarla.'),
@@ -129,7 +129,7 @@ const templates = {
     body:
       paragraph('La contraseña de tu cuenta <strong style="color:#16294B;">{{ .Email }}</strong> se actualizó correctamente. Si fuiste tú, no tienes que hacer nada más.') +
       box('Si no fuiste tú, restablece tu contraseña de inmediato y escríbenos a <a href="mailto:contacto@venezuela-inmuebles.online" style="color:#16294B;">contacto@venezuela-inmuebles.online</a>.') +
-      button('Revisar mi cuenta', '{{ .SiteURL }}/login'),
+      button('Revisar mi cuenta', '{{ .SiteURL }}/dashboard'),
     note: 'Este aviso de seguridad se envía siempre que cambia la contraseña de la cuenta.',
   },
 
