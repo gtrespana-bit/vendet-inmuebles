@@ -1672,5 +1672,25 @@
     "cancel": "Cancel",
     "notFound": "Listing not found or you are not its owner",
     "goDashboard": "Go to my dashboard"
+  },
+  "diagnostico": {
+    "title": "Photo upload & AI diagnostics",
+    "subtitle": "Check from your session whether photo uploads (R2) and AI (Gemini) work on the server.",
+    "loginRequired": "Sign in to run the diagnostics (use the same account you publish with).",
+    "loginLink": "Sign in",
+    "photosTitle": "Photo uploads (R2)",
+    "photosDesc": "Uploads a real test file to the bucket and verifies environment variables and write permissions.",
+    "aiTitle": "Description improvement (Gemini)",
+    "aiDesc": "Sends a sample description to the AI and checks it returns full-length text.",
+    "reRun": "Run again",
+    "running": "Testing… this may take a few seconds",
+    "photosOk": "R2 storage OK — photo uploads should work when publishing",
+    "photosFail": "R2 storage is failing — check the variables marked with ✗",
+    "envVars": "Environment variables (in Vercel)",
+    "writeTestLabel": "R2 write test",
+    "probeUrlLabel": "Open test file",
+    "aiOk": "AI working — returned a {words}-word description",
+    "aiFail": "The AI did not respond correctly:",
+    "hint": "If any R2 variable shows ✗, add or fix it in Vercel → Settings → Environment Variables and redeploy. If the write test fails with AccessDenied, the R2 API token lacks the «Object Read & Write» permission in Cloudflare."
   }
 }
