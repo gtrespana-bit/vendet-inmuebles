@@ -11,6 +11,8 @@ import LocalLink from '@/components/LocalLink'
 import { useTranslations } from 'next-intl'
 import { emailMensajeRecibido } from '@/lib/server-email'
 import { localizePath } from '@/lib/auth-redirect'
+import { UNREAD_REFRESH_EVENT } from '@/hooks/useUnreadMessages'
+import { mergeChatMessages } from '@/lib/chat-messages'
 
 type Conversacion = {
   id: string
@@ -67,16 +69,9 @@ export default function ChatPageClient() {
   const searchParams = useSearchParams()
   const productoId = searchParams?.get('producto_id')
   const vendedorId = searchParams?.get('vendedor_id')
+  const requestedConversation = searchParams?.get('conversation')
 
-  const [conversaciones, setConversaciones] = useState<Conversacion[]>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const cached = sessionStorage.getItem('venezuela_inmuebles_chat_convs')
-        if (cached) return JSON.parse(cached)
-      } catch {}
-    }
-    return []
-  })
+  const [conversaciones, setConversaciones] = useState<Conversacion[]>([])
   const [convId, setConvId] = useState<string | null>(null)
   const [mensajes, setMensajes] = useState<Mensaje[]>([])
   const [texto, setTexto] = useState('')
@@ -92,8 +87,12 @@ export default function ChatPageClient() {
   const chatContainerRef = useRef<HTMLDivElement>(null)
   const userRef = useRef(user)
   const convIdRef = useRef(convId)
+  const showMobileChatRef = useRef(showMobileChat)
+  const initialIntentRef = useRef<string | null>(null)
+  const conversationsRequestRef = useRef(0)
   userRef.current = user
   convIdRef.current = convId
+  showMobileChatRef.current = showMobileChat
 
   const [mostrarResena, setMostrarResena] = useState(false)
   const [ratingResena, setRatingResena] = useState(5)
@@ -116,10 +115,11 @@ export default function ChatPageClient() {
     const params = new URLSearchParams()
     if (productoId) params.set('producto_id', productoId)
     if (vendedorId) params.set('vendedor_id', vendedorId)
+    if (requestedConversation) params.set('conversation', requestedConversation)
     const queryString = params.toString()
     const returnPath = `/chat${queryString ? `?${queryString}` : ''}`
     router.replace(localizePath(`/login?redirect=${encodeURIComponent(returnPath)}`, locale))
-  }, [user, authLoading, router, locale, productoId, vendedorId])
+  }, [user, authLoading, router, locale, productoId, vendedorId, requestedConversation])
 
   useEffect(() => {
     chatContainerRef.current?.scrollTo({ top: chatContainerRef.current.scrollHeight, behavior: 'smooth' })
@@ -149,6 +149,7 @@ export default function ChatPageClient() {
   const loadConversaciones = useCallback(async () => {
     const uid = userRef.current?.id
     if (!uid) { loadingRef.current = false; return }
+    const requestId = ++conversationsRequestRef.current
 
     const { data: convs, error } = await supabase
       .from('conversaciones')
@@ -209,10 +210,15 @@ export default function ChatPageClient() {
       }
     })
 
+    if (requestId !== conversationsRequestRef.current || userRef.current?.id !== uid) return
     setConversaciones(enriched)
-    try { sessionStorage.setItem('venezuela_inmuebles_chat_convs', JSON.stringify(enriched)) } catch {}
-
-    if (productoId && vendedorId && vendedorId !== uid) {
+    const intentKey = `${uid}:${productoId || ''}:${vendedorId || ''}:${requestedConversation || ''}`
+    if (initialIntentRef.current === intentKey) return
+    initialIntentRef.current = intentKey
+    if (requestedConversation) {
+      const match = enriched.find((conversation) => conversation.id === requestedConversation)
+      if (match) { setConvId(match.id); setShowMobileChat(true) }
+    } else if (productoId && vendedorId && vendedorId !== uid) {
       const match = enriched.find(conversation =>
         conversation.producto_id === productoId &&
         ((conversation.user1_id === uid && conversation.user2_id === vendedorId) ||
@@ -248,7 +254,7 @@ export default function ChatPageClient() {
         }
       }
     }
-  }, [productoId, vendedorId, t])
+  }, [productoId, vendedorId, requestedConversation, t])
 
   useEffect(() => {
     if (authLoading || !user) return
@@ -258,72 +264,102 @@ export default function ChatPageClient() {
   }, [user, authLoading, loadConversaciones])
 
   const loadMensajes = useCallback(async (id: string) => {
+    const uid = userRef.current?.id
     const { data, error } = await supabase
       .from('mensajes')
       .select('id, remitente_id, destinatario_id, contenido, leido, creado_en, conversacion_id')
       .eq('conversacion_id', id)
       .order('creado_en', { ascending: true })
     if (error) { console.error('Error loading messages:', error); return }
-    setMensajes(data || [])
+    if (convIdRef.current !== id || uid !== userRef.current?.id) return
+    // Keep events received while the query was in flight.
+    setMensajes(previous => mergeChatMessages(data || [], previous, id))
   }, [])
 
-  useEffect(() => {
-    if (convId) loadMensajes(convId)
-  }, [convId, loadMensajes])
-
-  useEffect(() => {
-    if (!user) return
-    const subscription = supabase
-      .channel('chat-msgs')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensajes' }, (payload: any) => {
-        const incoming = payload.new as any
-        if (incoming.conversacion_id === convIdRef.current) {
-          setMensajes(previous => previous.some(message => message.id === incoming.id) ? previous : [...previous, incoming])
-        }
-      })
-      .subscribe()
-    return () => { supabase.removeChannel(subscription) }
-  }, [user])
-
-  useEffect(() => {
-    if (!user) return
-    const subscription = supabase
-      .channel('chat-convs')
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'conversaciones' }, (payload: any) => {
-        const updated = payload.new as any
-        if (updated.user1_id !== user.id && updated.user2_id !== user.id) return
-        setConversaciones(previous => {
-          const index = previous.findIndex(conversation => conversation.id === updated.id)
-          if (index < 0) return previous
-          const next = [...previous]
-          next[index] = {
-            ...next[index],
-            ultimo_mensaje: updated.ultimo_mensaje_contenido || updated.ultimo_mensaje || next[index].ultimo_mensaje,
-            ultimo_mensaje_en: updated.ultimo_mensaje_en,
-          }
-          return next.sort((a, b) => (b.ultimo_mensaje_en || '').localeCompare(a.ultimo_mensaje_en || ''))
-        })
-      })
-      .subscribe()
-    return () => { supabase.removeChannel(subscription) }
-  }, [user])
-
-  const seleccionarConv = async (id: string) => {
-    setConvId(id)
-    setShowMobileChat(true)
+  const markRead = useCallback(async (id: string) => {
+    const uid = userRef.current?.id
+    if (!uid || document.visibilityState !== 'visible') return
     try {
       const response = await fetch('/api/mensajes-leidos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(await getSupabaseAuthHeaders()) },
-        body: JSON.stringify({ conversacion_id: id, destinatario_id: user!.id }),
+        body: JSON.stringify({ conversacion_id: id, destinatario_id: uid }),
       })
-      if (response.ok) {
-        bcRef.current?.postMessage({ action: 'refresh-unread' })
-        localStorage.setItem('venezuela_inmuebles_unread_refresh', Date.now().toString())
-      }
+      if (!response.ok || userRef.current?.id !== uid) return
+      setConversaciones(previous => previous.map(conversation => conversation.id === id ? { ...conversation, no_leidos: 0 } : conversation))
+      window.dispatchEvent(new Event(UNREAD_REFRESH_EVENT))
+      bcRef.current?.postMessage({ action: 'refresh-unread' })
     } catch (error) { console.error('Error marking messages read:', error) }
-    setConversaciones(previous => previous.map(conversation => conversation.id === id ? { ...conversation, no_leidos: 0 } : conversation))
-    await loadMensajes(id)
+  }, [])
+
+  const isChatVisible = () => document.visibilityState === 'visible' && (window.matchMedia('(min-width: 768px)').matches || showMobileChatRef.current)
+
+  useEffect(() => {
+    if (!convId || !user) return
+    setMensajes(previous => previous.filter(message => message.conversacion_id === convId))
+    loadMensajes(convId)
+    if (isChatVisible()) markRead(convId)
+  }, [convId, user, loadMensajes, markRead])
+
+  useEffect(() => {
+    if (!user) return
+    const uid = user.id
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const refreshList = () => {
+      clearTimeout(timer)
+      timer = setTimeout(() => { loadConversaciones() }, 200)
+    }
+    const onMessage = (payload: any) => {
+      const incoming = payload.new as Mensaje
+      if (incoming.conversacion_id === convIdRef.current) {
+        setMensajes(previous => previous.some(message => message.id === incoming.id) ? previous : [...previous.filter(message => message.conversacion_id === incoming.conversacion_id), incoming])
+        if (incoming.destinatario_id === uid && isChatVisible()) markRead(incoming.conversacion_id)
+      }
+      refreshList()
+    }
+    const subscription = supabase.channel(`chat-messages-${uid}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensajes', filter: `destinatario_id=eq.${uid}` }, onMessage)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensajes', filter: `remitente_id=eq.${uid}` }, onMessage)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'mensajes', filter: `destinatario_id=eq.${uid}` }, refreshList)
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          refreshList()
+          if (convIdRef.current) loadMensajes(convIdRef.current)
+        }
+      })
+    const conversations = supabase.channel(`chat-conversations-${uid}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'conversaciones', filter: `user1_id=eq.${uid}` }, refreshList)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'conversaciones', filter: `user2_id=eq.${uid}` }, refreshList)
+      .subscribe()
+    const resync = () => {
+      if (document.visibilityState !== 'visible') return
+      refreshList()
+      if (convIdRef.current) {
+        loadMensajes(convIdRef.current)
+        if (isChatVisible()) markRead(convIdRef.current)
+      }
+    }
+    document.addEventListener('visibilitychange', resync)
+    window.addEventListener('focus', resync)
+    const fallback = window.setInterval(resync, 15000)
+    return () => {
+      clearTimeout(timer)
+      window.clearInterval(fallback)
+      document.removeEventListener('visibilitychange', resync)
+      window.removeEventListener('focus', resync)
+      supabase.removeChannel(subscription)
+      supabase.removeChannel(conversations)
+    }
+  }, [user, loadConversaciones, loadMensajes, markRead])
+
+  const seleccionarConv = (id: string) => {
+    convIdRef.current = id
+    showMobileChatRef.current = true
+    setMensajes(previous => previous.filter(message => message.conversacion_id === id))
+    setConvId(id)
+    setShowMobileChat(true)
+    loadMensajes(id)
+    markRead(id)
   }
 
   const eliminarConv = async (id: string, event: React.MouseEvent) => {
@@ -525,7 +561,7 @@ export default function ChatPageClient() {
               ) : (
                 <>
                   <header className="inbox-chat__header">
-                    <button type="button" onClick={() => setShowMobileChat(false)} className="inbox-chat__back" aria-label={t('backToConversations')}>
+                    <button type="button" onClick={() => { showMobileChatRef.current = false; setShowMobileChat(false) }} className="inbox-chat__back" aria-label={t('backToConversations')}>
                       <ArrowLeft size={19} />
                     </button>
                     {currentConversation && (

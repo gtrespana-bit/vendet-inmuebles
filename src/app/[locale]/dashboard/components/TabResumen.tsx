@@ -1,6 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { useUnreadMessages } from '@/hooks/useUnreadMessages'
+import { localizePath } from '@/lib/auth-redirect'
 import { useLocale, useTranslations } from 'next-intl'
 import LocalLink from '@/components/LocalLink'
 import Image from 'next/image'
@@ -8,7 +10,6 @@ import {
   PlusCircle, MessageSquare, Coins, ShieldCheck,
   AlertCircle, ArrowRight, Eye, Sparkles,
 } from 'lucide-react'
-import { supabase, isSupabaseConfigured } from '@/lib/supabase'
 import type { PlanInfo } from '../hooks/useDashboard'
 
 /**
@@ -30,23 +31,9 @@ export default function TabResumen({
 }) {
   const t = useTranslations('dashboard')
   const locale = useLocale()
-  const [mensajesNoLeidos, setMensajesNoLeidos] = useState(0)
-
-  useEffect(() => {
-    let cancelled = false
-    if (!isSupabaseConfigured()) return
-
-    supabase
-      .from('mensajes')
-      .select('id', { count: 'exact', head: true })
-      .eq('destinatario_id', userId)
-      .eq('leido', false)
-      .then(({ count }: { count: number | null }) => {
-        if (!cancelled) setMensajesNoLeidos(count || 0)
-      })
-
-    return () => { cancelled = true }
-  }, [userId])
+  const router = useRouter()
+  const mensajesNoLeidos = useUnreadMessages(userId)
+  const openChat = () => router.push(localizePath('/chat', locale))
 
   const pendientes = productos.filter((p: any) => p.estado_moderacion === 'pendiente')
   const recientes = productos.slice(0, 3)
@@ -56,7 +43,7 @@ export default function TabResumen({
       id: 'mensajes',
       icon: MessageSquare,
       texto: t('attentionMessages', { count: mensajesNoLeidos }),
-      accion: () => onGoToTab('mensajes'),
+      accion: openChat,
       color: 'text-[#9a524a]',
       bg: 'bg-[#f8e9e6]',
     },
@@ -80,7 +67,7 @@ export default function TabResumen({
 
   const accesos = [
     { href: '/publicar-inmueble', icon: PlusCircle, title: t('quickPublishTitle'), desc: t('quickPublishDesc') },
-    { onClick: () => onGoToTab('mensajes'), icon: MessageSquare, title: t('quickMessagesTitle'), desc: t('quickMessagesDesc') },
+    { href: '/chat', icon: MessageSquare, title: t('quickMessagesTitle'), desc: t('quickMessagesDesc') },
     { onClick: () => onGoToTab('creditos'), icon: Coins, title: t('quickCreditsTitle'), desc: t('quickCreditsDesc') },
     ...(verificado ? [] : [{ onClick: () => onGoToTab('verificacion'), icon: ShieldCheck, title: t('quickVerifyTitle'), desc: t('quickVerifyDesc') }]),
   ]

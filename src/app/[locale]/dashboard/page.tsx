@@ -7,7 +7,7 @@ import { getSupabaseAuthHeaders } from '@/lib/supabase-auth-headers'
 import dynamic from 'next/dynamic'
 import { getTasaBCVClient, actualizarTasaClient } from '@/lib/tasaBCV'
 import { useTranslations } from 'next-intl'
-import { Package, MessageSquare, CreditCard, Heart, X, Star, ShieldCheck, BarChart3, Settings } from 'lucide-react'
+import { Package, CreditCard, Heart, X, Star, ShieldCheck, BarChart3, Settings } from 'lucide-react'
 import LocalLink from '@/components/LocalLink'
 import { routing } from '@/i18n/routing'
 
@@ -15,7 +15,6 @@ import { routing } from '@/i18n/routing'
 import ProfileHero from './components/ProfileHero'
 import DashboardHeader from './components/DashboardHeader'
 import TabResumen from './components/TabResumen'
-import TabMensajes from './components/tabs/TabMensajes'
 import TabCreditos from './components/tabs/TabCreditos'
 import TabFavoritos from './components/tabs/TabFavoritos'
 import BoostModal from './components/modals/BoostModal'
@@ -113,10 +112,11 @@ export default function DashboardPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const tab = params.get('tab')
-    if (tab && ['resumen', 'productos', 'mensajes', 'creditos', 'favoritos', 'verificacion', 'reputacion', 'perfil'].includes(tab)) {
+    if (tab === 'mensajes') { router.replace(pathname.startsWith('/en') ? '/en/chat' : '/chat'); return }
+    if (tab && ['resumen', 'productos', 'creditos', 'favoritos', 'verificacion', 'reputacion', 'perfil'].includes(tab)) {
       setActiveTab(tab)
     }
-  }, [])
+  }, [router, pathname])
 
   useEffect(() => {
     const tasaData = getTasaBCVClient()
@@ -233,7 +233,6 @@ export default function DashboardPage() {
   const tabs = [
     { id: 'resumen', label: t('tabSummary'), icon: BarChart3 },
     { id: 'productos', label: t('tabListings'), icon: Package },
-    { id: 'mensajes', label: t('tabMessages'), icon: MessageSquare },
     { id: 'creditos', label: t('tabCredits'), icon: CreditCard },
     { id: 'favoritos', label: t('tabFavorites'), icon: Heart },
     { id: 'verificacion', label: t('tabVerification'), icon: ShieldCheck },
@@ -349,7 +348,6 @@ export default function DashboardPage() {
               />
             </Suspense>
           )}
-          {activeTab === 'mensajes' && <TabMensajes />}
           {activeTab === 'creditos' && (
             <TabCreditos creditos={data.creditos} tasaBs={tasaBs} refreshCreditos={data.refreshAll} />
           )}

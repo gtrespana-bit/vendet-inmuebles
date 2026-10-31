@@ -1,5 +1,5 @@
 import { Metadata } from 'next'
-import Link from 'next/link'
+import { PlanActionsProvider, PlanActionButton } from './PlanActions'
 import { Check, Star, Building2, User, Building, HeartHandshake } from 'lucide-react'
 
 export const metadata: Metadata = {
@@ -9,6 +9,7 @@ export const metadata: Metadata = {
 
 const planes = [
   {
+    id: 'gratuita' as const,
     nombre: 'Gratuita',
     precioMensual: '$0',
     precioAnual: '$0',
@@ -20,10 +21,10 @@ const planes = [
       '8 fotos por inmueble',
       'Verificación de identidad gratuita',
     ],
-    cta: 'Registrarse Gratis',
     destacado: false,
   },
   {
+    id: 'profesional' as const,
     nombre: 'Profesional',
     precioMensual: '$9,99/mes',
     precioAnual: '$99/año',
@@ -40,11 +41,11 @@ const planes = [
       'Soporte prioritario',
       'Verificación de identidad gratuita',
     ],
-    cta: 'Probar Gratis por 30 Días',
     destacado: true,
     badge: 'MÁS POPULAR',
   },
   {
+    id: 'agencia' as const,
     nombre: 'Agencia',
     precioMensual: '$39,99/mes',
     precioAnual: '$399/año',
@@ -63,7 +64,6 @@ const planes = [
       'Mensajería privada por agente',
       'Verificación de identidad gratuita',
     ],
-    cta: 'Probar Gratis por 30 Días',
     destacado: false,
   },
 ]
@@ -89,6 +89,7 @@ export default function PlanesPage() {
         </div>
 
         {/* Planes Grid */}
+        <PlanActionsProvider>
         <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
           {planes.map((plan) => {
             const Icon = plan.icon
@@ -138,8 +139,8 @@ export default function PlanesPage() {
                   ))}
                 </ul>
 
-                <Link
-                  href="/registrarse"
+                <PlanActionButton
+                  plan={plan.id}
                   className={`block w-full text-center py-3 rounded-lg font-medium transition-colors ${
                     plan.destacado
                       ? 'bg-brand-accent hover:brightness-105 text-[var(--on-gold)]'
@@ -147,13 +148,13 @@ export default function PlanesPage() {
                       ? 'bg-brand-primary hover:bg-brand-dark text-white'
                       : 'bg-gray-100 hover:bg-gray-200 text-brand-dark'
                   }`}
-                >
-                  {plan.cta}
-                </Link>
+                />
               </div>
             )
           })}
         </div>
+
+        </PlanActionsProvider>
 
         {/* FAQ */}
         <div className="mt-20 max-w-3xl mx-auto">

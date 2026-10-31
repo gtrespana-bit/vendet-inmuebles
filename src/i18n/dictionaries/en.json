@@ -333,6 +333,8 @@
     }
   },
   "header": {
+    "chat": "Chat",
+    "chatUnread": "Chat, {count} unread messages",
     "map": "Map",
     "searchPlaceholder": "Search by location, property type or keyword",
     "searchAria": "Search properties",
@@ -381,6 +383,38 @@
     "allRightsReserved": "All rights reserved."
   },
   "catalog": {
+    "extra": {
+      "mapFilterNote": "Map view only applies operation, city and search; other filters apply to the list.",
+      "loadError": "Could not load properties. Please try again.",
+      "more": "More options",
+      "any": "Any",
+      "habitaciones": "Bedrooms",
+      "banos": "Bathrooms",
+      "estacionamientos": "Parking spaces",
+      "area": "Land area (m²)",
+      "condition": "Condition",
+      "new": "New",
+      "good": "Used - good condition",
+      "renovate": "Needs renovation",
+      "amenities": "Features and amenities",
+      "amenitiesHint": "The property must have all selected features.",
+      "amenity": {
+        "gas": "Domestic gas",
+        "ventiladores": "Fans",
+        "aire": "Air conditioning",
+        "generador": "Generator",
+        "piscina": "Pool",
+        "ascensor": "Elevator",
+        "jardin": "Garden",
+        "balcon": "Balcony or terrace",
+        "cisterna": "Water tank",
+        "seguridad": "24-hour security",
+        "agua24": "24-hour water",
+        "electricidad110": "110V electricity",
+        "electricidad220": "220V electricity",
+        "amueblado": "Furnished"
+      }
+    },
     "title": "Find properties",
     "allProducts": "All properties",
     "results": "{count} results",
@@ -1662,7 +1696,17 @@
     "approxNote": "The exact location is arranged with the owner.",
     "locationTitle": "Location on the map"
   },
+  "planActions": {
+    "loading": "Checking your account…",
+    "current": "Your current plan",
+    "contact": "Request a plan change",
+    "contactHint": "Tell support which plan you want. The change is not automatic.",
+    "error": "We could not check your plan.",
+    "dashboard": "Go to dashboard",
+    "register": "Create account"
+  },
   "editListing": {
+    "saveError": "Could not save all changes. Check the listing and try again.",
     "photoUploadPending": "Wait for uploads to finish and remove any failed photos.",
     "parkingNone": "None",
     "waterLabel": "Water",

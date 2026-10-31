@@ -3004,3 +3004,25 @@ body {
     font-size: 11.5px;
   }
 }
+
+/* Secondary catalog filters stay compact until the visitor asks for them. */
+.catalog-sidebar { max-height: calc(100vh - 120px); overflow-y: auto; }
+.catalog-filter-panel__more { margin-top: 20px; border-top: 1px solid #e9e2d8; padding-top: 14px; }
+.catalog-filter-panel__more-toggle { width: 100%; display: flex; align-items: center; justify-content: space-between; color: var(--burgundy); font-size: 13px; font-weight: 700; }
+.catalog-filter-panel__amenities { border: 0; padding: 0; margin: 20px 0 0; }
+.catalog-filter-panel__amenities legend { color: #796f64; font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.catalog-filter-panel__amenities p { color: #716a61; font-size: 11px; margin: 8px 0; }
+.catalog-filter-panel__amenities label { display: flex; align-items: center; gap: 9px; padding: 5px 0; color: #342e29; font-size: 12px; cursor: pointer; }
+.catalog-filter-panel__amenities input[type='checkbox'] { width: 16px; min-width: 16px; height: 16px; min-height: 16px; padding: 0; accent-color: var(--burgundy); }
+@media (max-width: 900px) {
+  .catalog-sidebar { max-height: none; overflow: visible; }
+  .catalog-filter-panel__more { grid-column: 1 / -1; }
+  .catalog-filter-panel__amenities { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 0 12px; }
+  .catalog-filter-panel__amenities p { grid-column: 1 / -1; }
+}
+
+.site-header__chat { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-width: 44px; min-height: 44px; color: var(--burgundy); font-weight: 700; font-size: 12px; text-decoration: none; }
+.site-header__chat:hover { color: var(--burgundy-dark); }
+.site-header__chat-icon { position: relative; display: inline-flex; }
+.site-header__chat-badge { position: absolute; top: -10px; left: 12px; display: grid; place-items: center; min-width: 19px; height: 19px; padding: 0 4px; border-radius: 99px; background: #b42c38; color: white; border: 2px solid #fbfaf7; font-size: 9px; line-height: 1; }
+@media (max-width: 719px) { .site-header__chat { margin-left: auto; } .site-header__chat-label { display: none; } }
