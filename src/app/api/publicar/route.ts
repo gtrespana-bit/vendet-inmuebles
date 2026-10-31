@@ -148,6 +148,7 @@ export async function POST(req: NextRequest) {
       req,
     })
 
+    revalidatePath(`/inmueble/${property.id}`)
     revalidatePath('/')
     revalidatePath('/catalogo')
 

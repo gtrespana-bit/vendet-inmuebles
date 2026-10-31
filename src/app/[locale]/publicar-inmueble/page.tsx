@@ -13,6 +13,7 @@ import LocationPicker from '@/components/map/LocationPicker';
 import { resolveListingGeo } from '@/lib/geo/venezuela';
 import { compressImage } from '@/lib/image-compress';
 import { limpiarMetodosContacto, validarMetodosContacto } from '@/lib/contact-methods';
+import { FORM_AMENITY_GROUPS } from '@/lib/amenities';
 import ContactMethodsFields, { type MetodosContactoForm } from '@/components/ContactMethodsFields';
 import { Sparkles, Loader2 } from 'lucide-react';
 
@@ -41,19 +42,6 @@ const CONDICIONES = [
   { value: 'Nuevo', key: 'conditionNew' },
   { value: 'Usado - buen estado', key: 'conditionGood' },
   { value: 'Para remodelar', key: 'conditionRenovate' },
-] as const;
-
-const AMENIDADES = [
-  'Gas doméstico',
-  'Aire acondicionado',
-  'Ventiladores',
-  'Generador eléctrico',
-  'Piscina',
-  'Ascensor',
-  'Jardín',
-  'Balcón o terraza',
-  'Cisterna',
-  'Seguridad 24 horas',
 ] as const;
 
 /**
@@ -117,6 +105,7 @@ export default function PublicarInmueblePage() {
   const locale = pathname === '/en' || pathname.startsWith('/en/') ? 'en' : 'es';
   const tLanding = useTranslations('landing');
   const tPublish = useTranslations('publishProperty');
+  const tCatalog = useTranslations('catalog');
   const { user, loading: authLoading } = useAuth();
   const [maxFotos, setMaxFotos] = useState(8);
   const [planLimits, setPlanLimits] = useState<any>(null);
@@ -794,22 +783,29 @@ export default function PublicarInmueblePage() {
                 <span className="text-sm font-medium text-gray-700">{tPublish('water24h')}</span>
               </label>
 
-              {/* Amenidades */}
-              <div>
-                <p id="amenities-label" className="block text-sm font-medium text-gray-700 mb-2">{tPublish('amenities')}</p>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2" role="group" aria-labelledby="amenities-label">
-                  {AMENIDADES.map(nombre => (
-                    <label key={nombre} className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg border border-[#DCD6C6] bg-white hover:bg-[#F7F4EC] cursor-pointer text-sm text-gray-700">
-                      <input
-                        type="checkbox"
-                        checked={amenidades.includes(nombre)}
-                        onChange={() => toggleAmenidad(nombre)}
-                        className="w-4 h-4 rounded border-gray-300 text-brand-primary focus:ring-brand-accent"
-                      />
-                      {nombre}
-                    </label>
-                  ))}
-                </div>
+              {/* Ambientes, servicios y amenidades (catálogo compartido con la edición) */}
+              <div className="space-y-4">
+                <p id="amenities-label" className="block text-sm font-medium text-gray-700">{tPublish('amenities')}</p>
+                {FORM_AMENITY_GROUPS.map((group) => (
+                  <fieldset key={group.key} className="space-y-2">
+                    <legend className="text-sm font-semibold text-gray-800">
+                      {tCatalog(`extra.amenityGroup.${group.key}`)}
+                    </legend>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                      {group.options.map(({ key, name }) => (
+                        <label key={key} className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg border border-[#DCD6C6] bg-white hover:bg-[#F7F4EC] cursor-pointer text-sm text-gray-700">
+                          <input
+                            type="checkbox"
+                            checked={amenidades.includes(name)}
+                            onChange={() => toggleAmenidad(name)}
+                            className="w-4 h-4 rounded border-gray-300 text-brand-primary focus:ring-brand-accent"
+                          />
+                          {tCatalog(`extra.amenity.${key}`)}
+                        </label>
+                      ))}
+                    </div>
+                  </fieldset>
+                ))}
               </div>
             </div>
           </section>

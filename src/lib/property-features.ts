@@ -1,6 +1,13 @@
 import { createHash } from 'crypto'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
+/**
+ * Máximo de características por anuncio. El catálogo de ambientes y servicios
+ * tiene más de 40 opciones, así que el límite debe dejar marcar todas sin que
+ * el guardado falle.
+ */
+export const MAX_CARACTERISTICAS = 60
+
 /** Resolve all selected names before changing a listing's existing features. */
 export async function resolvePropertyFeatures(supabase: SupabaseClient, values: unknown[]): Promise<number[]> {
   const names = new Map<string, string>()
@@ -10,7 +17,7 @@ export async function resolvePropertyFeatures(supabase: SupabaseClient, values: 
     const key = name.toLocaleLowerCase('es')
     if (name.length >= 2 && !names.has(key)) names.set(key, name)
   }
-  if (names.size > 25) throw new Error('Demasiadas características')
+  if (names.size > MAX_CARACTERISTICAS) throw new Error('Demasiadas características')
 
   const catalog = new Map<string, number>()
   // PostgREST limits result sets, so read all pages rather than silently missing entries.

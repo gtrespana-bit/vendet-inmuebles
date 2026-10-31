@@ -3059,6 +3059,11 @@ html { padding-top: env(safe-area-inset-top, 0); }
 .catalog-filter-panel__amenities p { color: #716a61; font-size: 11px; margin: 8px 0; }
 .catalog-filter-panel__amenities label { display: flex; align-items: center; gap: 9px; padding: 5px 0; color: #342e29; font-size: 12px; cursor: pointer; }
 .catalog-filter-panel__amenities input[type='checkbox'] { width: 16px; min-width: 16px; height: 16px; min-height: 16px; padding: 0; accent-color: var(--burgundy); }
+/* El catálogo tiene 40+ opciones: se listan todas dentro de un área con scroll
+   para no alargar el panel de filtros en escritorio. */
+@media (min-width: 901px) {
+  .catalog-filter-panel__amenities { max-height: 260px; overflow-y: auto; padding-right: 6px; }
+}
 @media (max-width: 900px) {
   .catalog-sidebar { max-height: none; overflow: visible; }
   .catalog-filter-panel__more,

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
 import { createServerClient } from '@/lib/supabase-server'
 import { checkPlanLimits } from '@/lib/plans'
 import { savePropertyFeatures } from '@/lib/property-features'
@@ -171,6 +172,10 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // La ficha y el catálogo deben reflejar el anuncio recién creado.
+    revalidatePath(`/inmueble/${property.id}`)
+    revalidatePath('/catalogo')
+
     return NextResponse.json(property, { status: 201 })
   } catch (error: any) {
     console.error('Error creating property:', error)
@@ -336,6 +341,11 @@ export async function PATCH(req: NextRequest) {
         .update({ imagen_url: nuevas[0]?.url || null }).eq('id', id).eq('usuario_id', user.id)
       if (coverError) throw coverError
     }
+
+    // Invalida la ficha (ambientes, fotos, contacto…) y los listados.
+    revalidatePath(`/inmueble/${id}`)
+    revalidatePath('/inmueble/[id]', 'page')
+    revalidatePath('/catalogo')
 
     return NextResponse.json({ success: true })
   } catch (error: any) {

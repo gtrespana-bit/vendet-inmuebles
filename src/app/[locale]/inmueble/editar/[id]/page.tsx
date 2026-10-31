@@ -12,21 +12,9 @@ import { ESTADOS, getMunicipiosNombres } from '@/lib/ubicaciones'
 import { resolveListingGeo } from '@/lib/geo/venezuela'
 import { compressImage } from '@/lib/image-compress'
 import { limpiarMetodosContacto, tieneMetodosConfigurados, validarMetodosContacto } from '@/lib/contact-methods'
+import { FORM_AMENITY_GROUPS, claveAmenidad, nombreCanonicoAmenidad } from '@/lib/amenities'
 import ContactMethodsFields, { type MetodosContactoForm } from '@/components/ContactMethodsFields'
 
-/** Misma lista de amenidades que el formulario de publicación */
-const AMENIDADES = [
-  'Gas doméstico',
-  'Aire acondicionado',
-  'Ventiladores',
-  'Generador eléctrico',
-  'Piscina',
-  'Ascensor',
-  'Jardín',
-  'Balcón o terraza',
-  'Cisterna',
-  'Seguridad 24 horas',
-] as const
 import { useTranslations } from 'next-intl'
 import {
   ArrowLeft, Save, Loader2, Camera, X, MapPin, Sparkles,
@@ -65,6 +53,7 @@ export default function EditarInmueblePage({ params }: { params: { locale: strin
   const router = useRouter()
   const t = useTranslations('editListing')
   const tp = useTranslations('publishProperty')
+  const tc = useTranslations('catalog')
   const { user, loading: authLoading } = useAuth()
   const idioma = locale === 'en' ? 'en' : 'es'
 
@@ -191,9 +180,9 @@ export default function EditarInmueblePage({ params }: { params: { locale: strin
       const cars = ((data.inmueble_caracteristicas as Array<{ caracteristicas: { nombre: string } | null }>) || [])
         .map((r) => r.caracteristicas?.nombre)
         .filter(Boolean) as string[]
-      // Older catalogue entries may differ in casing; keep unknown features intact.
-      const knownNames = [...AMENIDADES, 'Electricidad 110V', 'Electricidad 220V', 'Agua 24 horas', 'Agua intermitente', 'Amueblado', 'Amueblado parcialmente']
-      const canonicalCars = cars.map((name) => knownNames.find((known) => known.toLocaleLowerCase('es') === name.trim().toLocaleLowerCase('es')) || name)
+      // Las entradas antiguas pueden diferir en mayúsculas/tildes. Se normalizan
+      // contra el catálogo compartido y las desconocidas se conservan intactas.
+      const canonicalCars = cars.map((name) => nombreCanonicoAmenidad(name))
       const has110 = canonicalCars.includes('Electricidad 110V')
       const has220 = canonicalCars.includes('Electricidad 220V')
       setElectricidad(has110 && has220 ? 'ambas' : has110 ? '110v' : has220 ? '220v' : '')
@@ -781,22 +770,50 @@ export default function EditarInmueblePage({ params }: { params: { locale: strin
         <section>
           <h2 className="text-lg font-semibold text-gray-900 mb-1">{tp('amenities')}</h2>
           <p className="text-xs text-gray-500 mb-3">{t('amenitiesHint')}</p>
-          <div className="flex flex-wrap gap-2">
-            {AMENIDADES.map((valor) => {
-              const activo = caracteristicas.includes(valor)
-              return (
-                <button
-                  key={valor}
-                  type="button"
-                  onClick={() => toggleCaracteristica(valor)}
-                  className={`px-3 py-1.5 rounded-full text-sm border-2 transition-colors ${
-                    activo ? 'border-brand-primary bg-brand-primary/10 text-brand-primary font-semibold' : 'border-gray-200 text-gray-600 hover:border-gray-300'
-                  }`}
-                >
-                  {valor}
-                </button>
-              )
-            })}
+          <div className="space-y-4">
+            {FORM_AMENITY_GROUPS.map((group) => (
+              <fieldset key={group.key}>
+                <legend className="text-sm font-semibold text-gray-800 mb-2">
+                  {tc(`extra.amenityGroup.${group.key}`)}
+                </legend>
+                <div className="flex flex-wrap gap-2">
+                  {group.options.map(({ key, name }) => {
+                    const activo = caracteristicas.includes(name)
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        aria-pressed={activo}
+                        onClick={() => toggleCaracteristica(name)}
+                        className={`px-3 py-1.5 rounded-full text-sm border-2 transition-colors ${
+                          activo ? 'border-brand-primary bg-brand-primary/10 text-brand-primary font-semibold' : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                        }`}
+                      >
+                        {tc(`extra.amenity.${key}`)}
+                      </button>
+                    )
+                  })}
+                </div>
+              </fieldset>
+            ))}
+            {caracteristicas.some((valor) => !claveAmenidad(valor)) && (
+              <fieldset>
+                <legend className="text-sm font-semibold text-gray-800 mb-2">{t('otherAmenities')}</legend>
+                <div className="flex flex-wrap gap-2">
+                  {caracteristicas.filter((valor) => !claveAmenidad(valor)).map((valor) => (
+                    <button
+                      key={valor}
+                      type="button"
+                      aria-pressed
+                      onClick={() => toggleCaracteristica(valor)}
+                      className="px-3 py-1.5 rounded-full text-sm border-2 border-brand-primary bg-brand-primary/10 text-brand-primary font-semibold"
+                    >
+                      {valor}
+                    </button>
+                  ))}
+                </div>
+              </fieldset>
+            )}
           </div>
         </section>
 
