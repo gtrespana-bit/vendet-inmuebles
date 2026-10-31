@@ -72,7 +72,7 @@ body {
 /* ===== MOBILE APP-LIKE BEHAVIOR ===== */
 @media (max-width: 767px) {
   body { overscroll-behavior-y: none; }
-  /* La navegación inferior sólo aparece cuando la app está instalada como PWA. */
+  /* La navegación inferior fija aparece en todos los móviles (web y PWA). */
   /* Extra padding en página de créditos para que el bottom nav no tape los botones */
   .creditos-grid { padding-bottom: 2rem; }
   /* Tap delay fix — iOS no mete delay de 300ms entre clicks */
@@ -81,13 +81,11 @@ body {
     touch-action: manipulation;
   }
 }
-/* PWA status bar */
-@media (display-mode: standalone) {
-  html { padding-top: env(safe-area-inset-top, 0); }
-}
-/* Bottom navigation safe area for PWA */
-@media (display-mode: standalone) and (max-width: 767px) {
-  main { padding-bottom: 5.5rem; }
+/* Safe area superior (notch en landscape); en escritorio y móvil en portrait vale 0 */
+html { padding-top: env(safe-area-inset-top, 0); }
+/* Hueco para el menú inferior fijo en TODOS los móviles (web y PWA instalada) */
+@media (max-width: 767px) {
+  main { padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px)); }
 }
 @media (max-width: 767px) {
   .safe-bottom {
@@ -1804,8 +1802,8 @@ body {
 }
 
 
-/* Respect the iOS standalone safe area without covering property contact actions. */
-@media (display-mode: standalone) and (max-width: 700px) {
+/* En móvil (web y PWA) elevar los flotantes para no quedar tapados por el menú inferior fijo */
+@media (max-width: 700px) {
   .floating-chat { bottom: calc(82px + env(safe-area-inset-bottom, 0px)); }
   .property-detail { padding-bottom: calc(168px + env(safe-area-inset-bottom, 0px)); }
   .property-detail__mobile-contact { bottom: calc(64px + env(safe-area-inset-bottom, 0px)); }

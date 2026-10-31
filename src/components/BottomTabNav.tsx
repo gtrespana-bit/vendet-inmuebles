@@ -6,22 +6,22 @@ import { Home, Search, PlusCircle, MessageCircle, User } from 'lucide-react'
 import { useLocalizedMessages } from '@/hooks/useLocalizedMessages'
 import { useEffect, useState } from 'react'
 
-function isPWA(): boolean {
-  if (typeof window === 'undefined') return false
-  return (
-    window.matchMedia('(display-mode: standalone)').matches ||
-    (window.navigator as any).standalone === true
-  )
-}
+// El menú inferior fijo se muestra en TODOS los móviles (navegador y PWA
+// instalada): la web móvil se ve igual que la app, con su menú fijo abajo.
+const MOBILE_MQ = '(max-width: 767px)'
 
 export default function BottomTabNav() {
   const pathname = usePathname()
   const normalizedPathname = pathname.replace(/^\/en(?=\/|$)/, '') || '/'
   const { t } = useLocalizedMessages()
-  const [isPwaMode, setIsPwaMode] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
 
   useEffect(() => {
-    setIsPwaMode(isPWA())
+    const mq = window.matchMedia(MOBILE_MQ)
+    const update = () => setIsMobile(mq.matches)
+    update()
+    mq.addEventListener('change', update)
+    return () => mq.removeEventListener('change', update)
   }, [])
 
   const navItems = [
@@ -32,7 +32,7 @@ export default function BottomTabNav() {
     { href: '/dashboard', icon: User, label: t('bottomNav.profile') },
   ]
 
-  if (!isPwaMode) return null
+  if (!isMobile) return null
 
   return (
     <nav
