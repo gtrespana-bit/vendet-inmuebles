@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
     if (url && key) {
       const sb = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
       await sb.rpc('registrar_visita_inmueble', { p_inmueble_id: id })
-      await registrarEvento('vista_inmueble', {
+      void registrarEvento('vista_inmueble', {
         ruta: sanitizeRuta(`/inmueble/${id}`),
         meta: { inmueble_id: id },
         userId: userIdDesdeCookie(req),

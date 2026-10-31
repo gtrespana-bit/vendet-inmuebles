@@ -139,7 +139,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    await registrarEvento('publicacion_creada', {
+    void registrarEvento('publicacion_creada', {
       ruta: `/inmueble/${property.slug || property.id}`,
       titulo: property.titulo,
       meta: { inmueble_id: property.id, moderacion: moderationState, estado, ciudad, precio },

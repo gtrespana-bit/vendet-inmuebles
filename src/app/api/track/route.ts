@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
     const tipo = String(body?.tipo || '')
     if (!EVENTOS_VALIDOS.has(tipo)) return new NextResponse(null, { status: 204 })
 
-    await registrarEvento(tipo, {
+    void registrarEvento(tipo, {
       ruta: sanitizeRuta(body?.ruta || '/'),
       titulo: body?.titulo,
       meta: body?.meta && typeof body.meta === 'object' ? body.meta : null,

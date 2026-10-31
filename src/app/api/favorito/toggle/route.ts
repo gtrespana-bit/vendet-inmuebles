@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
       const { error } = await auth.supabaseAdmin.from('favoritos')
         .delete().eq('user_id', auth.user.id).eq('producto_id', productId)
       if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-      await registrarEvento('favorito', {
+      void registrarEvento('favorito', {
         ruta: rutaDesdeReferer(req),
         meta: { producto_id: productId, accion: 'removed' },
         userId: auth.user.id,
@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
       producto_id: productId,
     })
     if (insertError?.code === '23505') {
-      await registrarEvento('favorito', { ruta: rutaDesdeReferer(req), meta: { producto_id: productId, accion: 'added' }, userId: auth.user.id, req })
+      void registrarEvento('favorito', { ruta: rutaDesdeReferer(req), meta: { producto_id: productId, accion: 'added' }, userId: auth.user.id, req })
       return NextResponse.json({ ok: true, action: 'added' })
     }
     if (insertError?.code === '23505') return NextResponse.json({ ok: true, action: 'added' })
@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
       await auth.supabaseAdmin.from('push_subscriptions').delete().in('endpoint', deadEndpoints)
     }
 
-    await registrarEvento('favorito', {
+    void registrarEvento('favorito', {
       ruta: rutaDesdeReferer(req),
       meta: { producto_id: productId, accion: 'added' },
       userId: auth.user.id,

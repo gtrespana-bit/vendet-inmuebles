@@ -1,5 +1,6 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import type { NextRequest } from 'next/server'
+import { leerCookieSesion, parseSesionCookie, payloadDesdeToken } from './auth-cookie'
 
 /**
  * Analítica interna del sitio.
@@ -102,22 +103,27 @@ export async function registrarEvento(tipo: string, opts: EventoOpts): Promise<v
     const ip = (headers?.get('x-forwarded-for') || '').split(',')[0]?.trim().slice(0, 45) || null
     const referrer = sliceText(headers?.get('referer'), 500)
 
-    await sb.from('eventos_web').insert({
-      tipo,
-      ruta: sanitizeRuta(opts.ruta),
-      titulo: sliceText(opts.titulo, 200),
-      referrer,
-      utm_source: sliceText(opts.utm?.source, 100),
-      utm_medium: sliceText(opts.utm?.medium, 100),
-      utm_campaign: sliceText(opts.utm?.campaign, 100),
-      session_id: sliceText(opts.sessionId, 64),
-      user_id: opts.userId || null,
-      pais,
-      dispositivo,
-      navegador,
-      ip,
-      meta: sanitizeMeta(opts.meta),
-    })
+    // Timeout interno: la analítica NUNCA puede colgar la request principal
+    // (sin esto, un insert lento haría que /api/login tardara para siempre).
+    await Promise.race([
+      sb.from('eventos_web').insert({
+        tipo,
+        ruta: sanitizeRuta(opts.ruta),
+        titulo: sliceText(opts.titulo, 200),
+        referrer,
+        utm_source: sliceText(opts.utm?.source, 100),
+        utm_medium: sliceText(opts.utm?.medium, 100),
+        utm_campaign: sliceText(opts.utm?.campaign, 100),
+        session_id: sliceText(opts.sessionId, 64),
+        user_id: opts.userId || null,
+        pais,
+        dispositivo,
+        navegador,
+        ip,
+        meta: sanitizeMeta(opts.meta),
+      }),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('timeout insert eventos_web')), 3000)),
+    ])
   } catch (e) {
     // Nunca interrumpir la operación principal por un fallo de analítica
     console.warn('analytics: no se pudo registrar el evento', tipo, e)
@@ -143,17 +149,10 @@ export function rutaDesdeReferer(req: NextRequest): string {
  */
 export function userIdDesdeCookie(req: NextRequest): string | null {
   try {
-    const cookie = req.cookies.getAll().find((c) => c.name.includes('auth-token'))
-    if (!cookie?.value) return null
-    let parsed: any = null
-    try {
-      parsed = JSON.parse(cookie.value)
-    } catch {
-      parsed = JSON.parse(decodeURIComponent(cookie.value))
-    }
-    const token: string | undefined = parsed?.access_token
+    const sesion = parseSesionCookie(leerCookieSesion(req.cookies.getAll()))
+    const token = sesion?.access_token
     if (!token) return null
-    const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString('utf-8'))
+    const payload = payloadDesdeToken(token)
     return typeof payload?.sub === 'string' ? payload.sub : null
   } catch {
     return null

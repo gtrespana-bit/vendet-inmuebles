@@ -97,7 +97,7 @@ export async function POST(req: NextRequest) {
     })
   }
 
-  await registrarEvento('compra_creditos', {
+  void registrarEvento('compra_creditos', {
     ruta: '/creditos',
     meta: {
       transaccion_id: tx.id,
