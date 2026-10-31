@@ -1,0 +1,15 @@
+{
+  "confirmation": "Confirma tu correo · Venezuela Inmuebles",
+  "email_change": "Confirma tu nuevo correo · Venezuela Inmuebles",
+  "invite": "Te invitaron a Venezuela Inmuebles",
+  "magic_link": "Tu enlace de acceso · Venezuela Inmuebles",
+  "reauthentication": "Tu código de verificación: {{ .Token }}",
+  "recovery": "Restablece tu contraseña · Venezuela Inmuebles",
+  "password_changed_notification": "Tu contraseña fue actualizada · Venezuela Inmuebles",
+  "email_changed_notification": "Tu correo fue actualizado · Venezuela Inmuebles",
+  "phone_changed_notification": "Tu teléfono fue actualizado · Venezuela Inmuebles",
+  "mfa_factor_enrolled_notification": "Se añadió un método de verificación · Venezuela Inmuebles",
+  "mfa_factor_unenrolled_notification": "Se eliminó un método de verificación · Venezuela Inmuebles",
+  "identity_linked_notification": "Se vinculó un nuevo método de acceso · Venezuela Inmuebles",
+  "identity_unlinked_notification": "Se eliminó un método de acceso · Venezuela Inmuebles"
+}

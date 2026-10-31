@@ -108,6 +108,23 @@ clic. La preferencia se guarda en `perfiles.email_notificaciones`. Los avisos
 `EMAIL_PREFERENCES_SECRET` es opcional: si no se define se usa
 `SUPABASE_SERVICE_ROLE_KEY` para firmar los tokens.
 
+## Correos de autenticación (Supabase Auth)
+
+Los correos que envía Supabase Auth —confirmación de cuenta, recuperación de
+contraseña, cambio de correo, enlace mágico, invitación, reautenticación y
+avisos de seguridad— usan plantillas propias con la identidad visual del sitio
+(azul marino, dorado, logotipo y pie de contacto).
+
+- Fuente y guía de aplicación: [`supabase/email-templates/README.md`](supabase/email-templates/README.md).
+- Las 13 plantillas están en `supabase/email-templates/*.html` y los asuntos en
+  `subjects.json`.
+- Se aplican con `scripts/apply-auth-email-templates.mjs` (Management API) o
+  pegándolas en **Authentication → Emails → Templates**.
+- Los avisos de seguridad vienen desactivados por defecto en Supabase; hay que
+  activarlos en **Authentication → Emails → Security notifications**.
+- No salen de `src/lib/server-email.ts`: los envía Supabase Auth por el SMTP de
+  Resend configurado en el proyecto.
+
 ## Correos transaccionales (eventos importantes)
 
 | Evento | Cuándo se envía | Plantilla |

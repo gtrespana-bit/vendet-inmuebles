@@ -63,3 +63,17 @@ ya programado). `vercel.json` conserva una ejecución diaria de respaldo.
 
 Detalles, comprobaciones y lista completa de correos transaccionales:
 [EMAIL_NOTIFICATIONS.md](EMAIL_NOTIFICATIONS.md).
+
+## Correos de autenticación
+
+Las plantillas de los correos de Supabase Auth están en
+[`supabase/email-templates/`](supabase/email-templates/) con la marca del sitio.
+Incluyen confirmación de cuenta, recuperación, cambio de correo, enlace mágico,
+invitación, reautenticación y los siete avisos de seguridad. La guía de
+aplicación (script con la Management API o pegado manual en el Dashboard) está
+en [`supabase/email-templates/README.md`](supabase/email-templates/README.md).
+
+Quedan pendientes de aplicar al proyecto: el conector de base de datos no puede
+editar plantillas de Auth. Después de aplicarlas, activar los avisos de
+seguridad y probar un registro y una recuperación reales.
+
