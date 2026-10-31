@@ -3,11 +3,11 @@
  *
  * Por qué existe esto: @supabase/ssr guarda la sesión en cookies que pueden
  * estar FRAGMENTADAS (chunks) cuando el JSON supera ~3180 caracteres:
- *   sb-auth-token            (sesión pequeña, cookie única)
- *   sb-auth-token.0, .1, ... (sesión grande, fragmento i en cookie "name.i")
- * Además el cliente del navegador usa storageKey 'sb-auth-token'
- * (src/lib/supabase.ts) mientras que las API routes usan la clave por defecto
- * "sb-<project-ref>-auth-token": pueden coexistir DOS cookies de sesión.
+ *   sb-<ref>-auth-token            (sesión pequeña, cookie única)
+ *   sb-<ref>-auth-token.0, .1, ... (sesión grande, fragmento i en cookie "name.i")
+ * El cliente del navegador (src/lib/supabase.ts) y las API routes usan la clave
+ * por defecto "sb-<ref>-auth-token"; se prueba también la clave legacy
+ * "sb-auth-token" por si quedó de despliegues anteriores.
  *
  * Leer con `find(c => c.name.includes('auth-token'))` devuelve a veces un
  * fragmento `.0` (no es JSON) y el parseo falla → el usuario "no puede entrar"
