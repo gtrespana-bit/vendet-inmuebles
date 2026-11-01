@@ -2,8 +2,10 @@
 
 ## Estado del despliegue
 
-Implementado y probado en la rama de trabajo. **No desplegado ni aplicado a Supabase real.**
-La migración `012_limites_publicacion_en_bd.sql` está lista para revisión/aplicación; mientras no se aplique, las escrituras directas de producción NO cuentan con estos nuevos controles. No se han cambiado saldos, suscripciones, anuncios ni archivos de usuarios reales.
+Código implementado y probado en la rama de trabajo, **aún no desplegado**.
+La migración `012_limites_publicacion_en_bd.sql` **ya está aplicada en el proyecto real** `quxbqmqwiacfwbpqioev` (registrada como `limites_publicacion_en_bd`, 2026-11-01). Verificación posterior: ambos triggers activos, funciones `SECURITY DEFINER` sin `EXECUTE` para `anon`/`authenticated`, y sin cambios en los datos (51 inmuebles, 125 fotos antes y después). No se han cambiado saldos, suscripciones, anuncios ni archivos de usuarios reales.
+
+Con los triggers ya activos y el código antiguo todavía en producción, la única diferencia visible es que una cuenta por encima de su cupo no puede publicar hasta que esté el despliegue; en la comprobación previa ninguna cuenta superaba su límite.
 
 ## Cambios
 
@@ -54,6 +56,20 @@ La migración `012_limites_publicacion_en_bd.sql` está lista para revisión/apl
 - **Cupo en administración:** aprobar una publicación (`moderar-producto`) o reactivarla (`toggle-activo`) puede exceder el cupo del plan. Antes devolvía 500 con el mensaje de PostgreSQL; ahora las cuatro rutas que escriben bajo los triggers (`/api/properties` POST y PATCH, `/api/publicar`, las dos de administración) usan un único mapeo (`src/lib/quota-errors.ts`) y responden **409 con `code: cupo_excedido`** y el motivo legible. Los formularios de alta y edición muestran ese motivo en vez de un error genérico.
 - **Desempate de plan efectivo:** la aplicación ordenaba las suscripciones solo por `created_at`; la función `plan_efectivo_publicacion` usa `created_at DESC, id DESC`. Se alineó `checkPlanLimits` para que ambos resuelvan el mismo plan cuando hay suscripciones del mismo instante.
 - **Documentación:** `README.md` actualizado a Next 15 y con el requisito de **Node 22.6+** para `npm test` (el ejecutor usa eliminación de tipos) y el comando de la prueba de concurrencia.
+
+## Bloque 2 — Privacidad de contacto y ubicación (F05)
+
+Aplicado en el proyecto real como `privacidad_contacto_y_ubicacion` y `permisos_vistas_privacidad`.
+
+- **Teléfono del anuncio:** solo aparece si el anuncio eligió teléfono o WhatsApp, o si es anterior a la elección (`metodos_contacto` nulo). Un anuncio con `{}` («solo chat») ya no publica el teléfono por la API. El propietario y la administración siempre lo ven.
+- **Perfil público del vendedor:** el teléfono solo se publica si alguna de sus publicaciones públicas permite contacto telefónico; `telefono_disponible` sigue la misma regla para que la interfaz no ofrezca botones sin número.
+- **Dirección exacta:** nula para el público. Ciudad, municipio y `zona` siguen publicados.
+- **Coordenadas:** redondeadas a 3 decimales (≈100 m) para el público; exactas para el propietario y la administración, de modo que el formulario de edición no pierda precisión.
+- **Permisos:** la primera versión devolvía «permission denied for function» a `anon` porque PostgreSQL comprueba `EXECUTE` con el rol que consulta, no con el propietario de la vista. `014` concede la función pura (`telefono_visible_anuncio`) y sustituye la RPC `SECURITY DEFINER` del perfil por un `EXISTS` dentro de la vista, que se elimina.
+
+Comprobado en la base real suplantando roles: con `anon`, `10.2492154` → `10.2490000`, `direccion_exacta` nula, teléfono presente solo cuando el anuncio lo consiente y `telefono_visible_anuncio('{}') = false`; con el propietario, coordenadas exactas. Pruebas automatizadas: **109/109** (8 nuevas en `tests/privacy-views.mjs`, usando la función real de la migración).
+
+**Pendiente de F05:** consentimiento explícito por dato con interruptor en el perfil (hoy se deduce de los anuncios), decidir si algún día se publica dirección exacta con permiso del vendedor, y revisar si otras vistas o endpoints exponen ubicación precisa.
 
 ## Validación realizada
 
