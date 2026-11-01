@@ -2,6 +2,7 @@ import Image from 'next/image'
 import LocalLink from '@/components/LocalLink'
 import FavoriteCardButton from '@/components/FavoriteCardButton'
 import { Bath, BedDouble, Compass, MapPin, Ruler, Video } from 'lucide-react'
+import { isOptimizableImageSrc } from '@/lib/image-src'
 import { calculatePricePerM2 } from '@/lib/urbanizaciones'
 import styles from './home.module.css'
 
@@ -101,6 +102,7 @@ export default function ListingCard({
           src={listing.image || '/sinimagen.webp'}
           alt={listing.title}
           fill
+          unoptimized={!isOptimizableImageSrc(listing.image || '/sinimagen.webp')}
           priority={priority}
           sizes="(max-width: 640px) 100vw, (max-width: 900px) 50vw, 33vw"
         />

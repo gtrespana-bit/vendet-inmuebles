@@ -201,6 +201,30 @@ export function diagnosticarCausaProbable(item: {
     }
   }
 
+  if (
+    /Attempted to call .* from the server but .* is on the client|Functions cannot be passed directly to Client Components|Event handlers cannot be passed to Client Component props/i.test(
+      texto,
+    )
+  ) {
+    return {
+      titulo: 'Frontera Servidor/Cliente de React (RSC)',
+      causa: 'Un Server Component invocó una función exportada desde un módulo con `"use client"` o pasó una función no serializable a un Client Component.',
+      solucion: 'Mueve las funciones puras compartidas a un módulo sin `"use client"` en `src/lib/` para que puedan ejecutarse tanto en SSR como en el navegador.',
+    }
+  }
+
+  if (
+    /Invalid src prop .* hostname .* is not configured under images/i.test(
+      texto,
+    )
+  ) {
+    return {
+      titulo: 'Dominio de imagen externo no autorizado en Next/Image',
+      causa: 'Un componente `<Image>` recibió una URL externa cuyo dominio no figura en `images.remotePatterns` y no tenía `unoptimized`.',
+      solucion: 'Aplica `unoptimized={!isOptimizableImageSrc(src)}` desde `@/lib/image-src` o añade el dominio de almacenamiento en `next.config.js`.',
+    }
+  }
+
   if (/Hydration failed|Minified React error #(418|423|425)/i.test(texto)) {
     return {
       titulo: 'Desajuste de hidratación en React',

@@ -2,7 +2,7 @@ import LocalLink from '@/components/LocalLink'
 import Image from 'next/image'
 import { MapPin, ChevronRight } from 'lucide-react'
 import { getTranslations } from 'next-intl/server'
-import { isOptimizableImageSrc } from '@/components/PropertyGallery'
+import { isOptimizableImageSrc } from '@/lib/image-src'
 
 interface Props {
   slug: string

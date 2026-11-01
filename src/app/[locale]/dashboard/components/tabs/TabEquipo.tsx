@@ -5,7 +5,7 @@ import { useLocale } from 'next-intl'
 import Image from 'next/image'
 import LocalLink from '@/components/LocalLink'
 import { getSupabaseAuthHeaders } from '@/lib/supabase-auth-headers'
-import { isOptimizableImageSrc } from '@/components/PropertyGallery'
+import { isOptimizableImageSrc } from '@/lib/image-src'
 import {
   AlertCircle,
   ArrowUpRight,

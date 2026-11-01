@@ -8,7 +8,7 @@ import {
   parseVideoMedia,
   parseVirtualTourMedia,
 } from '@/lib/property-media'
-import { isOptimizableImageSrc } from '@/components/PropertyGallery'
+import { isOptimizableImageSrc } from '@/lib/image-src'
 
 interface PropertyRichMediaProps {
   videoUrl?: string | null

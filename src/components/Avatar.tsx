@@ -1,6 +1,7 @@
 'use client'
 
 import Image from 'next/image'
+import { isOptimizableImageSrc } from '@/lib/image-src'
 
 interface AvatarProps {
   nombre: string
@@ -46,6 +47,7 @@ export default function Avatar({ nombre, fotoUrl, size = 'md', className = '' }:
         src={fotoUrl}
         alt={nombre || 'Avatar'}
         fill
+        unoptimized={!isOptimizableImageSrc(fotoUrl)}
         className="object-cover"
         onError={(e) => {
           // ✅ CORREGIDO: Fallback a iniciales con flag para prevenir loops

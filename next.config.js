@@ -59,6 +59,11 @@ const nextConfig = withNextIntl({
         hostname: 'pub-cafe0dcf4c8f4ee18f3a6c0761c55493.r2.dev',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'pub-041fd1fd7ad84ea096c62d9adc68a98f.r2.dev',
+        pathname: '/**',
+      },
     ],
     formats: ['image/avif', 'image/webp'],
     deviceSizes: [320, 384, 440, 512, 640, 750, 828, 1080, 1200, 1920],
