@@ -192,6 +192,42 @@ function priceLine(label: string, value: string): string {
   return `<tr><td style="font-family:'Inter','Segoe UI',Arial,sans-serif;font-size:14px;color:${COLORS.gray};padding:4px 0">${label}</td><td align="right" style="font-family:'Inter','Segoe UI',Arial,sans-serif;font-size:16px;font-weight:700;color:${COLORS.primary};padding:4px 0">${value}</td></tr>`
 }
 
+function formatearFechaEmail(iso?: string | null): string {
+  if (!iso) return 'Sin vencimiento'
+  const fecha = new Date(iso)
+  if (Number.isNaN(fecha.getTime())) return String(iso)
+  try {
+    return new Intl.DateTimeFormat('es-VE', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      timeZone: 'America/Caracas',
+    }).format(fecha)
+  } catch {
+    return fecha.toISOString().slice(0, 10)
+  }
+}
+
+function limpiarMotivoAdmin(motivo?: string | null): string | null {
+  const limpio = String(motivo ?? '').trim()
+  if (!limpio) return null
+  if (limpio.toLowerCase() === 'manual admin') return null
+  return limpio
+}
+
+function notaAdminHtml(motivo?: string | null): string {
+  const nota = limpiarMotivoAdmin(motivo)
+  if (!nota) return ''
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#FFFBEB;border-radius:8px;border-left:4px solid ${COLORS.accent};margin:16px 0">
+    <tr>
+      <td style="padding:14px 16px;font-family:'Inter','Segoe UI',Arial,sans-serif;font-size:14px;color:${COLORS.dark};line-height:1.6">
+        <strong style="color:${COLORS.primary}">Mensaje del equipo:</strong><br>
+        «${esc(nota)}»
+      </td>
+    </tr>
+  </table>`
+}
+
 // ─── 1. Producto Publicado ─────────────────────────────────
 
 export async function emailProductoPublicado(
@@ -241,7 +277,7 @@ export async function emailMensajeRecibido(
   ))
 }
 
-// ─── 3. Créditos Añadidos ──────────────────────────────────
+// ─── 3. Créditos Añadidos y Créditos de Cortesía ──────────
 
 export async function emailCreditosAgregados(
   email: string,
@@ -249,36 +285,125 @@ export async function emailCreditosAgregados(
   cantidad: number,
   balanceTotal: number,
 ): Promise<boolean> {
-  return enviar(email, `✅ +${cantidad} créditos en tu cuenta`, emailLayout(
+  return enviar(email, `Se acreditaron +${cantidad} ${cantidad === 1 ? 'crédito' : 'créditos'} en tu cuenta`, emailLayout(
     'Créditos añadidos',
-    `<p style="margin:0 0 16px">Hola <strong>${nombre}</strong>,</p>
-     <p style="margin:0 0 20px">Se acreditaron créditos a tu cuenta:</p>
+    `<p style="margin:0 0 16px">Hola <strong>${esc(nombre)}</strong>,</p>
+     <p style="margin:0 0 20px">Se acreditaron créditos en tu cuenta de Venezuela Inmuebles:</p>
      ${card(`
        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-         <tr>${priceLine('Créditos añadidos', `+${cantidad}`)}</tr>
-         <tr style="border-top:1px solid ${COLORS.lightGray}"><td style="padding-top:8px;font-family:'Inter','Segoe UI',Arial,sans-serif;font-size:14px;color:${COLORS.gray}">Balance total</td><td align="right" style="padding-top:8px;font-family:'Inter','Segoe UI',Arial,sans-serif;font-size:20px;font-weight:700;color:${COLORS.success}">${balanceTotal}</td></tr>
+         ${priceLine('Créditos añadidos', `+${cantidad}`)}
+         <tr style="border-top:1px solid ${COLORS.lightGray}"><td style="padding-top:8px;font-family:'Inter','Segoe UI',Arial,sans-serif;font-size:14px;color:${COLORS.gray}">Balance total disponible</td><td align="right" style="padding-top:8px;font-family:'Inter','Segoe UI',Arial,sans-serif;font-size:20px;font-weight:700;color:${COLORS.success}">${balanceTotal}</td></tr>
        </table>
      `)}`,
-    'Ir a mi perfil',
-    `${URL}/dashboard?tab=perfil`,
+    'Ir a mi panel',
+    `${URL}/dashboard?tab=productos`,
   ))
 }
 
-// ─── 4. Verificación Aprobada ──────────────────────────────
+export async function emailCreditosRegalados(
+  email: string,
+  nombre: string,
+  cantidad: number,
+  balanceTotal: number,
+  motivo?: string | null,
+): Promise<boolean> {
+  const unidad = cantidad === 1 ? 'crédito' : 'créditos'
+  return enviar(
+    email,
+    `Has recibido +${cantidad} ${unidad} de cortesía en Venezuela Inmuebles`,
+    emailLayout(
+      'Créditos de cortesía añadidos',
+      `<p style="margin:0 0 16px">Hola <strong>${esc(nombre)}</strong>,</p>
+       <p style="margin:0 0 20px">
+         El equipo de <strong>Venezuela Inmuebles</strong> ha añadido
+         <strong>+${cantidad} ${unidad} de cortesía</strong> a tu cuenta. Estos créditos no tienen fecha de vencimiento y ya están listos para usarse.
+       </p>
+       ${card(`
+         <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+           ${priceLine('Créditos otorgados', `+${cantidad} ${unidad}`)}
+           <tr style="border-top:1px solid ${COLORS.lightGray}">
+             <td style="padding-top:8px;font-family:'Inter','Segoe UI',Arial,sans-serif;font-size:14px;color:${COLORS.gray}">Nuevo balance disponible</td>
+             <td align="right" style="padding-top:8px;font-family:'Inter','Segoe UI',Arial,sans-serif;font-size:20px;font-weight:700;color:${COLORS.success}">${balanceTotal} ${balanceTotal === 1 ? 'crédito' : 'créditos'}</td>
+           </tr>
+         </table>
+       `)}
+       ${notaAdminHtml(motivo)}
+       <p style="margin:18px 0 8px;font-weight:600;color:${COLORS.dark}">¿Cómo puedes aprovecharlos?</p>
+       <p style="margin:0;color:${COLORS.gray};font-size:14px;line-height:1.65">
+         • <strong>Impulso inmediato (1 crédito):</strong> vuelve a posicionar tu inmueble en los primeros resultados.<br>
+         • <strong>Inmueble destacado (desde 4 créditos):</strong> aparece en portada y al tope de las búsquedas por 12h, 24h o 48h.
+       </p>`,
+      'Usar mis créditos',
+      `${URL}/dashboard?tab=productos`,
+    ),
+    { replyTo: CONTACT },
+  )
+}
 
-export async function emailVerificacionAprobada(email: string, nombre: string): Promise<boolean> {
-  return enviar(email, '🎉 Tu cuenta fue verificada', emailLayout(
-    'Cuenta verificada',
-    `<p style="margin:0 0 16px">Hola <strong>${nombre}</strong>,</p>
-     <div style="text-align:center;padding:24px 0">
-       <p style="font-size:52px;margin:0">✅</p>
-       <p style="font-size:18px;font-weight:700;color:${COLORS.primary};margin:12px 0">Verificación completada</p>
-     </div>
-     <p style="margin:0 0 16px;text-align:center">Tu cuenta ahora tiene el sello de verificación visible en todos tus anuncios.</p>
-     <p style="margin:0;text-align:center;color:${COLORS.gray};font-size:14px">Esto aumenta la confianza de los compradores y mejora tus ventas.</p>`,
-    'Ver mi perfil',
-    `${URL}/dashboard`,
-  ))
+// ─── 4. Verificación de Perfil ─────────────────────────────
+
+export async function emailVerificacionAprobada(
+  email: string,
+  nombre: string,
+  empresaNombre?: string | null,
+): Promise<boolean> {
+  const mencionEmpresa = empresaNombre
+    ? ` (<strong>${esc(empresaNombre)}</strong>)`
+    : ''
+  return enviar(
+    email,
+    'Tu perfil ha sido verificado en Venezuela Inmuebles',
+    emailLayout(
+      'Perfil verificado oficialmente',
+      `<p style="margin:0 0 16px">Hola <strong>${esc(nombre)}</strong>${mencionEmpresa},</p>
+       <p style="margin:0 0 20px">
+         Nuestro equipo completó la revisión de tu cuenta y activó tu
+         <strong>insignia oficial de Perfil Verificado</strong> en Venezuela Inmuebles.
+       </p>
+       ${card(`
+         <p style="margin:0 0 10px;font-weight:700;font-size:15px;color:${COLORS.primary}">Beneficios ya activos en tu cuenta:</p>
+         <p style="margin:0;color:${COLORS.dark};font-size:14px;line-height:1.7">
+           • <strong>Sello de identidad verificada</strong> visible en todos tus anuncios y en tu perfil público.<br>
+           • <strong>Mayor confianza ante compradores e inquilinos</strong>, incrementando la tasa de contacto directo.<br>
+           • <strong>Respaldo oficial de autenticidad</strong> dentro del directorio inmobiliario.
+         </p>
+       `)}
+       <p style="margin:20px 0 0;color:${COLORS.gray};font-size:14px">
+         Tus publicaciones activas muestran la insignia automáticamente sin que tengas que realizar ningún paso adicional.
+       </p>`,
+      'Ver mi perfil verificado',
+      `${URL}/dashboard`,
+    ),
+    { replyTo: CONTACT },
+  )
+}
+
+export async function emailVerificacionRechazada(
+  email: string,
+  nombre: string,
+  motivo?: string | null,
+): Promise<boolean> {
+  return enviar(
+    email,
+    'Necesitamos actualizar tus datos de verificación en Venezuela Inmuebles',
+    emailLayout(
+      'Revisión de verificación',
+      `<p style="margin:0 0 16px">Hola <strong>${esc(nombre)}</strong>,</p>
+       <p style="margin:0 0 20px">
+         Revisamos tu solicitud de verificación de identidad y por el momento necesitamos que corrijas un detalle antes de activar tu sello:
+       </p>
+       ${card(`
+         <p style="margin:0 0 6px;font-weight:700;font-size:14px;color:${COLORS.primary}">Observación del equipo:</p>
+         <p style="margin:0;color:${COLORS.dark};font-size:14px;line-height:1.6">${esc(motivo || 'Por favor asegúrate de que el documento sea legible y coincida con los datos de tu perfil.')}</p>
+       `)}
+       <p style="margin:16px 0 0;color:${COLORS.gray};font-size:14px">
+         Puedes enviar nuevamente tu solicitud desde tu panel en cualquier momento o responder este correo si necesitas asistencia.
+       </p>`,
+      'Volver a solicitar verificación',
+      `${URL}/dashboard?tab=perfil`,
+    ),
+    { replyTo: CONTACT },
+  )
 }
 
 // ─── 5. Subida de Nivel ────────────────────────────────────
@@ -589,5 +714,170 @@ export async function emailInvitacionAgencia(
       inviteUrl,
     ),
     { replyTo: CONTACT }
+  )
+}
+
+// ─── 15. Tiempo Extra y Gestión Manual de Planes (Admin) ───
+
+export interface TiempoExtraPlanParams {
+  email: string
+  nombre: string
+  empresaNombre?: string | null
+  plan: 'agencia' | 'profesional'
+  estado: 'activa' | 'trial'
+  diasAgregados: number
+  fechaVencimiento?: string | null
+  creditosIncluidos?: number | null
+  motivo?: string | null
+}
+
+function beneficiosPlanHtml(plan: 'agencia' | 'profesional', creditosIncluidos?: number | null): string {
+  if (plan === 'agencia') {
+    const creditos = creditosIncluidos ?? 20
+    return `<p style="margin:18px 0 8px;font-weight:600;color:${COLORS.dark}">Qué incluye tu Plan Agencia:</p>
+      <p style="margin:0;color:${COLORS.gray};font-size:14px;line-height:1.65">
+        • <strong>Publicaciones ilimitadas</strong> activas en toda Venezuela.<br>
+        • <strong>Gestión de equipo multi-agente:</strong> invita agentes por correo o enlace y asigna propiedades.<br>
+        • <strong>Hasta 30 fotografías</strong>, vídeo y planos por propiedad.<br>
+        • <strong>${creditos} créditos mensuales incluidos</strong> para impulsar o destacar tus anuncios.
+      </p>`
+  }
+  const creditos = creditosIncluidos ?? 5
+  return `<p style="margin:18px 0 8px;font-weight:600;color:${COLORS.dark}">Qué incluye tu Plan Profesional:</p>
+    <p style="margin:0;color:${COLORS.gray};font-size:14px;line-height:1.65">
+      • <strong>Hasta 10 inmuebles activos</strong> simultáneamente.<br>
+      • <strong>Escaparate profesional</strong> con tu marca y contacto directo.<br>
+      • <strong>Hasta 20 fotografías</strong> y vídeo por propiedad.<br>
+      • <strong>${creditos} créditos mensuales incluidos</strong> para impulsar o destacar tus anuncios.
+    </p>`
+}
+
+export async function emailTiempoExtraPlan(params: TiempoExtraPlanParams): Promise<boolean> {
+  const {
+    email,
+    nombre,
+    empresaNombre,
+    plan,
+    estado,
+    diasAgregados,
+    fechaVencimiento,
+    creditosIncluidos,
+    motivo,
+  } = params
+
+  const planLabel = plan === 'agencia' ? 'Agencia' : 'Profesional'
+  const diasTxt = `${diasAgregados} ${diasAgregados === 1 ? 'día' : 'días'}`
+  const estadoTxt = estado === 'trial' ? 'Período de prueba extendido' : 'Suscripción activa extendida'
+  const mencionEmpresa = empresaNombre ? ` para <strong>${esc(empresaNombre)}</strong>` : ''
+  const ctaDestino = plan === 'agencia' ? `${URL}/dashboard?tab=agencia` : `${URL}/dashboard`
+
+  return enviar(
+    email,
+    `Tiempo extra añadido a tu Plan ${planLabel} en Venezuela Inmuebles`,
+    emailLayout(
+      `+${diasTxt} extra en tu Plan ${planLabel}`,
+      `<p style="margin:0 0 16px">Hola <strong>${esc(nombre)}</strong>,</p>
+       <p style="margin:0 0 20px">
+         Hemos otorgado <strong>+${diasTxt} adicionales de cortesía</strong>${mencionEmpresa} en tu
+         <strong>Plan ${planLabel}</strong> dentro de Venezuela Inmuebles.
+       </p>
+       ${card(`
+         <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+           ${priceLine('Plan', `Plan ${planLabel}`)}
+           ${priceLine('Modalidad', estadoTxt)}
+           ${priceLine('Tiempo extra otorgado', `+${diasTxt}`)}
+           <tr style="border-top:1px solid ${COLORS.lightGray}">
+             <td style="padding-top:8px;font-family:'Inter','Segoe UI',Arial,sans-serif;font-size:14px;color:${COLORS.gray}">Válido hasta</td>
+             <td align="right" style="padding-top:8px;font-family:'Inter','Segoe UI',Arial,sans-serif;font-size:16px;font-weight:700;color:${COLORS.success}">${esc(formatearFechaEmail(fechaVencimiento))}</td>
+           </tr>
+         </table>
+       `)}
+       ${notaAdminHtml(motivo)}
+       ${beneficiosPlanHtml(plan, creditosIncluidos)}`,
+      plan === 'agencia' ? 'Gestionar mi agencia' : 'Ir a mi panel',
+      ctaDestino,
+    ),
+    { replyTo: CONTACT },
+  )
+}
+
+export interface PlanAsignadoAdminParams {
+  email: string
+  nombre: string
+  empresaNombre?: string | null
+  plan: 'agencia' | 'profesional' | 'gratuita'
+  estado: 'activa' | 'trial' | 'cancelada'
+  dias?: number | null
+  fechaVencimiento?: string | null
+  creditosIncluidos?: number | null
+  motivo?: string | null
+}
+
+export async function emailPlanAsignadoAdmin(params: PlanAsignadoAdminParams): Promise<boolean> {
+  const {
+    email,
+    nombre,
+    empresaNombre,
+    plan,
+    estado,
+    dias,
+    fechaVencimiento,
+    creditosIncluidos,
+    motivo,
+  } = params
+
+  if (plan === 'gratuita' || estado === 'cancelada') {
+    return enviar(
+      email,
+      'Actualización de tu plan en Venezuela Inmuebles',
+      emailLayout(
+        'Tu cuenta pasó al Plan Gratuito',
+        `<p style="margin:0 0 16px">Hola <strong>${esc(nombre)}</strong>,</p>
+         <p style="margin:0 0 20px">
+           Te informamos que tu cuenta en Venezuela Inmuebles ahora opera bajo el <strong>Plan Gratuito</strong> (hasta 3 inmuebles activos sin costo).
+         </p>
+         ${notaAdminHtml(motivo)}
+         <p style="margin:16px 0 0;color:${COLORS.gray};font-size:14px">
+           Si deseas reactivar un Plan Profesional o Agencia, puedes hacerlo desde tu panel o respondiendo a este mensaje.
+         </p>`,
+        'Ver planes disponibles',
+        `${URL}/planes`,
+      ),
+      { replyTo: CONTACT },
+    )
+  }
+
+  const planLabel = plan === 'agencia' ? 'Agencia' : 'Profesional'
+  const estadoTxt = estado === 'trial' ? 'Período de prueba sin costo' : 'Suscripción activa'
+  const duracionTxt = dias && dias > 0 ? `${dias} ${dias === 1 ? 'día' : 'días'}` : 'Vigencia activa'
+  const mencionEmpresa = empresaNombre ? ` para <strong>${esc(empresaNombre)}</strong>` : ''
+  const ctaDestino = plan === 'agencia' ? `${URL}/dashboard?tab=agencia` : `${URL}/dashboard`
+
+  return enviar(
+    email,
+    `Tu Plan ${planLabel} ya está activo en Venezuela Inmuebles`,
+    emailLayout(
+      `Plan ${planLabel} activado`,
+      `<p style="margin:0 0 16px">Hola <strong>${esc(nombre)}</strong>,</p>
+       <p style="margin:0 0 20px">
+         Hemos activado el <strong>Plan ${planLabel}</strong>${mencionEmpresa} en tu cuenta de Venezuela Inmuebles.
+       </p>
+       ${card(`
+         <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+           ${priceLine('Plan activado', `Plan ${planLabel}`)}
+           ${priceLine('Modalidad', estadoTxt)}
+           ${priceLine('Duración otorgada', duracionTxt)}
+           <tr style="border-top:1px solid ${COLORS.lightGray}">
+             <td style="padding-top:8px;font-family:'Inter','Segoe UI',Arial,sans-serif;font-size:14px;color:${COLORS.gray}">Válido hasta</td>
+             <td align="right" style="padding-top:8px;font-family:'Inter','Segoe UI',Arial,sans-serif;font-size:16px;font-weight:700;color:${COLORS.success}">${esc(formatearFechaEmail(fechaVencimiento))}</td>
+           </tr>
+         </table>
+       `)}
+       ${notaAdminHtml(motivo)}
+       ${beneficiosPlanHtml(plan, creditosIncluidos)}`,
+      plan === 'agencia' ? 'Configurar mi agencia' : 'Ir a mi panel',
+      ctaDestino,
+    ),
+    { replyTo: CONTACT },
   )
 }

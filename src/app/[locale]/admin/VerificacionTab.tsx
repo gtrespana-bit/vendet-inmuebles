@@ -89,18 +89,12 @@ export default function VerificacionTab({ notify }: { notify: (msg: string) => v
   }, [cargar])
 
   async function aprobarSol(id: string, userId: string, sol: any) {
-    // 1. Solicitud aprobada
-    const { error: err1 } = await supabase
-      .from('solicitudes_verificacion')
-      .update({ estado: 'aprobada', revisada_en: new Date().toISOString() })
-      .eq('id', id)
-    if (err1) { notify('Error aprobando: ' + err1.message); return }
-
-    // 2. Perfil verificado via server-side endpoint (bypass RLS)
     const res = await fetch('/api/admin/verificar-venta', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...(await getSupabaseAuthHeaders()) },
       body: JSON.stringify({
+        accion: 'aprobar',
+        solicitudId: id,
         userId,
         cedula_numero: sol.pago_movil_cedula || '',
         pago_movil_telefono: sol.pago_movil_telefono || '',
@@ -110,34 +104,38 @@ export default function VerificacionTab({ notify }: { notify: (msg: string) => v
     })
     const result = await res.json()
     if (!res.ok) {
-      notify('Error perfil: ' + result.error)
+      notify('Error perfil: ' + (result.error || 'desconocido'))
       return
     }
 
-    notify('Vendedor verificado correctamente')
-    // EMAIL: Notificar al usuario que fue verificado
-    try {
-      getSupabaseAuthHeaders()
-        .then(authHeaders => fetch('/api/email-verificacion', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', ...authHeaders },
-          body: JSON.stringify({ userId }),
-        }))
-        .catch(() => {})
-    } catch {}
+    notify('✅ Perfil verificado y correo enviado al usuario')
     cargar()
   }
 
   async function rechazarSol(id: string) {
     if (!rechazoMotivo.trim()) { notify('Escribe motivo de rechazo'); return }
-    const { error } = await supabase
-      .from('solicitudes_verificacion')
-      .update({ estado: 'rechazada', rechazo_motivo: rechazoMotivo, revisada_en: new Date().toISOString() })
-      .eq('id', id)
-    if (error) { notify('Error: ' + error.message); return }
+    const sol = solicitudes.find((s: any) => s.id === id)
+    if (!sol?.user_id) { notify('Solicitud inválida'); return }
+
+    const res = await fetch('/api/admin/verificar-venta', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(await getSupabaseAuthHeaders()) },
+      body: JSON.stringify({
+        accion: 'rechazar',
+        solicitudId: id,
+        userId: sol.user_id,
+        rechazoMotivo: rechazoMotivo.trim(),
+      }),
+    })
+    const result = await res.json()
+    if (!res.ok) {
+      notify('Error: ' + (result.error || 'desconocido'))
+      return
+    }
+
     setRechazoMotivo('')
     setRechazoModal(null)
-    notify('Solicitud rechazada')
+    notify('Solicitud rechazada y aviso enviado por correo')
     cargar()
   }
 

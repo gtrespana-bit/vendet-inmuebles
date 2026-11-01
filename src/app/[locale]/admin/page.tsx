@@ -54,6 +54,7 @@ function UsuariosTab({ notify }: Notifier) {
   const [creditModal, setCreditModal] = useState<string | null>(null)
   const [creditCantidad, setCreditCantidad] = useState('')
   const [creditMotivo, setCreditMotivo] = useState('')
+  const [creditNotificarEmail, setCreditNotificarEmail] = useState(true)
   const [creditProcesando, setCreditProcesando] = useState(false)
 
   // Columnas necesarias para la tabla de usuarios (una sola fuente de verdad)
@@ -114,13 +115,14 @@ function UsuariosTab({ notify }: Notifier) {
           userId,
           cantidad: parseInt(creditCantidad),
           motivo: creditMotivo || 'Manual admin',
+          notificarEmail: creditNotificarEmail,
         }),
       })
       const result = await res.json()
       if (!res.ok) throw new Error(result.error || 'desconocido')
 
       const perfil = usuarios.find(u => u.id === userId)
-      notify(`✅ +${creditCantidad} créditos a ${perfil?.nombre || 'usuario'}`)
+      notify(`✅ +${creditCantidad} créditos a ${perfil?.nombre || 'usuario'}${creditNotificarEmail ? ' · Email enviado' : ''}`)
 
       // Telegram notification
       try {
@@ -136,6 +138,7 @@ function UsuariosTab({ notify }: Notifier) {
       setCreditModal(null)
       setCreditCantidad('')
       setCreditMotivo('')
+      setCreditNotificarEmail(true)
       // reload user list
       await supabase.from('perfiles').select(COLUMNAS_USUARIOS).limit(1000).then(({data}: {data: any[]}) => {
         if (data) setUsuarios(data.map(mapProfile))
@@ -157,7 +160,7 @@ function UsuariosTab({ notify }: Notifier) {
       notify('❌ Error: ' + (result.error || 'desconocido'))
       return
     }
-    notify(estado ? '✅ Usuario verificado' : '⏸️ Verificación removida')
+    notify(estado ? '✅ Usuario verificado · Email enviado' : '⏸️ Verificación removida · Email enviado')
     setUsuarios(prev => prev.map(u => u.id === userId ? { ...u, verificado: estado } : u))
   }
 
@@ -242,8 +245,8 @@ function UsuariosTab({ notify }: Notifier) {
                   <td className="py-3 px-4 text-center text-gray-400 text-xs hidden lg:table-cell">{u.creado_en ? new Intl.DateTimeFormat('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(u.creado_en)) : '—'}</td>
                   <td className="py-3 px-4 text-center">
                     <div className="flex items-center justify-center gap-1">
-                      <button onClick={() => { setCreditModal(u.id); setCreditCantidad(''); setCreditMotivo('') }}
-                        className="p-1.5 rounded-lg hover:bg-green-50 text-green-600" title="Añadir créditos">
+                      <button onClick={() => { setCreditModal(u.id); setCreditCantidad(''); setCreditMotivo(''); setCreditNotificarEmail(true) }}
+                        className="p-1.5 rounded-lg hover:bg-green-50 text-green-600" title="Regalar / añadir créditos">
                         <CreditCard size={14} />
                       </button>
                       <button onClick={() => window.open(`/vendedor/${u.id}`, '_blank')}
@@ -263,27 +266,57 @@ function UsuariosTab({ notify }: Notifier) {
       {creditModal && (() => {
         const user = usuarios.find(u => u.id === creditModal)
         return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setCreditModal(null)}>
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => !creditProcesando && setCreditModal(null)}>
             <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl" onClick={e => e.stopPropagation()}>
-              <h3 className="font-bold text-lg mb-4">💰 Añadir créditos a {user?.nombre || 'usuario'}</h3>
+              <h3 className="font-bold text-lg mb-1">🎁 Regalar créditos a {user?.nombre || 'usuario'}</h3>
               <p className="text-sm text-gray-500 mb-4">Balance actual: <span className="font-bold text-brand-primary">{user?.credito_balance || 0} créditos</span></p>
               
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Cantidad</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Cantidad de créditos</label>
+                  <div className="flex gap-1.5 mb-2">
+                    {[5, 10, 20, 50].map(preset => (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => setCreditCantidad(String(preset))}
+                        className={`px-3 py-1 rounded-lg text-xs font-bold border transition ${
+                          creditCantidad === String(preset)
+                            ? 'bg-green-600 text-white border-green-600'
+                            : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
+                        }`}
+                      >
+                        +{preset}
+                      </button>
+                    ))}
+                  </div>
                   <input type="number" value={creditCantidad} onChange={e => setCreditCantidad(e.target.value)}
-                    placeholder="Ej: 5" min="1" className="w-full border rounded-lg px-4 py-2.5 text-sm" autoFocus />
+                    placeholder="Ej: 10" min="1" className="w-full border rounded-lg px-4 py-2.5 text-sm" autoFocus />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Motivo (opcional)</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Mensaje / motivo para el usuario (opcional)</label>
                   <input type="text" value={creditMotivo} onChange={e => setCreditMotivo(e.target.value)}
-                    placeholder="Ej: Bonus, corrección..." className="w-full border rounded-lg px-4 py-2.5 text-sm" />
+                    placeholder="Ej: Cortesía de bienvenida para destacar tus propiedades" className="w-full border rounded-lg px-4 py-2.5 text-sm" />
                 </div>
+                <label className="flex items-start gap-2.5 bg-green-50/70 border border-green-100 rounded-xl p-3 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={creditNotificarEmail}
+                    onChange={e => setCreditNotificarEmail(e.target.checked)}
+                    disabled={creditProcesando}
+                    className="mt-0.5 rounded border-gray-300 text-green-600 focus:ring-green-600"
+                  />
+                  <span className="text-xs text-gray-700 leading-relaxed">
+                    <strong className="text-gray-900">Enviar email específico de créditos de cortesía</strong>
+                    <br />
+                    El usuario recibirá un correo detallando los créditos regalados, su nuevo balance y tu mensaje.
+                  </span>
+                </label>
                 <div className="flex gap-2">
-                  <button onClick={() => setCreditModal(null)} className="flex-1 border py-2.5 rounded-lg font-medium hover:bg-gray-50">Cancelar</button>
+                  <button onClick={() => setCreditModal(null)} disabled={creditProcesando} className="flex-1 border py-2.5 rounded-lg font-medium hover:bg-gray-50 disabled:opacity-50">Cancelar</button>
                   <button onClick={() => añadirCreditos(creditModal!)} disabled={!creditCantidad || parseInt(creditCantidad) < 1 || creditProcesando}
-                    className="flex-1 bg-green-500 text-white py-2.5 rounded-lg font-bold hover:bg-green-600 disabled:opacity-50">
-                    {creditProcesando ? 'Añadiendo...' : `Añadir ${creditCantidad || '?'} créditos`}
+                    className="flex-1 bg-green-600 text-white py-2.5 rounded-lg font-bold hover:bg-green-700 disabled:opacity-50">
+                    {creditProcesando ? 'Otorgando...' : `Regalar +${creditCantidad || '?'} créditos`}
                   </button>
                 </div>
               </div>

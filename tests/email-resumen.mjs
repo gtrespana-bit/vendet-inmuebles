@@ -60,22 +60,30 @@ test('el cron procesa la cola y las plantillas de eventos importantes existen', 
     'emailPropiedadEnRevision',
     'emailPropiedadAprobada',
     'emailPropiedadRechazada',
+    'emailVerificacionAprobada',
+    'emailVerificacionRechazada',
     'emailVerificacionRevocada',
     'emailResenaRecibida',
     'emailPropiedadDestacada',
     'emailCreditosRechazados',
+    'emailCreditosRegalados',
+    'emailTiempoExtraPlan',
+    'emailPlanAsignadoAdmin',
   ]) {
     assert.match(plantillas, new RegExp(`export async function ${fn}\\(`), fn)
   }
 })
 
-test('los eventos importantes disparan correos desde sus rutas', () => {
+test('los eventos importantes disparan correos desde sus rutas sin duplicados', () => {
   const rutas = [
     ['src/app/api/publicar/route.ts', 'emailProductoPublicado'],
     ['src/app/api/admin/moderar-producto/route.ts', 'notificarPropiedadModerada'],
     ['src/app/api/admin/verificar/route.ts', 'notificarVerificacion'],
     ['src/app/api/admin/toggle-verificado/route.ts', 'notificarVerificacion'],
+    ['src/app/api/admin/verificar-venta/route.ts', 'notificarVerificacion'],
     ['src/app/api/admin/add-creditos/route.ts', 'notificarCreditosAgregados'],
+    ['src/app/api/admin/add-creditos/route.ts', 'esRegaloAdmin:\\s*true'],
+    ['src/app/api/admin/planes/route.ts', 'notificarCambioPlanAdmin'],
     ['src/app/api/admin/enviar-resena/route.ts', 'notificarResena'],
     ['src/app/api/admin/toggle-destacado/route.ts', 'notificarPropiedadDestacada'],
     ['src/app/api/admin/boost-producto/route.ts', 'notificarPropiedadBoost'],
@@ -85,4 +93,7 @@ test('los eventos importantes disparan correos desde sus rutas', () => {
   for (const [ruta, funcion] of rutas) {
     assert.match(readFileSync(ruta, 'utf8'), new RegExp(funcion), ruta)
   }
+
+  const verificacionTab = readFileSync('src/app/[locale]/admin/VerificacionTab.tsx', 'utf8')
+  assert.doesNotMatch(verificacionTab, /\/api\/email-verificacion/)
 })
