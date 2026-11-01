@@ -31,8 +31,13 @@ Fecha: 2026-11-01 · Rama: `arena/1b5f7152-vendet-inmuebles` · Proyecto Supabas
 - **F27 (Reserva atómica en cola de correo):** añadida reserva condicional por arrendamiento temporal (`programado_para`) en `procesarNotificacionesEmailPendientes` antes de enviar cada correo para impedir envíos duplicados ante ejecuciones concurrentes del cron.
 - **F29 (Integración continua):** añadido `.github/workflows/ci.yml` ejecutando `npm ci`, `npm test`, `npx tsc --noEmit`, `npm run lint` y `npm run build` en PRs y pushes, ampliando la batería automatizada a **136 pruebas** (incluyendo PGlite sobre migraciones reales).
 
-## Comprobaciones operativas externas que siguen requiriendo validación humana (§11)
-- Prueba real de pago de bajo importe (Pago Móvil y Binance Pay) verificando conciliación bancaria real y calibración OCR con comprobantes reales variados (F14).
-- Verificación de entregabilidad SMTP y registros DNS `SPF` / `DKIM` / `DMARC` en el dominio productivo (F27).
-- Confirmación de Sentry/alertas operativas, MFA en proveedores y ensayo periódico de restauración de backup (F28).
-- Revisión legal independiente de privacidad/cookies según jurisdicción aplicable (F26).
+## Elementos marcados como PENDIENTE
+
+- [ ] **PENDIENTE (F14 — Operación pagos/OCR):** Prueba real de pago de bajo importe (Pago Móvil y Binance Pay) verificando conciliación bancaria real y calibración del OCR con comprobantes reales anonimizados de distintos bancos.
+- [ ] **PENDIENTE (F12 — Backlog de producto Agencia/Profesional):** Implementación futura de funciones multiusuario de Agencia (hasta 5 agentes, bandeja privada asignable, carga/edición masiva) y URL personalizada de escaparate (retiradas mientras tanto de los textos comerciales para no anunciar funciones inexistentes).
+- [ ] **PENDIENTE (F24 / F25 — Rendimiento y accesibilidad en campo):** Medición real de Core Web Vitals / Lighthouse / axe tras despliegue y validación manual con teclado, lector de pantalla y móviles reales (Android/iOS).
+- [ ] **PENDIENTE (F20–F22 — Search Console):** Revisión de cobertura, canonicals elegidos y `sitemap.xml` en Google Search Console tras el despliegue a producción.
+- [ ] **PENDIENTE (F26 — Legal/privacidad):** Revisión legal independiente de política de privacidad, retención contable/antifraude y banner de preferencias de cookies según jurisdicción aplicable.
+- [ ] **PENDIENTE (F27 — Correo/DNS):** Verificación de entregabilidad SMTP, rebotes y registros DNS `SPF` / `DKIM` / `DMARC` en el dominio productivo.
+- [ ] **PENDIENTE (F28 — Observabilidad y continuidad):** Confirmación de captura de errores en Sentry sin datos sensibles, alertas operativas, MFA en proveedores (Vercel/GitHub/Supabase) y ensayo periódico de restauración de backup.
+- [ ] **PENDIENTE (F29 — E2E en navegador):** Incorporar suite Playwright de recorridos autenticados por rol (`visitante`, `particular`, `profesional`, `agencia`, `admin`) sobre entorno de pruebas.

@@ -384,18 +384,18 @@ El cron admite secreto en query, que puede acabar en logs; preferible solo cabec
 
 Retención y privacidad reales, scheduler de correo, observabilidad, backups y CI/E2E (F26–F29). Integrar pruebas de regresión en cada bloque anterior, no esperar a este bloque para empezar a probar.
 
-## 11. Comprobaciones que faltan antes de decir «lista para operar»
+## 11. Comprobaciones pendientes antes de declarar «lista para operar»
 
-- [ ] Prueba autenticada de visitante/particular/profesional/agencia/admin, incluyendo cambio de cuenta en la misma pestaña.
-- [ ] Pago real autorizado de importe pequeño, activación provisional, confirmación/rechazo y conciliación de saldo.
-- [ ] Cambios/renovaciones/bajadas/vencimientos con reloj controlado y sin pérdida de datos.
-- [ ] Publicación simultánea en el último cupo; edición de 8/20/30 imágenes; pausa/reactivación/vendido.
-- [ ] Chat/realtime/push/correo con dos usuarios y preferencias de avisos.
-- [ ] SMTP y dominio: entrega, SPF/DKIM/DMARC, límites y manejo de rebotes.
-- [ ] Android/iOS, Chrome/Safari/Firefox, teclado y lector de pantalla.
-- [ ] Lighthouse/axe y Core Web Vitals reales; no hay puntuación inventada en este informe.
-- [ ] Search Console: cobertura, canonical elegido, sitemap y datos estructurados.
-- [ ] Restauración de backup ensayada, acceso MFA y respuesta a incidentes.
-- [ ] Política legal/retención coherente con la implementación y proveedores utilizados.
+- [x] Cuotas transaccionales de anuncios/fotos, créditos mensuales incluidos en planes, destacado de 12h/24h/48h, cambios admin atómicos y rate limit atómico cubiertos con pruebas automatizadas (136 tests, incluidos escenarios concurrentes/transaccionales en PGlite) y migraciones `012`–`016` aplicadas en Supabase (`quxbqmqwiacfwbpqioev`).
+- [ ] **PENDIENTE:** Prueba manual autenticada en navegador con cuentas reales/de prueba (`visitante`, `particular`, `profesional`, `agencia`, `admin`), incluyendo cambio de cuenta en la misma pestaña y pruebas E2E con Playwright (F29).
+- [ ] **PENDIENTE:** Pago real autorizado de importe pequeño (Pago Móvil y Binance Pay), activación provisional, confirmación/rechazo, conciliación bancaria real y calibración de muestras reales anonimizadas de OCR (F14).
+- [ ] **PENDIENTE:** Evolución de capacidades avanzadas de Agencia y Profesional retiradas temporalmente de la oferta comercial hasta estar implementadas (equipos multiusuario de hasta 5 agentes, bandeja privada asignable, publicación/edición masiva y escaparate con URL personalizada — F12).
+- [ ] **PENDIENTE:** Chat/realtime/push/correo verificado de extremo a extremo entre dos usuarios reales y preferencias de avisos.
+- [ ] **PENDIENTE:** Entregabilidad SMTP en dominio productivo: verificación de registros DNS `SPF`, `DKIM` y `DMARC`, límites de envío y manejo de rebotes (F27).
+- [ ] **PENDIENTE:** Validación manual en dispositivos reales (Android/iOS, Chrome/Safari/Firefox), navegación completa por teclado, foco en todos los modales y lector de pantalla (F25).
+- [ ] **PENDIENTE:** Medición real de Lighthouse/axe y Core Web Vitals (LCP/INP/CLS) en móvil y escritorio tras el despliegue (F24, F25).
+- [ ] **PENDIENTE:** Verificación en Google Search Console tras desplegar los nuevos canonicals, `noindex` y `sitemap.xml` (F20–F22).
+- [ ] **PENDIENTE:** Observabilidad operativa (Sentry/alertas sin datos sensibles), verificación de MFA en Vercel/GitHub/Supabase y ensayo real de restauración de backup (F28).
+- [ ] **PENDIENTE:** Revisión legal independiente de la política de privacidad, retención y consentimiento de cookies según jurisdicción aplicable (F26).
 
-**Conclusión:** priorizar seguridad, cuentas, inventario y cumplimiento de las prestaciones de pago. Una mejora de diseño o de puntuación SEO no compensa que un cliente no vea propiedades existentes, no reciba los créditos incluidos o pierda fotos al editar. Las correcciones deben ir en bloques pequeños, con validación y PR independientes; esta revisión no ha desplegado cambios.
+**Conclusión:** los hallazgos de código y base de datos de los Bloques A–E han quedado corregidos y cubiertos por CI (`docs/auditoria/SEGURIDAD_BLOQUE_1.md` y `docs/auditoria/REMEDIACION_BLOQUES_B_C_D_E.md`). Los puntos marcados arriba como **PENDIENTE** corresponden a validaciones operativas externas, infraestructura/DNS, pruebas manuales en dispositivos reales o evoluciones de producto que deben completarse antes de dar por cerrada la certificación operativa.
