@@ -85,18 +85,17 @@ Pruebas: **112/112** (3 nuevas en `tests/image-upload-policy.mjs`). No se probó
 
 **Pendiente de F06:** rotación de claves y limpieza de huérfanos en el bucket, y comprobar en el despliegue real que el límite de cuerpo configurado coincide con 4 MB.
 
-## Bloque 4 — Rate limit atómico (F07)
+## Bloque 4 — Rate limit atómico y destinos push (F07)
 
-Aplicado en el proyecto real como `rate_limit_atomico`.
+Implementado en `015_rate_limit_atomico.sql`, `src/lib/rate-limit.ts`, `src/lib/push-endpoint.ts` y `src/app/api/cron/notificaciones-email/route.ts`.
 
-- `reservar_rate_limit` cuenta y inserta en la misma transacción, serializada por `pg_advisory_xact_lock` de (operación, identificador): dos peticiones simultáneas ya no pueden gastar el mismo presupuesto.
-- La ventana se recicla en la propia llamada (borra solo las filas de esa clave fuera de ventana) y hay índice de apoyo, así que no crece sin control.
+- `reservar_rate_limit` cuenta e inserta en la misma transacción, serializada por `pg_advisory_xact_lock` de (operación, identificador): dos peticiones simultáneas ya no pueden gastar el mismo presupuesto.
+- La ventana se recicla en la propia llamada (borra solo las filas de esa clave fuera de ventana), hay índice de apoyo (`idx_rate_limit_key_identifier_created`), y el cron periódico ejecuta `cleanOldRateLimits()` (>24 h) para purgar claves inactivas; además el cron deja de admitir `?secret=` en query y valida `Authorization: Bearer` con `timingSafeEqual`.
 - Política de fallo por operación: login, registro, reset, pagos, créditos, IA, contacto, subidas, publicaciones, mensajes y push **fallan cerrado** ante error o timeout; analítica, visitas y favoritos siguen fallando abierto para no degradar la navegación.
 - Función sin `EXECUTE` para `anon`/`authenticated`.
+- **Allowlist de destinos push (`src/lib/push-endpoint.ts`):** tanto `/api/push-subscribe` como `sendPush` exigen HTTPS, puerto estándar, sin credenciales y host perteneciente a proveedores Web Push reconocidos (FCM, Mozilla, Apple, WNS), bloqueando IPs literales, `localhost` y terceros arbitrarios (SSRF).
 
-Pruebas: **116/116** (4 nuevas en `tests/rate-limit.mjs` con PGlite).
-
-**Pendiente de F07:** allowlist de destinos en los endpoints push (riesgo SSRF) y retención programada de `rate_limit`.
+Pruebas: **120/120** (incluye pruebas de reserva atómica con PGlite, allowlist de endpoints push y retención/cabecera del cron).
 
 ## Validación realizada
 
@@ -139,12 +138,11 @@ COMMIT;
 
 Esta reversión no borra datos, pero **reabre la elusión de cupos**; no debe usarse como solución permanente.
 
-## Trabajo de seguridad que queda
+## Seguimiento pendiente tras los bloques 1–4 (Bloque A)
 
-- F01: resolver/seguir avisos moderados restantes sin romper herramientas.
-- F05: privacidad real de teléfono/dirección/coordenadas en vistas públicas; acordar contrato de publicación antes de restringir datos utilizados por las fichas.
-- F06: validación/reescritura de imágenes y endurecimiento de presigned/diagnóstico R2.
-- F07: rate limiting general atómico y política de fallo por operación; revisión controlada de destinos push.
+- F01: seguir los 5 avisos moderados de compilación (`glob`/`minimatch` en plugins de Sentry) cuando haya versiones compatibles.
+- F05: valorar en el futuro un interruptor explícito en el perfil para consentimiento de contacto/ubicación (hoy se deduce por anuncio en `metodos_contacto`).
+- F06: limpieza periódica de objetos huérfanos en R2 y verificación en Vercel del cuerpo máximo de 4 MB.
 - E2E con navegador, cookies renovadas y cuentas reales de prueba; revisión de MFA/backups/infraestructura.
 
-Esta entrega no implica que toda la seguridad de la web esté resuelta.
+Esta entrega cierra las acciones prioritarias del Bloque A de código y base de datos, pero no implica que toda la seguridad operativa de la web esté certificada.

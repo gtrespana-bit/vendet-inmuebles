@@ -42,4 +42,11 @@ test('la función no es ejecutable por anon ni authenticated', () => {
   assert.match(sql, /pg_advisory_xact_lock/)
 })
 
+test('el cron limpia registros antiguos de rate_limit y solo acepta secreto en cabecera', () => {
+  const cron = readFileSync('src/app/api/cron/notificaciones-email/route.ts', 'utf8')
+  assert.match(cron, /cleanOldRateLimits/)
+  assert.match(cron, /timingSafeEqual/)
+  assert.doesNotMatch(cron, /searchParams\.get\(['"]secret['"]\)/)
+})
+
 test.after(() => db.close())
