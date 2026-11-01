@@ -16,9 +16,11 @@ import { FORM_AMENITY_GROUPS, claveAmenidad, nombreCanonicoAmenidad } from '@/li
 import ContactMethodsFields, { type MetodosContactoForm } from '@/components/ContactMethodsFields'
 
 import { useTranslations } from 'next-intl'
+import { getUrbanizacionesSugeridas } from '@/lib/urbanizaciones'
+import { canPlanIncludeRichMedia, sanitizeExternalMediaUrl } from '@/lib/property-media'
 import {
   ArrowLeft, Save, Loader2, Camera, X, MapPin, Sparkles,
-  ChevronLeft, ChevronRight, AlertCircle,
+  ChevronLeft, ChevronRight, AlertCircle, Video, Compass, Layers, Upload,
 } from 'lucide-react'
 
 const CONDICIONES = [
@@ -71,6 +73,7 @@ export default function EditarInmueblePage() {
   const [tipo, setTipo] = useState('')
   const [estado, setEstado] = useState('')
   const [ciudad, setCiudad] = useState('')
+  const [zona, setZona] = useState('')
   const [areaConstruida, setAreaConstruida] = useState('')
   const [areaTerreno, setAreaTerreno] = useState('')
   const [puestos, setPuestos] = useState('')
@@ -87,6 +90,12 @@ export default function EditarInmueblePage() {
   const [tipos, setTipos] = useState<TipoRow[]>([])
   const [imagenes, setImagenes] = useState<ImagenEdit[]>([])
   const [maxFotos, setMaxFotos] = useState<number | null>(null)
+  const [effectivePlan, setEffectivePlan] = useState<string>('gratuita')
+  const [videoUrl, setVideoUrl] = useState('')
+  const [virtualTourUrl, setVirtualTourUrl] = useState('')
+  const [planoUrl, setPlanoUrl] = useState('')
+  const [hadSavedRichMedia, setHadSavedRichMedia] = useState(false)
+  const [subiendoPlano, setSubiendoPlano] = useState(false)
   const [aiLoading, setAiLoading] = useState(false)
   const [aiError, setAiError] = useState('')
   const [agencyContext, setAgencyContext] = useState<{
@@ -98,7 +107,9 @@ export default function EditarInmueblePage() {
   const [agenteAsignadoId, setAgenteAsignadoId] = useState<string>('')
 
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const planoInputRef = useRef<HTMLInputElement>(null)
   const dragIndexRef = useRef<number | null>(null)
+  const richMediaAllowed = canPlanIncludeRichMedia(effectivePlan) || hadSavedRichMedia
 
   const cargarTipos = useCallback(async () => {
     const { data } = await supabase.from('tipos_inmueble').select('id, slug, nombre').order('id')
@@ -116,7 +127,10 @@ export default function EditarInmueblePage() {
         if (!res.ok) throw new Error('plan unavailable')
         const data = await res.json()
         if (!Number.isInteger(data.limits?.maxFotos) || data.limits.maxFotos < 1) throw new Error('invalid limit')
-        if (!cancelled) setMaxFotos(data.limits.maxFotos)
+        if (!cancelled) {
+          setMaxFotos(data.limits.maxFotos)
+          setEffectivePlan(String(data.effectivePublishingPlan || data.plan || 'gratuita'))
+        }
       } catch {
         if (!cancelled) { setMaxFotos(null); setError(t('loadError')) }
       }
@@ -159,9 +173,10 @@ export default function EditarInmueblePage() {
       const { data, error: loadError } = await supabase
         .from('inmuebles')
         .select(`
-          id, usuario_id, agencia_id, agente_asignado_id, titulo, precio, descripcion, ciudad, estado,
+          id, usuario_id, agencia_id, agente_asignado_id, titulo, precio, descripcion, ciudad, estado, zona,
           area_construida, area_total, puestos_estacionamiento,
           condicion, latitud, longitud, metodos_contacto,
+          video_url, virtual_tour_url, plano_url,
           tipo:tipo_id ( slug ),
           inmueble_imagenes ( id, url_imagen, orden ),
           inmueble_caracteristicas ( caracteristicas ( nombre ) )
@@ -194,6 +209,11 @@ export default function EditarInmueblePage() {
       setTipo((data.tipo as { slug?: string } | null)?.slug || '')
       setEstado(data.estado || '')
       setCiudad(data.ciudad || '')
+      setZona(data.zona || '')
+      setVideoUrl(data.video_url || '')
+      setVirtualTourUrl(data.virtual_tour_url || '')
+      setPlanoUrl(data.plano_url || '')
+      setHadSavedRichMedia(Boolean(data.video_url || data.virtual_tour_url || data.plano_url))
       setAreaConstruida(data.area_construida != null ? String(data.area_construida) : '')
       setAreaTerreno(data.area_total != null ? String(data.area_total) : '')
       setPuestos(data.puestos_estacionamiento != null ? String(data.puestos_estacionamiento) : '')
@@ -279,6 +299,14 @@ export default function EditarInmueblePage() {
       )
       return
     }
+    if (richMediaAllowed) {
+      for (const rawLink of [videoUrl, virtualTourUrl, planoUrl]) {
+        if (rawLink.trim() && !sanitizeExternalMediaUrl(rawLink)) {
+          setError(tp('invalidMediaUrlError'))
+          return
+        }
+      }
+    }
 
     setSaving(true)
     setError('')
@@ -295,12 +323,20 @@ export default function EditarInmueblePage() {
           tipo,
           estado,
           ciudad,
+          zona: zona.trim() || null,
           area_construida: areaConstruida ? Number(areaConstruida) : null,
           area_total: areaTerreno ? Number(areaTerreno) : null,
           puestos_estacionamiento: puestos ? Number(puestos) : null,
           condicion,
           latitud: lat,
           longitud: lng,
+          ...(richMediaAllowed
+            ? {
+                video_url: videoUrl.trim() || null,
+                virtual_tour_url: virtualTourUrl.trim() || null,
+                plano_url: planoUrl.trim() || null,
+              }
+            : {}),
           caracteristicas: [
             ...caracteristicas,
             ...(electricidad === '110v' || electricidad === 'ambas' ? ['Electricidad 110V'] : []),
@@ -389,6 +425,38 @@ export default function EditarInmueblePage() {
 
   const removeImage = (index: number) => {
     setImagenes((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const handlePlanoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file || !user) return
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 4 * 1024 * 1024) {
+      setError(tp('fileTypeError'))
+      return
+    }
+    setSubiendoPlano(true)
+    setError('')
+    try {
+      const safeName = file.name.normalize('NFKD').replace(/[^a-zA-Z0-9._-]+/g, '_').slice(0, 80)
+      const key = `${user.id}/planos/${Date.now()}_${safeName}`
+      const compressed = await compressImage(file)
+      const fd = new FormData()
+      fd.append('key', key)
+      fd.append('file', compressed)
+      const res = await fetch('/api/r2-upload', {
+        method: 'POST',
+        headers: await getSupabaseAuthHeaders(),
+        body: fd,
+      })
+      if (!res.ok) throw new Error('upload failed')
+      const { publicUrl } = await res.json()
+      setPlanoUrl(publicUrl)
+    } catch {
+      setError(tp('uploadError'))
+    } finally {
+      setSubiendoPlano(false)
+    }
   }
 
   // Reordenar: la primera es la portada
@@ -630,6 +698,94 @@ export default function EditarInmueblePage() {
             onChange={handleFileChange}
             className="hidden"
           />
+
+          {/* Multimedia adicional: Vídeo, Recorrido 360° y Plano */}
+          <div className="mt-5 rounded-xl border border-[#E5DEC9] bg-[#FAF8F4] p-5 space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h3 className="text-base font-semibold text-gray-900">{tp('richMediaTitle')}</h3>
+                <p className="text-xs text-gray-500 mt-0.5">{tp('richMediaSubtitle')}</p>
+              </div>
+              {!richMediaAllowed && (
+                <LocalLink
+                  href="/planes"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-[#F3EBD9] border border-[#E1D0A9] px-3 py-1 text-xs font-semibold text-[#755B2C] hover:bg-[#eadcc0]"
+                >
+                  <Sparkles size={13} aria-hidden="true" />
+                  {tp('richMediaUpgradeBadge')}
+                </LocalLink>
+              )}
+            </div>
+
+            {!richMediaAllowed ? (
+              <p className="text-xs text-gray-600 bg-white border border-[#EAE3D5] rounded-lg p-3">
+                {tp('richMediaLockedNote')}
+              </p>
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="edit-video-url" className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1">
+                    <Video size={15} className="text-brand-primary" aria-hidden="true" />
+                    {tp('videoUrlLabel')}
+                  </label>
+                  <input
+                    id="edit-video-url"
+                    type="url"
+                    value={videoUrl}
+                    onChange={(e) => setVideoUrl(e.target.value)}
+                    placeholder="https://www.youtube.com/watch?v=... / Instagram Reel / TikTok"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white text-sm"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="edit-tour-url" className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1">
+                    <Compass size={15} className="text-brand-primary" aria-hidden="true" />
+                    {tp('virtualTourUrlLabel')}
+                  </label>
+                  <input
+                    id="edit-tour-url"
+                    type="url"
+                    value={virtualTourUrl}
+                    onChange={(e) => setVirtualTourUrl(e.target.value)}
+                    placeholder="https://my.matterport.com/show/?m=... / https://kuula.co/share/..."
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white text-sm"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="edit-plano-url" className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1">
+                    <Layers size={15} className="text-brand-primary" aria-hidden="true" />
+                    {tp('floorPlanUrlLabel')}
+                  </label>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <input
+                      id="edit-plano-url"
+                      type="url"
+                      value={planoUrl}
+                      onChange={(e) => setPlanoUrl(e.target.value)}
+                      placeholder="https://..."
+                      className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white text-sm"
+                    />
+                    <input
+                      ref={planoInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      onChange={handlePlanoUpload}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      disabled={subiendoPlano}
+                      onClick={() => planoInputRef.current?.click()}
+                      className="shrink-0 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border border-gray-300 bg-white text-xs font-semibold text-gray-800 hover:bg-gray-50 disabled:opacity-50"
+                    >
+                      {subiendoPlano ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+                      {tp('uploadFloorPlanBtn')}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </section>
 
         {/* Datos básicos */}
@@ -818,6 +974,26 @@ export default function EditarInmueblePage() {
                   )
                 })()}
               </select>
+            </div>
+            <div className="col-span-2">
+              <label htmlFor="edit-zona" className="block text-sm font-medium text-gray-700 mb-1">
+                {tp('neighborhood')}
+              </label>
+              <input
+                id="edit-zona"
+                type="text"
+                list="edit-zonas-datalist"
+                value={zona}
+                onChange={(e) => setZona(e.target.value)}
+                maxLength={120}
+                placeholder={tp('neighborhoodPlaceholder')}
+                className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white"
+              />
+              <datalist id="edit-zonas-datalist">
+                {getUrbanizacionesSugeridas(estado || undefined, ciudad || undefined).map((z) => (
+                  <option key={z} value={z} />
+                ))}
+              </datalist>
             </div>
           </div>
           <div className="flex items-center gap-2 text-xs text-gray-500">

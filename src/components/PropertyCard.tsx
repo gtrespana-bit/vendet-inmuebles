@@ -1,7 +1,9 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { ArrowUpRight, Bath, BedDouble, MapPin, Ruler } from 'lucide-react'
+import { ArrowUpRight, Bath, BedDouble, Camera, Compass, MapPin, Ruler, Video } from 'lucide-react'
 import { isOptimizableImageSrc } from '@/components/PropertyGallery'
+import FavoriteCardButton from '@/components/FavoriteCardButton'
+import { calculatePricePerM2 } from '@/lib/urbanizaciones'
 
 export interface PropertyCardData {
   id: string
@@ -12,13 +14,19 @@ export interface PropertyCardData {
   operation_type: string
   city?: string | null
   state?: string | null
+  zone?: string | null
   main_image_url: string | null
   bedrooms?: number | null
   bathrooms?: number | null
   area_size?: number | null
+  built_area?: number | null
   property_type?: string | null
   featured?: boolean
   verified?: boolean
+  owner_id?: string | null
+  photos_count?: number | null
+  has_video?: boolean
+  has_tour?: boolean
 }
 
 interface PropertyCardProps {
@@ -39,7 +47,7 @@ const FALLBACK_IMAGE = '/sinimagen.webp'
 
 function formatPropertyType(value: string | null | undefined, locale: string) {
   if (!value) return ''
-  const key = value.toLocaleLowerCase('es').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '')
+  const key = value.toLocaleLowerCase('es').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
   const english: Record<string, string> = {
     casa: 'House', casas: 'Houses', apartamento: 'Apartment', apartamentos: 'Apartments',
     terreno: 'Land', terrenos: 'Land', local: 'Commercial space', locales: 'Commercial spaces', 'local comercial': 'Commercial space',
@@ -58,6 +66,7 @@ function formatPropertyType(value: string | null | undefined, locale: string) {
 export default function PropertyCard({ property, locale, priority = false, labels = {} }: PropertyCardProps) {
   const normalizedLocale = locale === 'en' ? 'en-US' : 'es-VE'
   const currency = property.currency || 'USD'
+  const isRent = property.operation_type.toLowerCase().includes('alquiler') || property.operation_type.toLowerCase().includes('rent')
   const formattedPrice = property.price > 0
     ? new Intl.NumberFormat(normalizedLocale, {
         style: 'currency',
@@ -66,16 +75,32 @@ export default function PropertyCard({ property, locale, priority = false, label
         maximumFractionDigits: 0,
       }).format(property.price)
     : labels.priceOnRequest || (locale === 'en' ? 'Price on request' : 'Consultar precio')
-  const location = [property.city, property.state].filter(Boolean).join(', ')
-  const operationLabel = property.operation_type.toLowerCase() === 'alquiler'
+
+  const locationParts = property.zone
+    ? [property.zone, property.city || property.state].filter(Boolean)
+    : [property.city, property.state].filter(Boolean)
+  const location = locationParts.join(', ')
+
+  const operationLabel = isRent
     ? labels.rent || (locale === 'en' ? 'For rent' : 'Alquiler')
     : labels.sale || (locale === 'en' ? 'For sale' : 'En venta')
+
   const prefix = locale === 'en' ? '/en' : ''
   const href = `${prefix}/inmueble/${property.slug || property.id}`
   const imageUrl = property.main_image_url || FALLBACK_IMAGE
+  const displayArea = property.built_area && property.built_area > 0 ? property.built_area : property.area_size
+  const pricePerM2 = !isRent
+    ? calculatePricePerM2(property.price, property.built_area, property.area_size)
+    : null
 
   return (
     <article className="property-card">
+      <FavoriteCardButton
+        propertyId={property.id}
+        propertySlug={property.slug}
+        ownerId={property.owner_id}
+        locale={locale}
+      />
       <Link href={href} className="property-card__link group" aria-label={`${property.title} · ${location || 'Venezuela'}`}>
         <div className="property-card__media">
           <Image
@@ -96,6 +121,25 @@ export default function PropertyCard({ property, locale, priority = false, label
               <span className="property-card__featured">{labels.featured || (locale === 'en' ? 'Featured' : 'Destacada')}</span>
             )}
           </div>
+          {(Boolean(property.photos_count && property.photos_count > 1) || property.has_video || property.has_tour) && (
+            <div className="property-card__media-pills">
+              {property.photos_count && property.photos_count > 1 ? (
+                <span className="property-card__media-pill">
+                  <Camera size={11} aria-hidden="true" /> {property.photos_count}
+                </span>
+              ) : null}
+              {property.has_video ? (
+                <span className="property-card__media-pill">
+                  <Video size={11} aria-hidden="true" /> Video
+                </span>
+              ) : null}
+              {property.has_tour ? (
+                <span className="property-card__media-pill">
+                  <Compass size={11} aria-hidden="true" /> 360°
+                </span>
+              ) : null}
+            </div>
+          )}
           <span className="property-card__arrow" aria-hidden="true"><ArrowUpRight size={18} /></span>
         </div>
 
@@ -107,7 +151,19 @@ export default function PropertyCard({ property, locale, priority = false, label
           </p>
           <h3 className="property-card__title">{property.title}</h3>
           <div className="property-card__price-row">
-            <p className="property-card__price">{formattedPrice}</p>
+            <div className="property-card__price-group">
+              <p className="property-card__price">
+                {formattedPrice}
+                {isRent && property.price > 0 && (
+                  <span className="property-card__price-period">{locale === 'en' ? '/mo' : '/mes'}</span>
+                )}
+              </p>
+              {pricePerM2 != null && (
+                <span className="property-card__unit-price">
+                  ${new Intl.NumberFormat(normalizedLocale, { maximumFractionDigits: 0 }).format(pricePerM2)}/m²
+                </span>
+              )}
+            </div>
             {property.verified && <span className="property-card__verified">{locale === 'en' ? 'Verified' : 'Verificado'}</span>}
           </div>
           <div className="property-card__specs" aria-label={locale === 'en' ? 'Property details' : 'Detalles del inmueble'}>
@@ -117,8 +173,8 @@ export default function PropertyCard({ property, locale, priority = false, label
             {property.bathrooms != null && property.bathrooms > 0 && (
               <span><Bath size={15} aria-hidden="true" /> {property.bathrooms} <span className="sr-only">{labels.bathroom || (locale === 'en' ? 'bathrooms' : 'baños')}</span></span>
             )}
-            {property.area_size != null && property.area_size > 0 && (
-              <span><Ruler size={15} aria-hidden="true" /> {new Intl.NumberFormat(normalizedLocale, { maximumFractionDigits: 0 }).format(property.area_size)} m²</span>
+            {displayArea != null && displayArea > 0 && (
+              <span><Ruler size={15} aria-hidden="true" /> {new Intl.NumberFormat(normalizedLocale, { maximumFractionDigits: 0 }).format(displayArea)} m²</span>
             )}
           </div>
         </div>

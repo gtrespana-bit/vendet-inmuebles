@@ -731,7 +731,10 @@
     },
     "applyFilters": "Aplicar filtros",
     "applyChanges": "Aplicar cambios",
-    "pendingChanges": "{count, plural, one {# cambio sin aplicar} other {# cambios sin aplicar}}"
+    "pendingChanges": "{count, plural, one {# cambio sin aplicar} other {# cambios sin aplicar}}",
+    "sortRelevance": "Destacados y relevantes",
+    "sortPricePerM2Asc": "Menor precio por m²",
+    "sortAreaDesc": "Mayor superficie (m²)"
   },
   "productCard": {
     "featured": "Destacado",
@@ -1692,7 +1695,18 @@
     "chatAuto": "El chat interno siempre está activo en todos los anuncios.",
     "invalidPhone": "El número de teléfono no es válido: usa 7 a 15 dígitos, puede empezar con +.",
     "invalidEmail": "El email de contacto no es válido.",
-    "invalidMessenger": "El enlace de Messenger debe empezar por http:// o https://."
+    "invalidMessenger": "El enlace de Messenger debe empezar por http:// o https://.",
+    "neighborhood": "Urbanización, sector o zona",
+    "neighborhoodPlaceholder": "Ej. Las Mercedes, El Parral, Mañongo, Costa Azul…",
+    "richMediaTitle": "Vídeo, recorrido 360° y plano arquitectónico",
+    "richMediaSubtitle": "Muestra cada espacio con un vídeo, recorrido interactivo 360° o plano de distribución.",
+    "richMediaUpgradeBadge": "Planes Profesional y Agencia",
+    "richMediaLockedNote": "Los enlaces a vídeo, recorridos 360° y planos están incluidos en los planes Profesional y Agencia (con 30 días de prueba gratuita).",
+    "videoUrlLabel": "Enlace de vídeo (YouTube, Vimeo, Instagram Reel o TikTok)",
+    "virtualTourUrlLabel": "Enlace de recorrido virtual 360° (Matterport, Kuula u otro)",
+    "floorPlanUrlLabel": "Plano arquitectónico (URL o imagen subida)",
+    "uploadFloorPlanBtn": "Subir plano",
+    "invalidMediaUrlError": "Los enlaces de vídeo, recorrido 360° y planos deben comenzar con https:// y ser direcciones públicas válidas."
   },
   "pushBanner": {
     "title": "Mantente al día",

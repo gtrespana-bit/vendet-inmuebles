@@ -28,11 +28,14 @@ import { isValidUUID } from '@/lib/validation'
 import { buildPageAlternates } from '@/lib/seo-metadata'
 import { claveAmenidad, leerAmenidades, ordenAmenidad } from '@/lib/amenities'
 import PropertyGallery from '@/components/PropertyGallery'
+import PropertyRichMedia from '@/components/PropertyRichMedia'
+import PropertyCard, { type PropertyCardData } from '@/components/PropertyCard'
 import TrackInmueble from '@/components/TrackInmueble'
 import PropertyDetailActions from '@/components/PropertyDetailActions'
 import PropertyLocationMap from '@/components/map/PropertyLocationMap'
 import { jitterPoint, resolveListingGeo } from '@/lib/geo/venezuela'
 import { resolverContactoPublicacion, telHref, whatsappHref, mensajeWhatsappPredeterminado } from '@/lib/contact-methods'
+import { calculatePricePerM2 } from '@/lib/urbanizaciones'
 
 // Listing edits (fotos, ambientes, servicios, contacto…) deben aparecer de
 // inmediato: nada de caché de ruta ni de respuestas de Supabase.
@@ -76,6 +79,89 @@ const getPublicProperty = cache(async function getPublicProperty(identifier: str
     return null
   }
 })
+
+async function getSimilarProperties(property: PropertyRecord): Promise<PropertyCardData[]> {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) return []
+
+  try {
+    const supabase = createServerClient()
+    const opRaw = String(property.operacion_slug || property.operacion_nombre || '').toLowerCase()
+    const targetOp = opRaw.includes('alquiler') || opRaw.includes('rent') ? 'alquiler' : 'venta'
+
+    const { data, error } = await supabase
+      .from('vw_propiedades_publicas')
+      .select(
+        'id, usuario_id, slug, titulo, precio, moneda, operacion_slug, operacion_nombre, tipo_nombre, tipo_slug, ciudad, estado, zona, main_image_url, imagenes_urls, habitaciones, banos, area_total, area_construida, destacado, destacado_hasta, vendedor_verificado, video_url, virtual_tour_url, creado_en'
+      )
+      .eq('activo', true)
+      .neq('id', String(property.id))
+      .ilike('operacion_slug', `%${targetOp}%`)
+      .order('destacado', { ascending: false })
+      .order('creado_en', { ascending: false })
+      .limit(36)
+
+    if (error || !Array.isArray(data) || data.length === 0) return []
+
+    const targetCity = String(property.ciudad || '').trim().toLowerCase()
+    const targetState = String(property.estado || '').trim().toLowerCase()
+    const targetZone = String(property.zona || '').trim().toLowerCase()
+    const targetType = String(property.tipo_slug || property.tipo_nombre || '').trim().toLowerCase()
+    const targetPrice = Number(property.precio) || 0
+    const now = Date.now()
+
+    const scored = data.map((row: any) => {
+      let score = 0
+      const rowCity = String(row.ciudad || '').trim().toLowerCase()
+      const rowState = String(row.estado || '').trim().toLowerCase()
+      const rowZone = String(row.zona || '').trim().toLowerCase()
+      const rowType = String(row.tipo_slug || row.tipo_nombre || '').trim().toLowerCase()
+      const rowPrice = Number(row.precio) || 0
+      const isFeat = Boolean(row.destacado && (!row.destacado_hasta || new Date(row.destacado_hasta).getTime() > now))
+
+      if (targetZone && rowZone && rowZone === targetZone) score += 35
+      if (targetCity && rowCity && rowCity === targetCity) score += 30
+      else if (targetState && rowState && rowState === targetState) score += 18
+      if (targetType && rowType && rowType === targetType) score += 22
+      if (targetPrice > 0 && rowPrice > 0) {
+        const diffRatio = Math.abs(rowPrice - targetPrice) / targetPrice
+        if (diffRatio <= 0.25) score += 20
+        else if (diffRatio <= 0.45) score += 10
+      }
+      if (isFeat) score += 5
+
+      const card: PropertyCardData = {
+        id: String(row.id),
+        slug: row.slug || null,
+        title: String(row.titulo || 'Inmueble'),
+        price: rowPrice,
+        currency: row.moneda || 'USD',
+        operation_type: String(row.operacion_slug || row.operacion_nombre || targetOp),
+        city: row.ciudad || null,
+        state: row.estado || null,
+        zone: row.zona || null,
+        main_image_url: row.main_image_url || null,
+        bedrooms: row.habitaciones == null ? null : Number(row.habitaciones),
+        bathrooms: row.banos == null ? null : Number(row.banos),
+        area_size: row.area_total == null ? null : Number(row.area_total),
+        built_area: row.area_construida == null ? null : Number(row.area_construida),
+        property_type: row.tipo_nombre || row.tipo_slug || null,
+        featured: isFeat,
+        verified: Boolean(row.vendedor_verificado),
+        owner_id: row.usuario_id || null,
+        photos_count: Array.isArray(row.imagenes_urls) ? row.imagenes_urls.length : null,
+        has_video: Boolean(typeof row.video_url === 'string' && row.video_url.trim()),
+        has_tour: Boolean(typeof row.virtual_tour_url === 'string' && row.virtual_tour_url.trim()),
+      }
+
+      return { card, score }
+    })
+
+    scored.sort((a, b) => b.score - a.score)
+    return scored.slice(0, 3).map((entry) => entry.card)
+  } catch {
+    return []
+  }
+}
 
 function getPropertyImages(property: PropertyRecord): string[] {
   const images: string[] = []
@@ -306,6 +392,15 @@ export default async function PropertyDetailPage({ params }: PageProps) {
   ].filter((fact) => isPresent(fact.value))
 
   const numericPrice = Number(property.precio ?? property.price ?? 0)
+  const pricePerM2 = !isRent
+    ? calculatePricePerM2(numericPrice, property.area_construida, property.area_total)
+    : null
+  const similarProperties = await getSimilarProperties(property)
+  const similarCatalogParams = new URLSearchParams()
+  similarCatalogParams.set('operacion', isRent ? 'Alquiler' : 'Venta')
+  if (property.estado) similarCatalogParams.set('estado', String(property.estado))
+  if (property.ciudad) similarCatalogParams.set('ciudad', String(property.ciudad))
+  const similarCatalogHref = `${isEnglish ? '/en' : ''}/catalogo?${similarCatalogParams.toString()}`
   const schemaImages = images
     .map((img) => (img.startsWith('/') ? `https://venezuela-inmuebles.online${img}` : img))
     .filter(Boolean)
@@ -457,6 +552,14 @@ export default async function PropertyDetailPage({ params }: PageProps) {
               )}
             </section>
 
+            <PropertyRichMedia
+              videoUrl={property.video_url}
+              virtualTourUrl={property.virtual_tour_url}
+              floorPlanUrl={property.plano_url}
+              title={title}
+              locale={locale}
+            />
+
             <section className="property-detail__panel" aria-labelledby="property-description-title">
               <div className="property-detail__section-heading">
                 <div>
@@ -521,7 +624,17 @@ export default async function PropertyDetailPage({ params }: PageProps) {
               <div className="property-contact-card__price-row">
                 <div>
                   <p className="property-contact-card__price-label">{isEnglish ? 'Asking price' : 'Precio publicado'}</p>
-                  <p className="property-contact-card__price">{price}</p>
+                  <p className="property-contact-card__price">
+                    {price}
+                    {isRent && numericPrice > 0 && (
+                      <span className="property-contact-card__period">{isEnglish ? '/mo' : '/mes'}</span>
+                    )}
+                  </p>
+                  {pricePerM2 != null && (
+                    <p className="property-contact-card__unit-price">
+                      ${new Intl.NumberFormat(isEnglish ? 'en-US' : 'es-VE', { maximumFractionDigits: 0 }).format(pricePerM2)}/m²
+                    </p>
+                  )}
                 </div>
                 <span className="property-contact-card__currency">{currencyCode}</span>
               </div>
@@ -617,6 +730,32 @@ export default async function PropertyDetailPage({ params }: PageProps) {
             </section>
           </aside>
         </div>
+
+        {similarProperties.length > 0 && (
+          <section className="property-detail__similar" aria-labelledby="property-similar-title">
+            <div className="property-detail__similar-head">
+              <div>
+                <p className="property-detail__section-kicker">
+                  {isEnglish ? 'Keep exploring' : 'Sigue explorando'}
+                </p>
+                <h2 id="property-similar-title">
+                  {isEnglish
+                    ? 'Similar properties you may like'
+                    : 'Inmuebles similares que pueden interesarte'}
+                </h2>
+              </div>
+              <Link href={similarCatalogHref} className="property-detail__similar-more">
+                {isEnglish ? 'Explore more in catalog' : 'Ver más en el catálogo'}{' '}
+                <ArrowUpRight size={15} aria-hidden="true" />
+              </Link>
+            </div>
+            <div className="property-detail__similar-grid">
+              {similarProperties.map((item) => (
+                <PropertyCard key={item.id} property={item} locale={locale} />
+              ))}
+            </div>
+          </section>
+        )}
       </article>
 
       {ownerId && (

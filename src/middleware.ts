@@ -50,6 +50,24 @@ export default async function middleware(request: NextRequest) {
 
   const locale: 'es' | 'en' = isValidLocale(pathnameLocale) ? pathnameLocale : routing.defaultLocale
 
+  // 1b. Redirigir rutas heredadas del antiguo marketplace genérico hacia las rutas inmobiliarias canónicas
+  const segments = request.nextUrl.pathname.split('/').filter(Boolean)
+  const restSegments = segments[0] === 'es' || segments[0] === 'en' ? segments.slice(1) : segments
+  if (restSegments.length === 1) {
+    const first = restSegments[0].toLowerCase()
+    const prefix = locale === 'en' ? '/en' : ''
+    if (first === 'publicar') {
+      const dest = request.nextUrl.clone()
+      dest.pathname = `${prefix}/publicar-inmueble`
+      return NextResponse.redirect(dest, 308)
+    }
+    if (first === 'buscar') {
+      const dest = request.nextUrl.clone()
+      dest.pathname = `${prefix}/catalogo`
+      return NextResponse.redirect(dest, 308)
+    }
+  }
+
   // 2. 404 duro en producción para slugs de un solo segmento desconocidos
   if (process.env.NODE_ENV === 'production') {
     const segments = request.nextUrl.pathname.split('/').filter(Boolean)

@@ -7,6 +7,7 @@ import { useAuth } from '@/components/AuthProvider'
 import { getSupabaseAuthHeaders } from '@/lib/supabase-auth-headers'
 import { isSupabaseConfigured, supabase } from '@/lib/supabase'
 import { localizePath } from '@/lib/auth-redirect'
+import { setCachedFavoriteState } from '@/hooks/useUserFavorites'
 
 interface PropertyDetailActionsProps {
   propertyId: string
@@ -43,7 +44,11 @@ export default function PropertyDetailActions({ propertyId, title, locale, label
       .eq('user_id', user.id)
       .maybeSingle()
       .then(({ data }: { data: { producto_id: string } | null }) => {
-        if (!cancelled) setIsSaved(Boolean(data))
+        if (!cancelled) {
+          const saved = Boolean(data)
+          setIsSaved(saved)
+          setCachedFavoriteState(propertyId, saved)
+        }
       })
       .catch(() => undefined)
 
@@ -67,7 +72,9 @@ export default function PropertyDetailActions({ propertyId, title, locale, label
       })
       const result = await response.json()
       if (!response.ok) throw new Error(result.error || labels.error)
-      setIsSaved(result.action === 'added' || !isSaved)
+      const nextSaved = result.action === 'added' || !isSaved
+      setIsSaved(nextSaved)
+      setCachedFavoriteState(propertyId, nextSaved)
     } catch (error) {
       setStatus(error instanceof Error ? error.message : labels.error)
     } finally {

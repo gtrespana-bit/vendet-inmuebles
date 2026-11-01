@@ -124,6 +124,15 @@ export interface CatalogPropertyRecord {
   banos?: number | null
   bathrooms?: number | null
   area_total?: number | null
+  area_construida?: number | null
   area_size?: number | null
+  zona?: string | null
+  video_url?: string | null
+  virtual_tour_url?: string | null
+  plano_url?: string | null
+  imagenes_urls?: string[] | null
+  imagenes?: unknown[] | null
+  usuario_id?: string | null
+  user_id?: string | null
   _isFeatured?: boolean
 }

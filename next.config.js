@@ -89,7 +89,7 @@ const nextConfig = withNextIntl({
       "img-src 'self' data: blob: https://*.r2.dev https://images.unsplash.com https://tile.openstreetmap.org https://*.tile.openstreetmap.org https://*.supabase.co https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com",
       "font-src 'self' data:",
       "connect-src 'self' " + supabaseHost + " wss://quxbqmqwiacfwbpqioev.supabase.co https://*.r2.dev https://*.supabase.co wss://*.supabase.co https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com https://va.vercel-scripts.com https://api.telegram.org",
-      "frame-src 'none'",
+      "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://my.matterport.com https://kuula.co",
       "object-src 'none'",
       "base-uri 'self'",
       "form-action 'self'",
