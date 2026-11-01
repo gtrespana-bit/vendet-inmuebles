@@ -11,10 +11,10 @@ test('registration is shown only after determining there is no session', () => {
     assert.equal(getPlanAction(false, 'user', 'user', null, true, card), 'error')
   }
 })
-test('signed-in users see their current plan and request changes without registering', () => {
+test('signed-in users see their current plan and change plans directly without registering', () => {
   for (const current of ['gratuita', 'profesional', 'agencia']) {
     for (const card of ['gratuita', 'profesional', 'agencia']) {
-      assert.equal(getPlanAction(false, 'user', 'user', current, false, card), current === card ? 'current' : 'contact')
+      assert.equal(getPlanAction(false, 'user', 'user', current, false, card), current === card ? 'current' : 'change')
     }
   }
 })
