@@ -295,22 +295,102 @@
       "submitting": "Signing in..."
     },
     "register": {
-      "title": "Create Account",
-      "name": "Full Name",
-      "email": "Email",
-      "phone": "Phone (optional)",
-      "password": "Password",
-      "repeat_password": "Repeat Password",
-      "state": "State (optional)",
-      "city": "City (optional)",
-      "submit": "Sign Up",
+      "title": "Create account",
+      "subtitle": "Pick your account type and start with a 30-day free trial, no card needed.",
+      "stepsLabel": "Sign-up steps",
+      "steps": {
+        "type": "Account type",
+        "plan": "Plan",
+        "details": "Your details"
+      },
+      "stepTypeTitle": "How will you use Venezuela Inmuebles?",
+      "stepTypeLead": "Choose your account type and we will only ask for the details you need.",
+      "typeHint": "You can change your plan later from the plans page.",
+      "stepPlanTitle": "Choose your plan",
+      "stepPlanLead": "Every plan includes a 30-day free trial.",
+      "planHint": "No credit card and no automatic billing. When the trial ends your account moves to the Free plan (3 active listings) and nothing you published is lost.",
+      "stepDetailsTitle": "Your details",
+      "stepDetailsLead": "Only what we need to create your account. Marked fields are required.",
+      "types": {
+        "particular": {
+          "name": "Individual",
+          "description": "I sell or rent my own property."
+        },
+        "profesional": {
+          "name": "Professional",
+          "description": "I am an independent real estate agent or broker."
+        },
+        "agencia": {
+          "name": "Agency",
+          "description": "I represent a real estate company or a team of agents."
+        }
+      },
+      "listingsChip": "{max} active listings",
+      "listingsUnlimited": "Unlimited listings",
+      "photosChip": "{max} photos per property",
+      "trialBadge": "30-day free trial",
+      "trialBanner": "We activate a {days}-day free trial on the plan you choose: it starts today and ends on {date}.",
+      "recommended": "Recommended",
+      "planNames": {
+        "gratuita": "Free",
+        "profesional": "Professional",
+        "agencia": "Agency"
+      },
+      "planDescriptions": {
+        "gratuita": "List your own property. Up to {max} active listings.",
+        "profesional": "For independent agents. Up to {max} active listings.",
+        "agencia": "For agencies and teams. Unlimited listings."
+      },
+      "summaryPlan": "{plan} plan",
+      "summaryTrial": "{days}-day trial",
+      "fields": {
+        "name": "First name",
+        "surname": "Last name",
+        "responsable": "Contact person",
+        "empresa": "Agency name",
+        "licencia": "Broker license",
+        "email": "Email address",
+        "phone": "Phone or WhatsApp",
+        "state": "State",
+        "city": "City",
+        "password": "Password",
+        "repeatPassword": "Repeat password"
+      },
+      "placeholders": {
+        "name": "Your first name",
+        "surname": "Your last name",
+        "empresa": "Agency or team",
+        "licencia": "License number",
+        "password": "At least 8 characters",
+        "repeatPassword": "Repeat your password"
+      },
+      "optional": "optional",
+      "choose": "Select…",
+      "rules": {
+        "length": "8 characters",
+        "upper": "One uppercase letter",
+        "number": "One number"
+      },
+      "continue": "Continue",
+      "back": "Back",
+      "submit": "Create account and start 30 days",
+      "creating": "Creating account…",
       "has_account": "Already have an account?",
-      "login": "Sign In",
-      "password_mismatch": "Passwords do not match",
-      "error": "Registration error",
-      "subtitle": "Create an account to manage your properties and inquiries.",
-      "creating": "Creating account...",
-      "password_hint": "Use at least 8 characters, one uppercase letter and one number."
+      "login": "Sign in",
+      "errors": {
+        "type": "Choose your account type to continue.",
+        "name": "Enter your first name (at least 2 characters).",
+        "surname": "Enter your last name (at least 2 characters).",
+        "empresa": "Enter the agency name.",
+        "email": "Enter a valid email address.",
+        "password": "Your password must be at least 8 characters.",
+        "passwordUpper": "Add at least one uppercase letter.",
+        "passwordNumber": "Add at least one number.",
+        "passwordMismatch": "Passwords do not match.",
+        "accountExists": "An account with this email already exists. Sign in or reset your password.",
+        "connection": "We could not connect. Please try again.",
+        "generic": "We could not create the account. Please try again."
+      }
     },
     "confirmacion": {
       "title": "Almost there!",
@@ -320,7 +400,11 @@
       "footer": "When you receive the email, confirm your account and then return to log in.",
       "not_received": "🔒 Confirmation email not sent yet?",
       "resend_hint": "Go back to login and click \"Didn't receive the confirmation email? Resend it\"",
-      "go_to_login": "Go to login"
+      "go_to_login": "Go to login",
+      "trialTitle": "Your {days}-day free trial is active",
+      "trialPlan": "{plan} plan",
+      "trialUntil": "until {date}",
+      "trialNote": "It starts when you confirm your email. No credit card and no automatic billing."
     },
     "story": {
       "eyebrow": "REAL ESTATE, WITH MORE CLARITY",
@@ -1692,16 +1776,16 @@
     "planProPeriod": "per month",
     "planAgency": "Agency",
     "planAgencyPeriod": "per month",
-    "planFreeFeature1": "1 active listing",
+    "planFreeFeature1": "3 active listings",
     "planFreeFeature2": "8 photos per property",
     "planFreeFeature3": "Free verification",
-    "planProFeature1": "5 active listings",
+    "planProFeature1": "10 active listings",
     "planProFeature2": "20 photos per property",
     "planProFeature3": "5 monthly credits",
     "planAgencyFeature1": "Unlimited listings",
     "planAgencyFeature2": "30 photos per property",
     "planAgencyFeature3": "Up to 5 users",
-    "plansNote": "30-day trial on paid plans. No credit card, no automatic billing: when it ends the account returns to the Free plan.",
+    "plansNote": "30-day free trial on any plan. No credit card, no automatic billing: when it ends the account returns to the Free plan with 3 active listings.",
     "plansCta": "Compare plans",
     "closingEyebrow": "START TODAY",
     "closingTitle": "Your next property is one search away.",
@@ -1714,7 +1798,8 @@
     "cardPriceOnRequest": "Price on request",
     "cardBedrooms": "bd",
     "cardBathrooms": "ba",
-    "viewMap": "View on map"
+    "viewMap": "View on map",
+    "planTrial": "30-day free trial"
   },
   "map": {
     "eyebrow": "Map search",

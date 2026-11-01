@@ -1,10 +1,10 @@
 import { Metadata } from 'next'
 import { PlanActionsProvider, PlanActionButton } from './PlanActions'
-import { Check, Star, Building2, User, Building, HeartHandshake } from 'lucide-react'
+import { Check, Star, Building2, User, Gift, HeartHandshake } from 'lucide-react'
 
 export const metadata: Metadata = {
   title: 'Planes y Precios | Venezuela Inmuebles',
-  description: 'Elige el plan que mejor se adapte a tus necesidades. Prueba gratuita de 30 días en planes de pago, como iniciativa solidaria para apoyar al sector inmobiliario.',
+  description: 'Elige el plan que mejor se adapte a tus necesidades. Prueba gratuita de 30 días en cualquiera de los planes, como iniciativa solidaria para apoyar al sector inmobiliario.',
 }
 
 const planes = [
@@ -13,26 +13,27 @@ const planes = [
     nombre: 'Gratuita',
     precioMensual: '$0',
     precioAnual: '$0',
-    descripcion: 'Para usuarios que buscan vender o alquilar un único inmueble',
+    descripcion: 'Para quien vende o alquila su propio inmueble',
     icon: User,
     color: 'gray',
     features: [
-      '1 anuncio activo',
+      '3 anuncios activos',
       '8 fotos por inmueble',
       'Verificación de identidad gratuita',
     ],
     destacado: false,
+    trial: true,
   },
   {
     id: 'profesional' as const,
     nombre: 'Profesional',
     precioMensual: '$9,99/mes',
     precioAnual: '$99/año',
-    descripcion: 'Para agentes independientes y vendedores activos',
+    descripcion: 'Para agentes y corredores independientes',
     icon: Star,
     color: 'brand-accent',
     features: [
-      '5 anuncios activos',
+      '10 anuncios activos',
       '20 fotos por inmueble',
       '5 créditos incluidos al mes',
       'Escaparate con URL personalizada',
@@ -43,6 +44,7 @@ const planes = [
     ],
     destacado: true,
     badge: 'MÁS POPULAR',
+    trial: true,
   },
   {
     id: 'agencia' as const,
@@ -65,6 +67,7 @@ const planes = [
       'Verificación de identidad gratuita',
     ],
     destacado: false,
+    trial: true,
   },
 ]
 
@@ -77,14 +80,14 @@ export default function PlanesPage() {
           <div className="flex justify-center mb-4">
             <span className="inline-flex items-center gap-2 bg-brand-primary/10 text-brand-primary px-4 py-2 rounded-full text-sm font-medium">
               <HeartHandshake className="w-4 h-4" />
-              Iniciativa Solidaria: 1 Mes de Prueba Gratis
+              Iniciativa Solidaria: 30 días de prueba gratis
             </span>
           </div>
           <h1 className="text-4xl md:text-5xl font-bold text-brand-dark mb-4">
             Planes y Precios
           </h1>
           <p className="text-xl text-brand-dark/70 max-w-2xl mx-auto">
-            Elige el plan ideal para ti. Disfruta de 30 días de prueba en nuestros planes de pago sin compromiso, sin tarjeta de crédito y sin cobros automáticos.
+            Elige el plan ideal para ti. Todos los planes incluyen 30 días de prueba gratis, sin tarjeta de crédito y sin cobros automáticos.
           </p>
         </div>
 
@@ -115,9 +118,15 @@ export default function PlanesPage() {
                   <h2 className="text-2xl font-bold text-brand-dark mb-2">
                     {plan.nombre}
                   </h2>
-                  <p className="text-brand-dark/70 text-sm mb-4 min-h-[40px]">
+                  <p className="text-brand-dark/70 text-sm mb-3 min-h-[40px]">
                     {plan.descripcion}
                   </p>
+                  {plan.trial && (
+                    <p className="mb-4 inline-flex items-center gap-1.5 rounded-full bg-brand-primary/10 px-3 py-1 text-xs font-semibold text-brand-primary">
+                      <Gift className="h-3.5 w-3.5" aria-hidden="true" />
+                      30 días de prueba gratis
+                    </p>
+                  )}
                   <div className="mb-2">
                     <span className="text-4xl font-bold text-brand-dark">
                       {plan.precioMensual}
@@ -165,13 +174,13 @@ export default function PlanesPage() {
             <div className="bg-white p-6 rounded-xl shadow-sm">
               <h3 className="font-bold text-lg mb-2 text-brand-dark">¿Cómo funciona la prueba gratuita de 30 días?</h3>
               <p className="text-gray-600">
-                Como iniciativa solidaria para apoyar al sector inmobiliario en estos momentos, ofrecemos 1 mes gratis del plan Profesional o Agencia. Empieza tu prueba sin necesidad de ingresar tarjeta de crédito. Al finalizar los 30 días, te avisaremos para que decidas si deseas suscribirte o volver al plan Gratuito.
+                Como iniciativa solidaria para apoyar al sector inmobiliario, al crear tu cuenta activamos 30 días de prueba gratis en el plan que elijas: Gratuita, Profesional o Agencia. Empiezas sin tarjeta de crédito y sin cobros automáticos. Al finalizar los 30 días te avisaremos para que decidas si deseas suscribirte o quedarte en el plan Gratuito (3 anuncios activos).
               </p>
             </div>
             <div className="bg-white p-6 rounded-xl shadow-sm">
               <h3 className="font-bold text-lg mb-2 text-brand-dark">¿Qué pasa cuando termina la prueba si no deseo pagar?</h3>
               <p className="text-gray-600">
-                <strong>No habrá ningún cobro automático</strong> ni perderás tus anuncios. Tu cuenta simplemente volverá al plan Gratuito. Si tenías más de 1 anuncio activo, los anuncios adicionales serán pausados (pero no eliminados). Podrás elegir cuál mantener activo o reactivarlos en cualquier momento suscribiéndote a un plan de pago.
+                <strong>No habrá ningún cobro automático</strong> ni perderás tus anuncios. Tu cuenta simplemente volverá al plan Gratuito, con 3 anuncios activos. Si tenías más, los anuncios adicionales serán pausados (pero no eliminados). Podrás elegir cuál mantener activo o reactivarlos en cualquier momento suscribiéndote a un plan de pago.
               </p>
             </div>
             <div className="bg-white p-6 rounded-xl shadow-sm">

@@ -1,11 +1,9 @@
 import { createServerClient } from './supabase-server'
+import { PLAN_LIMITS, TRIAL_DAYS } from './plan-catalog'
 
-// Plan definitions
-export const PLANS = {
-  gratuita: { maxAnuncios: 1, maxFotos: 8, creditosMes: 0 },
-  profesional: { maxAnuncios: 5, maxFotos: 20, creditosMes: 5 },
-  agencia: { maxAnuncios: 999999, maxFotos: 30, creditosMes: 20 },
-}
+// Límites por plan (fuente única en `plan-catalog.ts`).
+export const PLANS = PLAN_LIMITS
+export { TRIAL_DAYS }
 
 export async function checkPlanLimits(userId: string) {
   const supabase = createServerClient()

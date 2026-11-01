@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/api-auth'
 import { requireUUIDs } from '@/lib/validation'
 import { PLANS } from '@/lib/plans'
+import { accountTypeForPlan } from '@/lib/plan-catalog'
 
 // Gestión de planes de suscripción por parte del administrador.
 // RLS sobre `suscripciones` sólo permite SELECT, así que la escritura
@@ -43,7 +44,7 @@ export async function POST(request: NextRequest) {
       .in('estado', ['activa', 'trial'])
     if (cancelError) return NextResponse.json({ error: cancelError.message }, { status: 500 })
 
-    const tipoCuenta = plan === 'agencia' ? 'agencia' : plan === 'profesional' ? 'profesional' : 'particular'
+    const tipoCuenta = accountTypeForPlan(plan)
     const creditosIncluidos = PLANS[plan as keyof typeof PLANS]?.creditosMes ?? 0
 
     // 2) Plan gratuito: basta con cancelar lo vigente (gratuita es el estado por defecto)
