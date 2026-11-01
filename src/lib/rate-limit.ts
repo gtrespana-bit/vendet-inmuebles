@@ -58,6 +58,8 @@ const LIMITS: Record<string, { max: number; windowMs: number }> = {
   'agencia:invitar': { max: 30, windowMs: 60 * 60 * 1000 },
   // Aceptación de invitaciones de agencia: 15 por hora por usuario
   'agencia:aceptar': { max: 15, windowMs: 60 * 60 * 1000 },
+  // Telemetría interna de errores: máx 25 reportes cada 15 min por IP (anti-inundación)
+  'errores:reportar': { max: 25, windowMs: 15 * 60 * 1000 },
 }
 
 function getSupabaseClient() {
@@ -79,6 +81,7 @@ const FAIL_CLOSED = new Set([
   'push:send', 'denuncia:create', 'conversacion:create', 'foto-perfil:update',
   'agencia:invitar', 'agencia:aceptar',
   'perfil:escaparate',
+  'errores:reportar',
 ])
 
 export function failClosed(key: string): boolean {

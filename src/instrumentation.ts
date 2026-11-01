@@ -1,18 +1,25 @@
-import * as Sentry from '@sentry/nextjs'
-import { scrubSentryEvent } from '@/lib/sentry-scrubber'
+import type { Instrumentation } from 'next'
 
 export async function register() {
-  const dsn = process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN
-  if (!dsn) return
-
-  Sentry.init({
-    dsn,
-    tracesSampleRate: 0.2,
-    sendDefaultPii: false,
-    beforeSend(event) {
-      return scrubSentryEvent(event)
-    },
-  })
+  // Monitor interno activo en PostgreSQL (sin servicios externos como Sentry).
 }
 
-export const onRequestError = Sentry.captureRequestError
+export const onRequestError: Instrumentation.onRequestError = async (err, request, context) => {
+  if (process.env.NEXT_RUNTIME === 'nodejs') {
+    try {
+      const { capturarErrorServidor } = await import('@/lib/error-monitor-server')
+      const headers = request.headers as Record<string, string | string[] | undefined> | undefined
+      const rawCountry = headers?.['x-vercel-ip-country']
+      const pais = Array.isArray(rawCountry) ? rawCountry[0] : rawCountry || null
+
+      await capturarErrorServidor(err, {
+        path: request.path,
+        method: request.method,
+        routeType: context.routeType,
+        pais,
+      })
+    } catch {
+      // Nunca interrumpir el ciclo de respuesta por un fallo de telemetría interna
+    }
+  }
+}

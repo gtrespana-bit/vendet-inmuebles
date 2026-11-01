@@ -10,12 +10,13 @@ import {
   CreditCard, Shield, Users, BarChart3, ShieldCheck,
   Package, Star, Pause, Play, Trash2, Search, RefreshCw,
   SortAsc, SortDesc, ExternalLink, Zap, ChevronDown,
-  Megaphone, Download, Eye, Loader2, Check, X, Tag, Crown
+  Megaphone, Download, Eye, Loader2, Check, X, Tag, Crown, AlertTriangle
 } from 'lucide-react'
 import VerificacionTab from './VerificacionTab'
 import AnalyticsTab from './analytics/AnalyticsTab'
 import PlanesTab from './PlanesTab'
 import PagosTab from './PagosTab'
+import ErroresTab from './ErroresTab'
 import Image from 'next/image'
 
 import { isAdminEmail } from '@/lib/admin-config'
@@ -27,6 +28,7 @@ const TABS = [
   { id: 'planes', label: 'Planes', icon: Crown },
   { id: 'pagos', label: 'Pagos', icon: CreditCard },
   { id: 'verificacion', label: 'Verificación', icon: ShieldCheck },
+  { id: 'errores', label: 'Errores', icon: AlertTriangle },
 ]
 
 const QUICK_LINKS = [
@@ -1117,6 +1119,7 @@ export default function AdminPage() {
   const [tab, setTab] = useState<string>('dashboard')
   const [toast, setToast] = useState<string | null>(null)
   const [perfiles, setPerfiles] = useState<Record<string, any>>({})
+  const [erroresActivos, setErroresActivos] = useState<number>(0)
 
   const isAdmin = isAdminEmail(user?.email)
 
@@ -1128,6 +1131,13 @@ export default function AdminPage() {
       return
     }
     cargarPerfiles()
+    void getSupabaseAuthHeaders()
+      .then(headers => fetch('/api/admin/errores?soloConteo=1', { headers }))
+      .then(r => r.json())
+      .then(d => {
+        if (typeof d?.activos === 'number') setErroresActivos(d.activos)
+      })
+      .catch(() => {})
     // Read tab from URL
     const urlTab = searchParams?.get('tab')
     if (urlTab && TABS.some(t => t.id === urlTab)) {
@@ -1191,6 +1201,13 @@ export default function AdminPage() {
               tab === t.id ? 'bg-brand-primary text-white' : 'text-gray-600 hover:bg-gray-50'}`}>
             <t.icon size={16} />
             <span className="hidden sm:inline">{t.label}</span>
+            {t.id === 'errores' && erroresActivos > 0 && (
+              <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${
+                tab === 'errores' ? 'bg-white text-red-600' : 'bg-red-600 text-white'
+              }`}>
+                {erroresActivos}
+              </span>
+            )}
           </button>
         ))}
       </nav>
@@ -1212,6 +1229,7 @@ export default function AdminPage() {
       {tab === 'pagos' && <PagosTab />}
       {tab === 'publicaciones' && <PublicacionesTab notify={notify} />}
       {tab === 'verificacion' && <VerificacionTab notify={notify} />}
+      {tab === 'errores' && <ErroresTab notify={notify} onConteoChange={setErroresActivos} />}
       {tab === 'moderacion' && <ModeracionTab notify={notify} adminEmail={user?.email || ''} />}
       {tab === 'transacciones' && <TabTransacciones perfiles={perfiles} notify={notify} />}
       {tab === 'anuncios' && <TabAnuncios notify={notify} />}

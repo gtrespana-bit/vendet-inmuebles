@@ -84,11 +84,11 @@ const nextConfig = withNextIntl({
     // Next; se compensa con object-src 'none', base-uri 'self' y frame-ancestors 'none'.
     const csp = [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://va.vercel-scripts.com https://*.sentry.io",
+      "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://va.vercel-scripts.com",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https://*.r2.dev https://images.unsplash.com https://tile.openstreetmap.org https://*.tile.openstreetmap.org https://*.supabase.co https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com",
       "font-src 'self' data:",
-      "connect-src 'self' " + supabaseHost + " wss://quxbqmqwiacfwbpqioev.supabase.co https://*.r2.dev https://*.supabase.co wss://*.supabase.co https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com https://va.vercel-scripts.com https://*.sentry.io https://api.telegram.org",
+      "connect-src 'self' " + supabaseHost + " wss://quxbqmqwiacfwbpqioev.supabase.co https://*.r2.dev https://*.supabase.co wss://*.supabase.co https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com https://va.vercel-scripts.com https://api.telegram.org",
       "frame-src 'none'",
       "object-src 'none'",
       "base-uri 'self'",
