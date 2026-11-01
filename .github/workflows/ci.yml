@@ -37,3 +37,6 @@ jobs:
 
       - name: Production build
         run: npm run build
+
+      - name: Production HTTP & SSR smoke suite
+        run: npm run test:smoke

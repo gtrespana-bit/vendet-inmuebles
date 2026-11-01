@@ -1,6 +1,6 @@
 'use client'
 
-import { type FormEvent, useState } from 'react'
+import { type FormEvent, useEffect, useState } from 'react'
 import { AlertCircle, ArrowUpRight, CheckCircle, Loader2, Mail, Send } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
@@ -27,6 +27,15 @@ export default function ContactPage() {
   const [estado, setEstado] = useState<'idle' | 'success' | 'error'>('idle')
   const [errorText, setErrorText] = useState('')
   const [sentEmail, setSentEmail] = useState('')
+
+  useEffect(() => {
+    const orden = new URLSearchParams(window.location.search).get('orden')?.trim()
+    if (orden && /^[0-9a-f-]{8,64}$/i.test(orden)) {
+      setAsunto(subjects[2] || subjects[0])
+      setMensaje((prev) => prev || `Revisión manual de orden de pago: ${orden}\n`)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()

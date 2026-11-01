@@ -8,12 +8,18 @@ import LocalLink from '@/components/LocalLink'
 import BadgeVerificado from '@/components/BadgeVerificado'
 import Avatar from '@/components/Avatar'
 import SellerReputation from '@/components/SellerReputation'
+import { isOptimizableImageSrc } from '@/components/PropertyGallery'
+import { isUuidIdentifier } from '@/lib/storefront-slug'
 import { supabase, isSupabaseConfigured } from '@/lib/supabase'
-import { ArrowLeft, ArrowUpRight, Mail, MapPin, MessageSquare, Phone, Shield, ShieldCheck, Star } from 'lucide-react'
+import { ArrowLeft, ArrowUpRight, Building2, Mail, MapPin, MessageSquare, Phone, Shield, ShieldCheck, Star } from 'lucide-react'
 
 type SellerProfile = {
   id: string
+  slug?: string | null
   nombre: string | null
+  empresa_nombre?: string | null
+  descripcion_agente?: string | null
+  tipo_cuenta?: string | null
   telefono: string | null
   estado: string | null
   ciudad: string | null
@@ -48,7 +54,7 @@ export default function VendedorPage() {
   const t = useTranslations('seller')
   const locale = useLocale()
   const params = useParams()
-  const sellerId = params.id as string
+  const sellerParam = decodeURIComponent(String(params.id || '')).trim()
   const [seller, setSeller] = useState<SellerProfile | null>(null)
   const [properties, setProperties] = useState<SellerListing[]>([])
   const [reviews, setReviews] = useState<any[]>([])
@@ -60,34 +66,40 @@ export default function VendedorPage() {
     let cancelled = false
 
     async function loadSeller() {
-      if (!isSupabaseConfigured()) {
+      if (!isSupabaseConfigured() || !sellerParam) {
         setNotFound(true)
         setLoading(false)
         return
       }
 
       try {
-        const { data: profile, error: profileError } = await supabase
+        let profileQuery = supabase
           .from('vw_perfiles_publicos')
-          .select('id, nombre, telefono, estado, ciudad, verificado, nivel_confianza, creado_en, foto_perfil_url, badges_automaticos, whatsapp_disponible, telefono_disponible, email_disponible, email_publico, total_vendidas, antiguedad_dias, ultima_actividad')
-          .eq('id', sellerId)
-          .maybeSingle()
+          .select('id, slug, nombre, empresa_nombre, descripcion_agente, tipo_cuenta, telefono, estado, ciudad, verificado, nivel_confianza, creado_en, foto_perfil_url, badges_automaticos, whatsapp_disponible, telefono_disponible, email_disponible, email_publico, total_vendidas, antiguedad_dias, ultima_actividad')
+
+        profileQuery = isUuidIdentifier(sellerParam)
+          ? profileQuery.eq('id', sellerParam)
+          : profileQuery.eq('slug', sellerParam.toLowerCase())
+
+        const { data: profile, error: profileError } = await profileQuery.maybeSingle()
         if (profileError) throw profileError
         if (!profile) {
           if (!cancelled) setNotFound(true)
           return
         }
 
+        const resolvedSellerId = profile.id
+
         const [{ data: reviewRows }, { data: listingRows }] = await Promise.all([
           supabase
             .from('resenas')
             .select('id, puntuacion, comentario, producto_id, producto_titulo, creado_en')
-            .eq('vendedor_id', sellerId)
+            .eq('vendedor_id', resolvedSellerId)
             .order('creado_en', { ascending: false }),
           supabase
             .from('vw_propiedades_publicas')
             .select('id, titulo, precio, moneda, imagen_url, main_image_url, ciudad, estado, operacion_nombre, tipo_nombre')
-            .eq('user_id', sellerId)
+            .eq('user_id', resolvedSellerId)
             .eq('activo', true)
             .order('creado_en', { ascending: false })
             .limit(12),
@@ -96,8 +108,8 @@ export default function VendedorPage() {
         if (cancelled) return
         const reviewList = reviewRows || []
         setSeller(profile as SellerProfile)
-        setReviews(reviewList)
         setProperties((listingRows || []) as SellerListing[])
+        setReviews(reviewList)
         if (reviewList.length) {
           const mean = reviewList.reduce((sum: number, review: any) => sum + Number(review.puntuacion || 0), 0) / reviewList.length
           setAverage(Math.round(mean * 10) / 10)
@@ -112,37 +124,38 @@ export default function VendedorPage() {
 
     loadSeller()
     return () => { cancelled = true }
-  }, [sellerId])
+  }, [sellerParam])
 
   const isEnglish = locale === 'en'
   const dateFormatter = useMemo(() => new Intl.DateTimeFormat(isEnglish ? 'en-US' : 'es-VE', { day: '2-digit', month: 'short', year: 'numeric' }), [isEnglish])
 
   if (loading) {
     return (
-      <main className="seller-page" aria-busy="true">
+      <div className="seller-page" aria-busy="true">
         <div className="seller-page__inner seller-page__loading">
           <div className="seller-page__skeleton-avatar" />
           <div className="h-7 w-48 animate-pulse bg-[#EAE6DC]" />
           <div className="h-4 w-64 max-w-full animate-pulse bg-[#f0ebe4]" />
         </div>
-      </main>
+      </div>
     )
   }
 
   if (notFound || !seller) {
     return (
-      <main className="seller-page">
+      <div className="seller-page">
         <section className="seller-page__inner seller-page__not-found">
           <p className="seller-page__eyebrow">{t('publicProfile')}</p>
           <h1>{t('profileNotFound')}</h1>
           <p>{t('profileNotFoundDescription')}</p>
           <LocalLink href="/catalogo">{t('exploreProperties')} <ArrowUpRight size={15} /></LocalLink>
         </section>
-      </main>
+      </div>
     )
   }
 
   const sellerName = seller.nombre || t('seller')
+  const canonicalIdentifier = seller.slug || seller.id
   const location = [seller.ciudad, seller.estado].filter(Boolean).join(', ')
   const phoneDigits = seller.telefono?.replace(/[^0-9]/g, '') || ''
   const whatsappEnabled = Boolean(seller.whatsapp_disponible && phoneDigits)
@@ -152,20 +165,20 @@ export default function VendedorPage() {
     ? Math.max(0, Math.floor((Date.now() - new Date(seller.creado_en).getTime()) / 86400000))
     : 0)
   const firstPropertyChat = properties[0]
-    ? `/chat?producto_id=${encodeURIComponent(properties[0].id)}&vendedor_id=${encodeURIComponent(sellerId)}`
+    ? `/chat?producto_id=${encodeURIComponent(properties[0].id)}&vendedor_id=${encodeURIComponent(seller.id)}`
     : null
 
   const reviewSchema = reviews.length ? {
     '@context': 'https://schema.org',
-    '@type': seller.verificado ? 'Organization' : 'Person',
-    name: sellerName,
+    '@type': seller.verificado || seller.empresa_nombre ? 'RealEstateAgent' : 'Person',
+    name: seller.empresa_nombre || sellerName,
     address: {
       '@type': 'PostalAddress',
       addressLocality: seller.ciudad || '',
       addressRegion: seller.estado || '',
       addressCountry: 'VE',
     },
-    url: `https://venezuela-inmuebles.online${isEnglish ? '/en' : ''}/vendedor/${sellerId}`,
+    url: `https://venezuela-inmuebles.online${isEnglish ? '/en' : ''}/vendedor/${canonicalIdentifier}`,
     aggregateRating: {
       '@type': 'AggregateRating',
       ratingValue: average.toFixed(1),
@@ -176,7 +189,7 @@ export default function VendedorPage() {
   } : null
 
   return (
-    <main className="seller-page">
+    <div className="seller-page">
       {reviewSchema && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(reviewSchema).replace(/</g, '\\u003c') }} />}
       <div className="seller-page__inner">
         <LocalLink href="/catalogo" className="seller-page__back"><ArrowLeft size={15} /> {t('backToProperties')}</LocalLink>
@@ -193,8 +206,20 @@ export default function VendedorPage() {
             <Avatar nombre={sellerName} fotoUrl={seller.foto_perfil_url} size="xl" />
             <div className="seller-profile-card__identity">
               <h1 id="seller-name">{sellerName} {seller.verificado && <BadgeVerificado size="md" />}</h1>
-              <p className="seller-profile-card__role">{t('professionalLabel')}</p>
+              {seller.empresa_nombre ? (
+                <p className="seller-profile-card__role flex items-center gap-1.5">
+                  <Building2 size={14} aria-hidden="true" />
+                  <span>{seller.empresa_nombre}</span>
+                </p>
+              ) : (
+                <p className="seller-profile-card__role">{t('professionalLabel')}</p>
+              )}
               {location && <p className="seller-profile-card__location"><MapPin size={15} />{location}</p>}
+              {seller.descripcion_agente && (
+                <p className="text-sm text-gray-600 mt-2 max-w-2xl leading-relaxed">
+                  {seller.descripcion_agente}
+                </p>
+              )}
               <div className="seller-profile-card__reputation">
                 <SellerReputation
                   nivel={seller.nivel_confianza || 0}
@@ -250,7 +275,17 @@ export default function VendedorPage() {
                   return (
                     <LocalLink key={property.id} href={`/inmueble/${property.id}`} className="seller-property-card">
                       <div className="seller-property-card__media">
-                        {image ? <Image src={image} alt="" fill sizes="(max-width: 640px) 90vw, (max-width: 1000px) 45vw, 29vw" unoptimized /> : <span>{t('noPhoto')}</span>}
+                        {image ? (
+                          <Image
+                            src={image}
+                            alt=""
+                            fill
+                            sizes="(max-width: 640px) 90vw, (max-width: 1000px) 45vw, 29vw"
+                            unoptimized={!isOptimizableImageSrc(image)}
+                          />
+                        ) : (
+                          <span>{t('noPhoto')}</span>
+                        )}
                         {property.operacion_nombre && <span className="seller-property-card__operation">{property.operacion_nombre}</span>}
                       </div>
                       <div className="seller-property-card__body">
@@ -297,6 +332,6 @@ export default function VendedorPage() {
           </aside>
         </div>
       </div>
-    </main>
+    </div>
   )
 }
