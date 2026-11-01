@@ -54,6 +54,10 @@ type PropertyMapProps = {
   fitKey?: string
   initialZoom?: number
   initialCenter?: { lat: number; lng: number }
+  /** Centro y zoom reactivos (p. ej. al cambiar estado/ciudad en LocationPicker). */
+  viewCenter?: { lat: number; lng: number }
+  viewZoom?: number
+  viewKey?: string
   /** Encuadra automáticamente los puntos al montar (por defecto sí). */
   fit?: boolean
   className?: string
@@ -149,6 +153,9 @@ export default function PropertyMap({
   fitKey,
   initialZoom,
   initialCenter,
+  viewCenter,
+  viewZoom,
+  viewKey,
   fit = true,
   className,
 }: PropertyMapProps) {
@@ -161,12 +168,31 @@ export default function PropertyMap({
   const onBoundsRef = useRef(onBoundsChange)
   const onMapClickRef = useRef(onMapClick)
   const lastFitRef = useRef<string | null>(null)
+  const lastViewKeyRef = useRef<string | null>(null)
+  const latestViewRef = useRef({
+    center: viewCenter ?? initialCenter ?? VE_CENTER,
+    zoom: viewZoom ?? initialZoom ?? (variant === 'mini' ? 13 : VE_ZOOM),
+    key:
+      viewKey ??
+      (viewCenter
+        ? `${viewCenter.lat.toFixed(5)},${viewCenter.lng.toFixed(5)}:${viewZoom ?? ''}`
+        : null),
+  })
   const [ready, setReady] = useState(false)
   const [tilesFailed, setTilesFailed] = useState(false)
 
   onSelectRef.current = onSelect
   onBoundsRef.current = onBoundsChange
   onMapClickRef.current = onMapClick
+  latestViewRef.current = {
+    center: viewCenter ?? initialCenter ?? VE_CENTER,
+    zoom: viewZoom ?? initialZoom ?? (variant === 'mini' ? 13 : VE_ZOOM),
+    key:
+      viewKey ??
+      (viewCenter
+        ? `${viewCenter.lat.toFixed(5)},${viewCenter.lng.toFixed(5)}:${viewZoom ?? ''}`
+        : null),
+  }
 
   const points = useMemo(
     () => items.filter((item) => Number.isFinite(item.lat) && Number.isFinite(item.lng)),
@@ -195,9 +221,10 @@ export default function PropertyMap({
       if (cancelled || !containerRef.current || mapRef.current) return
       leafletRef.current = L as unknown as typeof import('leaflet')
 
+      const startView = latestViewRef.current
       const map = L.map(containerRef.current, {
-        center: [initialCenter?.lat ?? VE_CENTER.lat, initialCenter?.lng ?? VE_CENTER.lng],
-        zoom: initialZoom ?? (variant === 'mini' ? 13 : VE_ZOOM),
+        center: [startView.center.lat, startView.center.lng],
+        zoom: startView.zoom,
         zoomControl: false,
         attributionControl: false,
         scrollWheelZoom: variant === 'full' ? 'center' : false,
@@ -272,6 +299,7 @@ export default function PropertyMap({
       map.whenReady(() => emitBounds(map))
 
       mapRef.current = map
+      lastViewKeyRef.current = startView.key
       setReady(true)
     }
 
@@ -335,6 +363,26 @@ export default function PropertyMap({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, pointsKey, locale])
 
+  /* ── Encuadre reactivo a cambios de estado/ciudad/municipio ──────────── */
+  const viewLat = viewCenter?.lat
+  const viewLng = viewCenter?.lng
+  useEffect(() => {
+    const map = mapRef.current
+    if (!ready || !map || viewLat === undefined || viewLng === undefined) return
+    if (!Number.isFinite(viewLat) || !Number.isFinite(viewLng)) return
+
+    const effectiveKey =
+      viewKey ?? `${viewLat.toFixed(5)},${viewLng.toFixed(5)}:${viewZoom ?? ''}`
+    if (lastViewKeyRef.current === effectiveKey) return
+    lastViewKeyRef.current = effectiveKey
+
+    map.invalidateSize({ pan: false })
+    map.flyTo([viewLat, viewLng], viewZoom ?? map.getZoom(), {
+      animate: true,
+      duration: 0.65,
+    })
+  }, [ready, viewKey, viewLat, viewLng, viewZoom])
+
   /* ── Encuadre ─────────────────────────────────────────────────────────── */
   useEffect(() => {
     const map = mapRef.current
@@ -368,8 +416,18 @@ export default function PropertyMap({
   const fitAll = () => {
     const map = mapRef.current
     const L = leafletRef.current
-    if (!map || !L || points.length === 0) return
-    fitPoints(map, L, points)
+    if (!map || !L) return
+    if (fit && points.length > 0) {
+      fitPoints(map, L, points)
+      return
+    }
+    if (points.length === 1) {
+      map.flyTo([points[0].lat, points[0].lng], 15.5, { animate: true, duration: 0.5 })
+      return
+    }
+    if (viewCenter) {
+      map.flyTo([viewCenter.lat, viewCenter.lng], viewZoom ?? VE_ZOOM, { animate: true, duration: 0.5 })
+    }
   }
 
   return (
