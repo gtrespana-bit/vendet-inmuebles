@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase-server'
 import { cleanOldRateLimits } from '@/lib/rate-limit'
 import { limpiarNotificacionesEmailAntiguas, procesarNotificacionesEmailPendientes } from '@/lib/notificaciones-email'
+import { alertarPagosPendientesRevision } from '@/lib/pagos-alertas'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
@@ -49,7 +50,20 @@ async function procesar(request: NextRequest) {
       const { data: ev } = await supabase.rpc('limpiar_eventos_antiguos')
       eventosLimpiados = Number(ev || 0)
     } catch { /* la tabla puede no existir aún si falta la migración 007 */ }
-    return NextResponse.json({ ok: true, ...resultado, limpiadas, rateLimitsLimpiados, eventosLimpiados })
+    // Supervisión de órdenes provisionales/en revisión sin atender (>6 h) — F14
+    const pagosPendientesAntiguos = await alertarPagosPendientesRevision(supabase).catch(() => ({
+      provisionalesAntiguos: 0,
+      revisionAntiguos: 0,
+      alertaEnviada: false,
+    }))
+    return NextResponse.json({
+      ok: true,
+      ...resultado,
+      limpiadas,
+      rateLimitsLimpiados,
+      eventosLimpiados,
+      pagosPendientesAntiguos,
+    })
   } catch (error: any) {
     console.error('Cron notificaciones-email:', error)
     return NextResponse.json({ ok: false, error: error.message }, { status: 500 })

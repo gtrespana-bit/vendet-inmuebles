@@ -50,6 +50,8 @@ const LIMITS: Record<string, { max: number; windowMs: number }> = {
   'track:evento': { max: 300, windowMs: 60 * 60 * 1000 },
   // Visita a ficha de inmueble: 60 por hora por IP
   'inmueble:visita': { max: 60, windowMs: 60 * 60 * 1000 },
+  // Recordatorio periódico de órdenes provisionales/en revisión: máx 1 cada 6 h
+  'cron:alerta-provisionales': { max: 1, windowMs: 6 * 60 * 60 * 1000 },
 }
 
 function getSupabaseClient() {

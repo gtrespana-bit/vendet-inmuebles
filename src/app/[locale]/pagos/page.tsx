@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import LocalLink from '@/components/LocalLink'
 import { getSupabaseAuthHeaders } from '@/lib/supabase-auth-headers'
 import { CREDIT_PACKAGES, PLAN_PRICES } from '@/lib/payment-catalog'
+import { translateReceiptReason } from '@/lib/receipt-validation'
 import { trialDaysRemaining } from '@/lib/trial-status'
 import { useAuth } from '@/components/AuthProvider'
 
@@ -114,8 +115,24 @@ export default function PaymentsPage() {
       {order.suscripciones && <p className="text-sm">{copy('Período del plan','Plan period')}: {new Date(order.suscripciones.inicio).toLocaleDateString(en ? 'en':'es')} → {new Date(order.suscripciones.fin).toLocaleDateString(en ? 'en':'es')}</p>}<p className="text-xs text-gray-500">{order.id}</p>
       <dl className="text-sm space-y-1">{Object.entries(order.destinatario).map(([key,value]) => <div key={key} className="flex flex-wrap gap-2"><dt className="capitalize">{key}:</dt><dd className="font-mono select-all">{value}</dd></div>)}</dl>
       {['creada','revision','bloqueada'].includes(order.estado) && <p className="text-sm">{copy('Pagar antes de','Pay before')}: {new Date(order.vence_en).toLocaleString(en ? 'en' : 'es')}</p>}
-      {!!order.motivos.length && <ul className="list-disc pl-5 text-amber-900">{order.motivos.map((reason,i) => <li key={i}>{reason}</li>)}</ul>}
+      {!!order.motivos.length && <ul className="list-disc pl-5 text-amber-900">{order.motivos.map((reason,i) => <li key={i}>{translateReceiptReason(reason, en ? 'en' : 'es')}</li>)}</ul>}
       {order.nota_revision && <p>{order.nota_revision}</p>}
+      {order.estado === 'bloqueada' && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950 space-y-1">
+          <p className="font-semibold">
+            {copy('¿Alcanzaste el límite de intentos automáticos o tu captura fue rechazada por formato?', 'Reached the automatic check limit or had a valid receipt flagged?')}
+          </p>
+          <p>
+            {copy(
+              'No realices un segundo pago. Nuestro equipo revisará esta orden manualmente en Administración → Pagos, o puedes escribirnos indicando el código de orden para adjuntar soporte adicional:',
+              'Do not pay twice. Our team reviews blocked orders manually, or you can contact support quoting your order ID if you need to attach additional proof:'
+            )}{' '}
+            <LocalLink href={`/contacto?orden=${encodeURIComponent(order.id)}`} className="underline font-semibold">
+              {copy('Contactar soporte con este número de orden', 'Contact support with this order ID')}
+            </LocalLink>
+          </p>
+        </div>
+      )}
       {['creada','revision','bloqueada'].includes(order.estado) && <div className="space-y-3">
         <label className="block font-medium">{copy('Subir o resubir justificante','Upload or replace receipt')}
           <input className="block mt-2 w-full" type="file" accept="image/png,image/jpeg,image/webp" disabled={!!busy} onChange={e => {
