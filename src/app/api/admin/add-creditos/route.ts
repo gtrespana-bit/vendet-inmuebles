@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
     if (!auth.ok) return auth.response
 
     const body = await request.json()
-    const { userId, cantidad, motivo } = body
+    const { userId, cantidad, motivo, idempotencyKey } = body
     const uuidCheck = requireUUIDs(body, ['userId'])
     if (!uuidCheck.valid) return NextResponse.json({ error: uuidCheck.error }, { status: 400 })
 
@@ -19,48 +19,39 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Cantidad inválida (debe ser entre 1 y 10.000)' }, { status: 400 })
     }
 
-    const { data: perfil, error: perfilError } = await auth.supabaseAdmin
-      .from('perfiles')
-      .select('credito_balance, nombre')
-      .eq('id', userId)
-      .maybeSingle()
-    if (perfilError) return NextResponse.json({ error: perfilError.message }, { status: 500 })
-    if (!perfil) return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 })
+    const referencia = typeof idempotencyKey === 'string' && idempotencyKey.trim()
+      ? `admin:${idempotencyKey.trim().slice(0, 120)}`
+      : null
 
-    const nuevoBalance = Number(perfil.credito_balance || 0) + creditos
-    const { error: updateError } = await auth.supabaseAdmin
-      .from('perfiles')
-      .update({ credito_balance: nuevoBalance })
-      .eq('id', userId)
-    if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 })
-
-    const { error: txError } = await auth.supabaseAdmin.from('transacciones_creditos').insert({
-      user_id: userId,
-      tipo: 'admin_manual',
-      monto: creditos,
-      estado: 'aprobado',
-      motivo_registro: typeof motivo === 'string' ? motivo.slice(0, 500) : 'Manual admin',
-      aprobado_en: new Date().toISOString(),
-      aprobado_por: auth.user.id,
+    const { data, error } = await auth.supabaseAdmin.rpc('admin_agregar_creditos', {
+      p_user_id: userId,
+      p_admin_id: auth.user.id,
+      p_cantidad: creditos,
+      p_motivo: typeof motivo === 'string' ? motivo.slice(0, 500) : 'Manual admin',
+      p_referencia: referencia,
     })
-    if (txError) {
-      // Roll back the balance if the audit transaction could not be written.
-      await auth.supabaseAdmin.from('perfiles')
-        .update({ credito_balance: Number(perfil.credito_balance || 0) })
-        .eq('id', userId)
-      return NextResponse.json({ error: txError.message }, { status: 500 })
+
+    if (error) {
+      const status = error.code === 'P0002' ? 404 : error.code === '22023' ? 400 : 500
+      return NextResponse.json({ error: error.message }, { status })
     }
 
-    await notifyUser(auth.supabaseAdmin, userId, {
-      title: '💰 Créditos recibidos',
-      body: `Recibiste ${creditos} ${creditos === 1 ? 'crédito' : 'créditos'} en tu cuenta Venezuela Inmuebles. Nuevo balance: ${nuevoBalance}.`,
-      tag: 'creditos',
-      icon: '/icon-192.png',
-      click_url: '/creditos',
-    })
-    await notificarCreditosAgregados(auth.supabaseAdmin, userId, creditos)
+    const fila = Array.isArray(data) ? data[0] : data
+    const nuevoBalance = Number(fila?.nuevo_balance ?? 0)
+    const yaAplicado = Boolean(fila?.ya_aplicado)
 
-    return NextResponse.json({ ok: true, nuevoBalance })
+    if (!yaAplicado) {
+      await notifyUser(auth.supabaseAdmin, userId, {
+        title: '💰 Créditos recibidos',
+        body: `Recibiste ${creditos} ${creditos === 1 ? 'crédito' : 'créditos'} en tu cuenta Venezuela Inmuebles. Nuevo balance: ${nuevoBalance}.`,
+        tag: 'creditos',
+        icon: '/icon-192.png',
+        click_url: '/creditos',
+      })
+      await notificarCreditosAgregados(auth.supabaseAdmin, userId, creditos)
+    }
+
+    return NextResponse.json({ ok: true, nuevoBalance, idempotent: yaAplicado })
   } catch (err: any) {
     return NextResponse.json({ error: err.message || 'Error desconocido' }, { status: 500 })
   }

@@ -9,6 +9,8 @@ export interface PlanInfo {
   trialEndsAt: string | null
   fin: string | null
   creditosIncluidos: number
+  creditosUsadosMes?: number
+  creditosRestantesPlan?: number
   limits: { maxAnuncios: number; maxFotos: number; creditosMes: number }
   activeCount: number
   canPublish: boolean

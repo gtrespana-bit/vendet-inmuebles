@@ -11,7 +11,7 @@ export async function checkPlanLimits(userId: string) {
   // Get active subscription and its plan
   const { data: susData, error: susError } = await supabase
     .from('suscripciones')
-    .select('plan, estado, trial_ends_at, fin, creditos_incluidos, cambio_gratuita')
+    .select('plan, estado, trial_ends_at, fin, creditos_incluidos, creditos_usados_mes, proxima_renovacion_creditos, cambio_gratuita')
     .eq('user_id', userId)
     .in('estado', ['activa', 'trial'])
     .lte('inicio', new Date().toISOString())
@@ -31,6 +31,7 @@ export async function checkPlanLimits(userId: string) {
   let trialEndsAt: string | null = null
   let fin: string | null = null
   let creditosIncluidos = 0
+  let creditosUsadosMes = 0
   
   if (susData && (susData.estado === 'activa' || (susData.estado === 'trial' && new Date(susData.trial_ends_at) > new Date()))) {
     currentPlanName = susData.plan
@@ -38,7 +39,10 @@ export async function checkPlanLimits(userId: string) {
     trialEndsAt = susData.trial_ends_at || null
     fin = susData.fin || null
     creditosIncluidos = susData.creditos_incluidos ?? 0
+    const renovacionVencida = susData.proxima_renovacion_creditos && new Date(susData.proxima_renovacion_creditos) <= new Date()
+    creditosUsadosMes = renovacionVencida ? 0 : (susData.creditos_usados_mes ?? 0)
   }
+  const creditosRestantesPlan = Math.max(0, creditosIncluidos - creditosUsadosMes)
 
   const { data: scheduled, error: scheduledError } = await supabase.from('suscripciones')
     .select('plan, inicio').eq('user_id', userId).in('estado', ['activa','trial'])
@@ -66,6 +70,8 @@ export async function checkPlanLimits(userId: string) {
     trialEndsAt,
     fin,
     creditosIncluidos,
+    creditosUsadosMes,
+    creditosRestantesPlan,
     limits,
     activeCount: activeCount || 0,
     canPublish,
