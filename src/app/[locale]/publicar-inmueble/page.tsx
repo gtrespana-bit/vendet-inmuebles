@@ -181,7 +181,7 @@ export default function PublicarInmueblePage() {
     e.target.value = '';
     if (!files.length) return;
 
-    const validFiles = files.filter(file => file.type.startsWith('image/') && file.size <= 8 * 1024 * 1024);
+    const validFiles = files.filter(file => file.type.startsWith('image/') && file.size <= 4 * 1024 * 1024);
     const remaining = Math.max(0, maxFotos - imagenes.length);
     if (validFiles.length !== files.length) {
       setError(tPublish('fileTypeError'));

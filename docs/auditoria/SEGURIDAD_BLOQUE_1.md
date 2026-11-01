@@ -71,6 +71,20 @@ Comprobado en la base real suplantando roles: con `anon`, `10.2492154` → `10.2
 
 **Pendiente de F05:** consentimiento explícito por dato con interruptor en el perfil (hoy se deduce de los anuncios), decidir si algún día se publica dirección exacta con permiso del vendedor, y revisar si otras vistas o endpoints exponen ubicación precisa.
 
+## Bloque 3 — Subidas de imágenes (F06)
+
+Implementado en la rama; **no desplegado**. En el servidor de producción hasta que se despliegue el código sigue el comportamiento anterior.
+
+- **Validación real:** el archivo se decodifica con sharp; el tipo se decide por el contenido, no por el MIME declarado. Se rechazan vacíos, no-imágenes, más de 8000 px, más de 40 Mpx y más de 4 MB (antes 8 MB, por encima del cuerpo que admite una función de Vercel).
+- **Reescritura:** toda imagen se guarda como WebP sin metadatos, rotada según EXIF y reducida a 2560 px de lado máximo. La clave final usa la extensión del formato real.
+- **Presigned:** la firma incluye `ContentLength`, así que la URL no permite subir más de 4 MB ni otro `Content-Type`; caducidad de 5 minutos.
+- **Diagnóstico:** `GET /api/r2-upload` pasa a requerir administración y borra el objeto de prueba inmediatamente (antes cualquier cuenta autenticada dejaba un archivo por llamada).
+- **Límites del cliente:** los formularios de alta y edición avisan a 4 MB en vez de 8 MB.
+
+Pruebas: **112/112** (3 nuevas en `tests/image-upload-policy.mjs`). No se probó la subida real a R2 desde este entorno (sin credenciales); el flujo se apoya en el mismo `uploadObjectServer` que ya usaba la aplicación.
+
+**Pendiente de F06:** rotación de claves y limpieza de huérfanos en el bucket, y comprobar en el despliegue real que el límite de cuerpo configurado coincide con 4 MB.
+
 ## Validación realizada
 
 - `npm test`: **101/101 pruebas** (incluye las 4 nuevas de mapeo de cupo), más comprobación de traducciones de edición.

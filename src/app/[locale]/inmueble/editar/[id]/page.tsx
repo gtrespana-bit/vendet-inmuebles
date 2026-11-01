@@ -301,7 +301,7 @@ export default function EditarInmueblePage() {
         setError(tp('fileTypeError'))
         continue
       }
-      if (file.size > 8 * 1024 * 1024) {
+      if (file.size > 4 * 1024 * 1024) {
         setError(tp('fileTypeError'))
         continue
       }

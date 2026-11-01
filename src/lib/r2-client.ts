@@ -38,17 +38,21 @@ function getClient(): S3Client {
   return r2Client
 }
 
-/** Genera un presigned URL para subir un archivo a R2 */
+/** Genera un presigned URL para subir un archivo a R2.
+ *  `contentLength` fija el tamaño exacto en la firma: la URL no sirve para
+ *  subir objetos mayores ni de otro tipo. */
 export async function getUploadPresignedUrl(
   key: string,
   contentType: string = 'image/jpeg',
-  expiresIn: number = 3600
+  contentLength: number = 4 * 1024 * 1024,
+  expiresIn: number = 300
 ): Promise<string> {
   const client = getClient()
   const command = new PutObjectCommand({
     Bucket: R2_BUCKET,
     Key: key,
     ContentType: contentType,
+    ContentLength: contentLength,
   })
   return await getSignedUrl(client, command, { expiresIn })
 }
