@@ -15,6 +15,7 @@ CREATE TABLE suscripciones(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),user_id
 CREATE TABLE transacciones_creditos(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),user_id uuid,tipo text,monto integer,precio_usd numeric,metodo_pago text,estado text,motivo_registro text,referencia text);
 `)
 await db.exec(readFileSync(new URL('../supabase/migrations/010_ordenes_pago_verificacion.sql',import.meta.url),'utf8'))
+await db.exec(readFileSync(new URL('../supabase/migrations/011_cambio_plan_durante_prueba.sql',import.meta.url),'utf8'))
 const one = async (sql,params=[]) => (await db.query(sql,params)).rows[0]
 const user = async () => (await one('INSERT INTO perfiles DEFAULT VALUES RETURNING id')).id
 async function order(uid,concepto='creditos') {
@@ -88,5 +89,38 @@ test('OCR budget reserved atomically before work, with user and IP limits',async
  const uid2=await user()
  for(let n=0;n<6;n++) assert.equal((await one("SELECT reservar_analisis_pago($1,'192.0.2.1') AS allowed",[uid2])).allowed,true)
  assert.equal((await one("SELECT reservar_analisis_pago($1,'192.0.2.1') AS allowed",[await user()])).allowed,false)
+})
+test('switching trial plans is free, immediate and preserves original deadlines and credit balance',async()=>{
+ const uid=await user()
+ const original=await one("INSERT INTO suscripciones(user_id,plan,estado,fin,trial_ends_at,creditos_usados_mes) VALUES($1,'agencia','trial',now()+interval '12 days',now()+interval '12 days',3) RETURNING *",[uid])
+ for(const plan of ['profesional','gratuita','agencia','profesional']) {
+   await db.query('SELECT cambiar_plan_prueba($1,$2)',[uid,plan])
+   const changed=await one('SELECT * FROM suscripciones WHERE id=$1',[original.id])
+   assert.equal(changed.plan,plan);assert.equal(changed.estado,'trial')
+   assert.equal(changed.trial_ends_at.toISOString(),original.trial_ends_at.toISOString())
+   assert.equal(changed.fin.toISOString(),original.fin.toISOString())
+   assert.equal(changed.inicio.toISOString(),original.inicio.toISOString())
+   assert.equal(changed.creditos_usados_mes,3)
+ }
+ assert.equal(Number((await one('SELECT credito_balance FROM perfiles WHERE id=$1',[uid])).credito_balance),0)
+ assert.equal((await one('SELECT count(*) FROM suscripciones WHERE user_id=$1',[uid])).count,1)
+ assert.equal((await one('SELECT count(*) FROM ordenes_pago WHERE user_id=$1',[uid])).count,0)
+})
+test('expired trial and paid accounts cannot obtain another free trial by switching',async()=>{
+ for(const estado of ['trial','activa']) {
+  const uid=await user()
+  await db.query("INSERT INTO suscripciones(user_id,plan,estado,fin,trial_ends_at) VALUES($1,'profesional',$2,now()+interval '10 days',now()-interval '1 day')",[uid,estado])
+  await assert.rejects(()=>db.query("SELECT cambiar_plan_prueba($1,'agencia')",[uid]),/ya no está activa/)
+ }
+})
+test('old paid orders cannot end a live trial on approval, but extra credit purchases remain available',async()=>{
+ const uid=await user()
+ await db.query("INSERT INTO suscripciones(user_id,plan,estado,fin,trial_ends_at) VALUES($1,'profesional','trial',now()+interval '10 days',now()+interval '10 days')",[uid])
+ const paid=await order(uid,'agencia')
+ assert.equal(await attempt(paid,'trial-plan-reference'),'revision')
+ await assert.rejects(()=>review(paid,true),/prueba sigue activa/)
+ const credits=await order(uid)
+ assert.equal(await attempt(credits,'trial-credit-reference'),'provisional')
+ assert.equal((await one('SELECT estado FROM suscripciones WHERE user_id=$1',[uid])).estado,'trial')
 })
 test.after(async()=>{await db.close()})

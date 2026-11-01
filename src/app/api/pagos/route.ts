@@ -25,9 +25,12 @@ export async function POST(req: NextRequest) {
     if (!price) return NextResponse.json({ error: 'Compra inválida' }, { status: 400 })
     if (body.concepto !== 'creditos') {
       const { data: subscriptions, error: subError } = await auth.supabaseAdmin.from('suscripciones')
-        .select('plan, inicio, fin').eq('user_id', auth.user.id).in('estado',['activa','trial'])
+        .select('plan, inicio, fin, estado, trial_ends_at').eq('user_id', auth.user.id).in('estado',['activa','trial'])
         .or(`fin.is.null,fin.gt.${new Date().toISOString()}`).order('created_at',{ascending:false})
       if (subError) throw subError
+      if (subscriptions?.some(s=>s.estado==='trial' && Date.parse(s.inicio)<=Date.now() && Date.parse(s.trial_ends_at)>Date.now())) {
+        return NextResponse.json({error:'Tu prueba gratuita sigue activa. Puedes cambiar de plan sin pagar desde Planes.',code:'TRIAL_ACTIVE'},{status:409})
+      }
       if (subscriptions?.some(s => Date.parse(s.inicio)>Date.now())) return NextResponse.json({error:'Ya tienes un cambio de plan pagado programado. Revisa tus pagos.'},{status:409})
       const current = subscriptions?.[0]
       if (current && !current.fin && (current.plan === body.concepto || (current.plan === 'agencia' && body.concepto === 'profesional'))) return NextResponse.json({error:'Tu plan actual no tiene fecha de fin. Contacta con soporte antes de pagar.'},{status:409})
