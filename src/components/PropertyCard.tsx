@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowUpRight, Bath, BedDouble, MapPin, Ruler } from 'lucide-react'
+import { isOptimizableImageSrc } from '@/components/PropertyGallery'
 
 export interface PropertyCardData {
   id: string
@@ -69,7 +70,8 @@ export default function PropertyCard({ property, locale, priority = false, label
   const operationLabel = property.operation_type.toLowerCase() === 'alquiler'
     ? labels.rent || (locale === 'en' ? 'For rent' : 'Alquiler')
     : labels.sale || (locale === 'en' ? 'For sale' : 'En venta')
-  const href = `/${locale}/inmueble/${property.slug || property.id}`
+  const prefix = locale === 'en' ? '/en' : ''
+  const href = `${prefix}/inmueble/${property.slug || property.id}`
   const imageUrl = property.main_image_url || FALLBACK_IMAGE
 
   return (
@@ -80,6 +82,7 @@ export default function PropertyCard({ property, locale, priority = false, label
             src={imageUrl}
             alt={property.title}
             fill
+            unoptimized={!isOptimizableImageSrc(imageUrl)}
             sizes="(max-width: 640px) 92vw, (max-width: 1024px) 46vw, 31vw"
             className="property-card__image"
             priority={priority}

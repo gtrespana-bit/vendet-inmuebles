@@ -18,6 +18,7 @@ const PRIVATE_PATHS = [
   '/buscar',
   '/offline',
   '/publicar',
+  '/inmueble/editar',
 ]
 
 export default function robots(): MetadataRoute.Robots {

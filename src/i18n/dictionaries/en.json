@@ -758,22 +758,23 @@
     "profile": "Profile"
   },
   "blog": {
-    "title": "Blog",
-    "subtitle": "Market prices, entrepreneurship guides and tips for buying and selling in Venezuela",
+    "title": "Real Estate Blog",
+    "subtitle": "SAREN legal guides, price-per-square-meter insights and tips for buying, selling or renting property in Venezuela",
     "featured": "Featured",
     "allArticles": "All articles",
     "readMore": "Read more",
-    "comingSoon": "More content coming soon...",
-    "ctaTitle": "Want to sell something? Post for free",
-    "ctaDesc": "No commissions, no complications. Put your product in front of buyers in Venezuela.",
-    "ctaButton": "Post now",
+    "comingSoon": "More real estate guides coming soon...",
+    "ctaTitle": "Want to sell or rent your property?",
+    "ctaDesc": "Zero sales commission. Put your house, apartment, land or commercial space in front of buyers across Venezuela.",
+    "ctaSubtitle": "Zero sales commission. Put your house, apartment, land or commercial space in front of buyers across Venezuela.",
+    "ctaButton": "Publish property",
     "postNotFound": "Article not found",
     "backToBlog": "Back to blog",
     "home": "Home",
-    "haveSomething": "Have something to sell?",
-    "publishFreeDesc": "Post for free on Venezuela Inmuebles and connect with buyers across Venezuela",
-    "publishFree": "Post for free",
-    "moreArticles": "More articles"
+    "haveSomething": "Have a property for sale or rent?",
+    "publishFreeDesc": "Publish on Venezuela Inmuebles and connect directly with buyers and tenants nationwide",
+    "publishFree": "Publish property",
+    "moreArticles": "More real estate guides"
   },
   "productDetail": {
     "notFound": "Product not found",

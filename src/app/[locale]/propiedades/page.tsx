@@ -1,28 +1,14 @@
-import { Metadata } from 'next'
-import { redirect } from 'next/navigation'
-import { getTranslations } from 'next-intl/server'
+import { permanentRedirect } from 'next/navigation'
 
 interface PageProps {
   params: Promise<{ locale: string }>
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { locale } = await params
-  const t = await getTranslations({ locale, namespace: 'properties' })
-  return {
-    title: t('meta.title').replace(/\s*[-|]\s*Venezuela Inmuebles$/i, ''),
-    description: t('meta.description'),
-    alternates: {
-      canonical: `https://venezuela-inmuebles.online${locale === 'en' ? '/en' : ''}/propiedades`,
-      languages: {
-        'es-VE': 'https://venezuela-inmuebles.online/propiedades',
-        'en-US': 'https://venezuela-inmuebles.online/en/propiedades',
-      },
-    },
-  }
-}
-
+/**
+ * Redirección permanente (308) al hub principal de propiedades en venta,
+ * evitando páginas puente en el índice y consolidando autoridad SEO.
+ */
 export default async function PropiedadesPage({ params }: PageProps) {
   const { locale } = await params
-  redirect(locale === 'en' ? '/en/propiedades/venta' : '/propiedades/venta')
+  permanentRedirect(locale === 'en' ? '/en/propiedades/venta' : '/propiedades/venta')
 }

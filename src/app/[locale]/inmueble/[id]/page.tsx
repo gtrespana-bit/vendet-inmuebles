@@ -1,6 +1,6 @@
 import { cache } from 'react'
 import type { Metadata } from 'next'
-import { notFound } from 'next/navigation'
+import { notFound, permanentRedirect } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import {
@@ -165,6 +165,11 @@ export default async function PropertyDetailPage({ params }: PageProps) {
   const property = await getPublicProperty(id)
   if (!property) notFound()
 
+  const canonicalSlug = typeof property.slug === 'string' ? property.slug.trim() : ''
+  if (canonicalSlug && id !== canonicalSlug && isValidUUID(id)) {
+    permanentRedirect(`${locale === 'en' ? '/en' : ''}/inmueble/${canonicalSlug}`)
+  }
+
   const isEnglish = locale === 'en'
   const title = String(property.titulo || (isEnglish ? 'Property in Venezuela' : 'Inmueble en Venezuela'))
   const operationName = String(property.operacion_nombre || property.tipo_operacion || '').toLowerCase()
@@ -282,11 +287,97 @@ export default async function PropertyDetailPage({ params }: PageProps) {
     { label: isEnglish ? 'Floor' : 'Piso', value: property.piso, icon: Building2 },
   ].filter((fact) => isPresent(fact.value))
 
+  const numericPrice = Number(property.precio ?? property.price ?? 0)
+  const schemaImages = images
+    .map((img) => (img.startsWith('/') ? `https://venezuela-inmuebles.online${img}` : img))
+    .filter(Boolean)
+  const listingJsonLd = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'RealEstateListing',
+        '@id': `${anuncioUrl}#listing`,
+        name: title,
+        url: anuncioUrl,
+        description: String(property.descripcion || title).replace(/\s+/g, ' ').slice(0, 500),
+        image: schemaImages,
+        datePosted: property.publicado_en || property.creado_en || undefined,
+        ...(numericPrice > 0
+          ? {
+              offers: {
+                '@type': 'Offer',
+                price: numericPrice,
+                priceCurrency: currencyCode,
+                availability: 'https://schema.org/InStock',
+                url: anuncioUrl,
+              },
+            }
+          : {}),
+        address: {
+          '@type': 'PostalAddress',
+          addressLocality: property.ciudad || undefined,
+          addressRegion: property.estado || undefined,
+          addressCountry: 'VE',
+        },
+        ...(mapPoint && !geo.approximate
+          ? {
+              geo: {
+                '@type': 'GeoCoordinates',
+                latitude: mapPoint.lat,
+                longitude: mapPoint.lng,
+              },
+            }
+          : {}),
+        ...(Number(property.area_construida || property.area_total) > 0
+          ? {
+              floorSize: {
+                '@type': 'QuantitativeValue',
+                value: Number(property.area_construida || property.area_total),
+                unitCode: 'MTK',
+              },
+            }
+          : {}),
+        ...(Number(property.habitaciones) > 0
+          ? { numberOfRooms: Number(property.habitaciones) }
+          : {}),
+      },
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          {
+            '@type': 'ListItem',
+            position: 1,
+            name: isEnglish ? 'Home' : 'Inicio',
+            item: `https://venezuela-inmuebles.online${isEnglish ? '/en' : ''}`,
+          },
+          {
+            '@type': 'ListItem',
+            position: 2,
+            name: isRent
+              ? (isEnglish ? 'For Rent' : 'En Alquiler')
+              : (isEnglish ? 'For Sale' : 'En Venta'),
+            item: `https://venezuela-inmuebles.online${isEnglish ? '/en' : ''}/propiedades/${isRent ? 'alquiler' : 'venta'}`,
+          },
+          {
+            '@type': 'ListItem',
+            position: 3,
+            name: title,
+            item: anuncioUrl,
+          },
+        ],
+      },
+    ],
+  }
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(listingJsonLd).replace(/</g, '\\u003c') }}
+      />
       <TrackInmueble id={propertyId} />
     <div className="property-detail">
-      <main className="property-detail__inner">
+      <article className="property-detail__inner">
         <nav className="property-detail__breadcrumb" aria-label={isEnglish ? 'Breadcrumb' : 'Ruta de navegación'}>
           <Link href={isEnglish ? '/en' : '/'}>{isEnglish ? 'Home' : 'Inicio'}</Link>
           <span aria-hidden="true">/</span>
@@ -489,7 +580,7 @@ export default async function PropertyDetailPage({ params }: PageProps) {
             </section>
           </aside>
         </div>
-      </main>
+      </article>
 
       {ownerId && (
         <div className="property-detail__mobile-contact">

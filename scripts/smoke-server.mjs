@@ -98,19 +98,61 @@ try {
     assert.match(html, /noindex/i, `${route} debe incluir meta robots noindex`)
   }
 
-  // 4. robots.txt y sitemap.xml
+  // 4. robots.txt, sitemap.xml sin bloqueos ni duplicados, portada y blog SEO
   {
     const robotsRes = await fetch(`${BASE}/robots.txt`)
     assert.equal(robotsRes.status, 200)
     const robotsTxt = await robotsRes.text()
     assert.match(robotsTxt, /Disallow: \/en\/admin/)
     assert.match(robotsTxt, /Disallow: \/buscar/)
+    const disallowPrefixes = robotsTxt
+      .split('\n')
+      .map((l) => l.trim())
+      .filter((l) => l.toLowerCase().startsWith('disallow:'))
+      .map((l) => l.slice('disallow:'.length).trim())
+      .filter(Boolean)
 
     const sitemapRes = await fetch(`${BASE}/sitemap.xml`)
     assert.equal(sitemapRes.status, 200)
     const sitemapXml = await sitemapRes.text()
     assert.match(sitemapXml, /<urlset/)
+    assert.match(sitemapXml, /hreflang="x-default"/)
     assert.doesNotMatch(sitemapXml, /\/buscar</)
+    assert.doesNotMatch(sitemapXml, /\/propiedades</)
+    assert.doesNotMatch(sitemapXml, /\/publicar-inmueble</)
+
+    const locs = Array.from(sitemapXml.matchAll(/<loc>([^<]+)<\/loc>/g)).map((m) => m[1])
+    assert.ok(locs.length >= 40, `sitemap.xml debe contener rutas base y blog, recibido ${locs.length}`)
+    assert.equal(new Set(locs).size, locs.length, 'sitemap.xml no debe tener <loc> duplicados')
+    for (const loc of locs) {
+      const p = new URL(loc).pathname
+      for (const dis of disallowPrefixes) {
+        assert.ok(!p.startsWith(dis), `URL ${p} en sitemap.xml choca con Disallow: ${dis}`)
+      }
+    }
+
+    // Portada: sin doble "| Venezuela Inmuebles | Venezuela Inmuebles" y canonical exacto sin barra final
+    const homeRes = await fetch(`${BASE}/`)
+    assert.equal(homeRes.status, 200)
+    const homeHtml = await homeRes.text()
+    assert.doesNotMatch(homeHtml, /Venezuela Inmuebles\s*\|\s*Venezuela Inmuebles/)
+    assert.match(homeHtml, /rel="canonical"[^>]*href="https:\/\/venezuela-inmuebles\.online"/)
+    assert.match(homeHtml, /\/catalogo\?q=\{search_term_string\}/)
+
+    // Blog inmobiliario: canonical propio + JSON-LD Article + 404 real en artículo inexistente
+    const postRes = await fetch(`${BASE}/blog/requisitos-legales-comprar-inmueble-venezuela-saren`)
+    assert.equal(postRes.status, 200)
+    const postHtml = await postRes.text()
+    assert.match(postHtml, /rel="canonical"[^>]*href="https:\/\/venezuela-inmuebles\.online\/blog\/requisitos-legales-comprar-inmueble-venezuela-saren"/)
+    assert.match(postHtml, /"@type":"Article"/)
+
+    const missingPostRes = await fetch(`${BASE}/blog/articulo-inexistente-auditoria-seo`)
+    assert.equal(missingPostRes.status, 404, 'Artículo de blog inexistente debe devolver 404 real (no soft-404)')
+
+    // /propiedades redirige permanentemente (308) a /propiedades/venta
+    const propRedirect = await fetch(`${BASE}/propiedades`, { redirect: 'manual' })
+    assert.equal(propRedirect.status, 308)
+    assert.match(propRedirect.headers.get('location') || '', /\/propiedades\/venta$/)
   }
 
   // 5. 404 real en slugs inválidos, redirección de rutas privadas y bloqueo 401 en APIs autenticadas/admin/cron

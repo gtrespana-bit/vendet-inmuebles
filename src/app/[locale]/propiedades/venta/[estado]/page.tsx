@@ -1,8 +1,10 @@
+import { cache } from 'react'
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import LocalLink from '@/components/LocalLink'
 import { createServerClient } from '@/lib/supabase-server'
 import { fetchListingsByLocation, resolveStateByParam } from '@/lib/location-listings'
+import { buildPageAlternates } from '@/lib/seo-metadata'
 import PropertyCard from '@/components/PropertyCard'
 import Breadcrumbs from '@/components/Breadcrumbs'
 
@@ -10,55 +12,61 @@ interface PageProps {
   params: Promise<{ locale: string; estado: string }>
 }
 
+const loadStateSaleData = cache(async function loadStateSaleData(estadoParam: string) {
+  const supabase = createServerClient()
+  const { state, serviceError: stateError } = await resolveStateByParam(supabase, estadoParam)
+  if (!state) {
+    return { state: null, ciudades: null, properties: [], hasError: stateError }
+  }
+  const [{ data: ciudades }, { properties, serviceError: listingsError }] = await Promise.all([
+    supabase.from('cities').select('id, name, slug').eq('state_id', state.id).order('name'),
+    fetchListingsByLocation(supabase, { operacion: 'venta', state, limit: 50 }),
+  ])
+  return { state, ciudades, properties, hasError: stateError || listingsError }
+})
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { locale, estado } = await params
   const isEn = locale === 'en'
-  const supabase = createServerClient()
-  const { state } = await resolveStateByParam(supabase, estado)
+  const { state, properties, hasError } = await loadStateSaleData(estado)
+
+  if (!state && !hasError) {
+    return {
+      title: isEn ? 'State not found' : 'Estado no encontrado',
+      robots: { index: false, follow: false },
+    }
+  }
+
   const estadoName = state?.name || estado
   const slug = state?.slug || state?.id || estado
+  const shouldIndex = properties.length > 0 || hasError
 
   const title = isEn
-    ? `Properties for sale in ${estadoName}`
-    : `Propiedades en venta en ${estadoName}`
+    ? `Properties for Sale in ${estadoName}`
+    : `Propiedades en Venta en ${estadoName}`
   const description = isEn
     ? `Find houses, apartments, land and commercial spaces for sale in ${estadoName}, Venezuela.`
-    : `Encuentra propiedades en venta en ${estadoName}. Casas, apartamentos, terrenos y más.`
+    : `Encuentra propiedades en venta en ${estadoName}: casas, apartamentos, terrenos y locales comerciales.`
 
   return {
     title,
     description,
-    alternates: {
-      canonical: `https://venezuela-inmuebles.online${isEn ? '/en' : ''}/propiedades/venta/${slug}`,
-      languages: {
-        'es-VE': `https://venezuela-inmuebles.online/propiedades/venta/${slug}`,
-        'en-US': `https://venezuela-inmuebles.online/en/propiedades/venta/${slug}`,
-      },
-    },
+    alternates: buildPageAlternates(locale, `/propiedades/venta/${slug}`),
+    robots: { index: shouldIndex, follow: true },
   }
 }
 
 export default async function VentasPorEstadoPage({ params }: PageProps) {
   const { locale, estado } = await params
   const isEn = locale === 'en'
-  const supabase = createServerClient()
+  const { state: stateData, ciudades, properties, hasError } = await loadStateSaleData(estado)
 
-  const { state: stateData, serviceError: stateError } = await resolveStateByParam(supabase, estado)
-  if (!stateData && !stateError) {
+  if (!stateData && !hasError) {
     notFound()
   }
 
   const stateName = stateData?.name || estado
   const stateSlug = stateData?.slug || stateData?.id || estado
-
-  const [{ data: ciudades }, { properties, serviceError: listingsError }] = stateData
-    ? await Promise.all([
-        supabase.from('cities').select('id, name, slug').eq('state_id', stateData.id).order('name'),
-        fetchListingsByLocation(supabase, { operacion: 'venta', state: stateData, limit: 50 }),
-      ])
-    : [{ data: null }, { properties: [], serviceError: true }]
-
-  const hasError = stateError || listingsError
 
   return (
     <div className="container mx-auto px-4 py-8">

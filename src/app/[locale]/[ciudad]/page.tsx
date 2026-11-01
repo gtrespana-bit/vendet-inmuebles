@@ -1,13 +1,38 @@
+import { cache } from 'react'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import LandingCiudad from './LandingCiudad'
 import { getCiudadBySlug, generateCityParams } from '@/lib/ubicaciones-seo'
 import Breadcrumbs from '@/components/Breadcrumbs'
 import { routing } from '@/i18n/routing'
+import { supabase, isSupabaseConfigured } from '@/lib/supabase'
+import { buildPageAlternates, SITE_URL } from '@/lib/seo-metadata'
 
 type Props = {
   params: Promise<{ locale: string; ciudad: string }>
 }
+
+const getCityInventory = cache(async function getCityInventory(cityName: string) {
+  if (!isSupabaseConfigured()) {
+    return { properties: [], total: 0, serviceError: true }
+  }
+  try {
+    const { data, count, error } = await supabase
+      .from('vw_propiedades_publicas')
+      .select('id, slug, titulo, precio, moneda, estado, main_image_url, ciudad, destacado, destacado_hasta', { count: 'exact' })
+      .eq('activo', true)
+      .ilike('ciudad', cityName)
+      .order('creado_en', { ascending: false })
+      .limit(24)
+
+    if (error) {
+      return { properties: [], total: 0, serviceError: true }
+    }
+    return { properties: data || [], total: count || 0, serviceError: false }
+  } catch {
+    return { properties: [], total: 0, serviceError: true }
+  }
+})
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { ciudad, locale } = await params
@@ -20,13 +45,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     }
   }
 
+  const { total, serviceError } = await getCityInventory(ciudadSEO.nombre)
+  const shouldIndex = total > 0 || serviceError
   const isEnglish = locale === 'en'
+  const alternates = buildPageAlternates(locale, `/${ciudadSEO.slug}`)
+
   const title = isEnglish
-    ? `Properties in ${ciudadSEO.nombre}, ${ciudadSEO.estado}`
-    : `Inmuebles en ${ciudadSEO.nombre}, ${ciudadSEO.estado}`
+    ? `Properties for Sale & Rent in ${ciudadSEO.nombre}, ${ciudadSEO.estado}`
+    : `Inmuebles en Venta y Alquiler en ${ciudadSEO.nombre}, ${ciudadSEO.estado}`
   const description = isEnglish
-    ? `Explore properties for sale or rent in ${ciudadSEO.nombre}, ${ciudadSEO.estado}. Browse current real estate listings in Venezuela.`
-    : `Explora inmuebles en venta o alquiler en ${ciudadSEO.nombre}, ${ciudadSEO.estado}. Consulta anuncios inmobiliarios en Venezuela.`
+    ? `Explore houses, apartments, land and commercial spaces for sale or rent in ${ciudadSEO.nombre}, ${ciudadSEO.estado}, Venezuela.`
+    : `Explora casas, apartamentos, terrenos y locales en venta o alquiler en ${ciudadSEO.nombre}, ${ciudadSEO.estado}. Contacto directo en Venezuela Inmuebles.`
 
   return {
     title,
@@ -35,23 +64,41 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       title,
       description,
+      url: String(alternates.canonical),
+      siteName: 'Venezuela Inmuebles',
       type: 'website',
       locale: isEnglish ? 'en_US' : 'es_VE',
+      images: [{ url: `${SITE_URL}/og-image.png`, width: 1200, height: 630, alt: title }],
     },
-    alternates: {
-      canonical: `https://venezuela-inmuebles.online${isEnglish ? '/en' : ''}/${ciudad}`,
-    },
+    alternates,
     robots: {
-      index: true,
+      index: shouldIndex,
       follow: true,
     },
   }
 }
 
-// Generar rutas estáticas para TODAS las ciudades de Venezuela
+export const revalidate = 3600
+export const dynamicParams = true
+
+const CORE_PREBUILT_CITY_SLUGS = new Set([
+  'caracas',
+  'valencia',
+  'san-diego',
+  'maracaibo',
+  'barquisimeto',
+  'maracay',
+  'lecherias',
+  'merida',
+  'san-cristobal',
+  'puerto-ordaz',
+])
+
 export async function generateStaticParams() {
   return routing.locales.flatMap((locale) =>
-    generateCityParams().map((cityParams) => ({ locale, ...cityParams }))
+    generateCityParams()
+      .filter((cityParams) => CORE_PREBUILT_CITY_SLUGS.has(cityParams.ciudad))
+      .map((cityParams) => ({ locale, ...cityParams }))
   )
 }
 
@@ -61,27 +108,30 @@ export default async function CiudadPage({ params }: Props) {
 
   if (!ciudadSEO) notFound()
 
-  // Breadcrumb items
-  const breadcrumbItems = [
-    { label: ciudadSEO.nombre, href: undefined }
-  ]
+  const { properties, total } = await getCityInventory(ciudadSEO.nombre)
+  const breadcrumbItems = [{ label: ciudadSEO.nombre, href: undefined }]
 
-  // JSON-LD City Schema
   const cityJsonLd = {
     '@context': 'https://schema.org',
-    '@type': 'City',
-    name: ciudadSEO.nombre,
-    containedInPlace: {
-      '@type': 'State',
-      name: ciudadSEO.estado,
-      containedInPlace: {
-        '@type': 'Country',
-        name: 'Venezuela',
-        addressCountry: 'VE'
-      }
-    },
+    '@type': 'CollectionPage',
+    name: locale === 'en'
+      ? `Properties in ${ciudadSEO.nombre}, ${ciudadSEO.estado}`
+      : `Inmuebles en ${ciudadSEO.nombre}, ${ciudadSEO.estado}`,
     description: ciudadSEO.descripcion,
-    sameAs: `https://venezuela-inmuebles.online${locale === 'en' ? '/en' : ''}/${ciudad}`
+    url: `${SITE_URL}${locale === 'en' ? '/en' : ''}/${ciudadSEO.slug}`,
+    about: {
+      '@type': 'City',
+      name: ciudadSEO.nombre,
+      containedInPlace: {
+        '@type': 'State',
+        name: ciudadSEO.estado,
+        containedInPlace: {
+          '@type': 'Country',
+          name: 'Venezuela',
+          addressCountry: 'VE',
+        },
+      },
+    },
   }
 
   return (
@@ -91,16 +141,14 @@ export default async function CiudadPage({ params }: Props) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(cityJsonLd).replace(/</g, '\\u003c') }}
       />
       <Breadcrumbs items={breadcrumbItems} />
-      <LandingCiudad 
-        slug={ciudad} 
+      <LandingCiudad
+        slug={ciudadSEO.slug}
         nombre={ciudadSEO.nombre}
         estado={ciudadSEO.estado}
         descripcion={ciudadSEO.descripcion}
+        initialProperties={properties}
+        initialTotal={total}
       />
     </>
   )
 }
-
-// ISR: cache city landing pages for 5 minutes
-export const revalidate = 300
-export const dynamicParams = false

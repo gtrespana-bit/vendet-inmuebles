@@ -1,7 +1,9 @@
+import { cache } from 'react'
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { createServerClient } from '@/lib/supabase-server'
 import { fetchListingsByLocation, resolveCityByParam, resolveStateByParam } from '@/lib/location-listings'
+import { buildPageAlternates } from '@/lib/seo-metadata'
 import Breadcrumbs from '@/components/Breadcrumbs'
 import PropertyCard from '@/components/PropertyCard'
 
@@ -9,64 +11,70 @@ interface PageProps {
   params: Promise<{ locale: string; estado: string; ciudad: string }>
 }
 
+const loadCityRentData = cache(async function loadCityRentData(estadoParam: string, ciudadParam: string) {
+  const supabase = createServerClient()
+  const { state, serviceError: stateError } = await resolveStateByParam(supabase, estadoParam)
+  if (!state) {
+    return { state: null, city: null, properties: [], hasError: stateError }
+  }
+  const { city, serviceError: cityError } = await resolveCityByParam(supabase, state.id, ciudadParam)
+  if (!city) {
+    return { state, city: null, properties: [], hasError: stateError || cityError }
+  }
+  const { properties, serviceError: listingsError } = await fetchListingsByLocation(supabase, {
+    operacion: 'alquiler',
+    state,
+    city,
+    limit: 50,
+  })
+  return { state, city, properties, hasError: stateError || cityError || listingsError }
+})
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { locale, estado, ciudad } = await params
   const isEn = locale === 'en'
-  const supabase = createServerClient()
-  const { state } = await resolveStateByParam(supabase, estado)
-  const { city } = state ? await resolveCityByParam(supabase, state.id, ciudad) : { city: null }
+  const { state, city, properties, hasError } = await loadCityRentData(estado, ciudad)
+
+  if ((!state || !city) && !hasError) {
+    return {
+      title: isEn ? 'City not found' : 'Ciudad no encontrada',
+      robots: { index: false, follow: false },
+    }
+  }
 
   const stateName = state?.name || estado
   const cityName = city?.name || decodeURIComponent(ciudad)
   const stateSlug = state?.slug || state?.id || estado
   const citySlug = city?.slug || city?.id || ciudad
+  const shouldIndex = properties.length > 0 || hasError
 
   const title = isEn
-    ? `Properties for rent in ${cityName}, ${stateName}`
-    : `Propiedades en alquiler en ${cityName}, ${stateName}`
+    ? `Properties for Rent in ${cityName}, ${stateName}`
+    : `Propiedades en Alquiler en ${cityName}, ${stateName}`
   const description = isEn
-    ? `Find houses, apartments, commercial spaces and offices for rent in ${cityName}, ${stateName}.`
-    : `Encuentra propiedades en alquiler en ${cityName}, ${stateName}. Casas, apartamentos, locales y más.`
+    ? `Find houses, apartments, commercial spaces and offices for rent in ${cityName}, ${stateName}, Venezuela.`
+    : `Encuentra propiedades en alquiler en ${cityName}, ${stateName}: casas, apartamentos, locales y oficinas.`
 
   return {
     title,
     description,
-    alternates: {
-      canonical: `https://venezuela-inmuebles.online${isEn ? '/en' : ''}/propiedades/alquiler/${stateSlug}/${citySlug}`,
-      languages: {
-        'es-VE': `https://venezuela-inmuebles.online/propiedades/alquiler/${stateSlug}/${citySlug}`,
-        'en-US': `https://venezuela-inmuebles.online/en/propiedades/alquiler/${stateSlug}/${citySlug}`,
-      },
-    },
+    alternates: buildPageAlternates(locale, `/propiedades/alquiler/${stateSlug}/${citySlug}`),
+    robots: { index: shouldIndex, follow: true },
   }
 }
 
 export default async function AlquilerPorCiudadPage({ params }: PageProps) {
   const { locale, estado, ciudad } = await params
   const isEn = locale === 'en'
-  const supabase = createServerClient()
+  const { state, city, properties, hasError } = await loadCityRentData(estado, ciudad)
 
-  const { state, serviceError: stateError } = await resolveStateByParam(supabase, estado)
-  if (!state && !stateError) {
+  if ((!state || !city) && !hasError) {
     notFound()
   }
-
-  const { city, serviceError: cityError } = state
-    ? await resolveCityByParam(supabase, state.id, ciudad)
-    : { city: null, serviceError: true }
-
-  if (state && !city && !cityError) {
-    notFound()
-  }
-
-  const { properties, serviceError: listingsError } = state && city
-    ? await fetchListingsByLocation(supabase, { operacion: 'alquiler', state, city, limit: 50 })
-    : { properties: [], serviceError: true }
 
   const stateName = state?.name || estado
   const stateSlug = state?.slug || state?.id || estado
   const cityName = city?.name || decodeURIComponent(ciudad)
-  const hasError = stateError || cityError || listingsError
 
   return (
     <div className="container mx-auto px-4 py-8">
