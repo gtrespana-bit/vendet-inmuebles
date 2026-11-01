@@ -1,7 +1,7 @@
 // Datos SEO optimizados para ciudades de Venezuela
 // Genera metadata única para cada combinación ciudad/categoría
 
-import { MUNICIPIOS_POR_ESTADO, ESTADOS } from './ubicaciones'
+import { MUNICIPIOS_POR_ESTADO, ESTADOS } from './ubicaciones.ts'
 
 export interface CiudadSEO {
   slug: string
