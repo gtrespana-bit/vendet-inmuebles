@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
     if (!auth.ok) return auth.response
 
     const body = await request.json()
-    const { userId, cantidad, motivo, idempotencyKey } = body
+    const { userId, cantidad, motivo, idempotencyKey, notificarEmail = true } = body
     const uuidCheck = requireUUIDs(body, ['userId'])
     if (!uuidCheck.valid) return NextResponse.json({ error: uuidCheck.error }, { status: 400 })
 
@@ -18,6 +18,10 @@ export async function POST(request: NextRequest) {
     if (!Number.isInteger(creditos) || creditos < 1 || creditos > 10000) {
       return NextResponse.json({ error: 'Cantidad inválida (debe ser entre 1 y 10.000)' }, { status: 400 })
     }
+
+    const motivoTexto = typeof motivo === 'string' && motivo.trim()
+      ? motivo.trim().slice(0, 500)
+      : 'Manual admin'
 
     const referencia = typeof idempotencyKey === 'string' && idempotencyKey.trim()
       ? `admin:${idempotencyKey.trim().slice(0, 120)}`
@@ -27,7 +31,7 @@ export async function POST(request: NextRequest) {
       p_user_id: userId,
       p_admin_id: auth.user.id,
       p_cantidad: creditos,
-      p_motivo: typeof motivo === 'string' ? motivo.slice(0, 500) : 'Manual admin',
+      p_motivo: motivoTexto,
       p_referencia: referencia,
     })
 
@@ -42,13 +46,19 @@ export async function POST(request: NextRequest) {
 
     if (!yaAplicado) {
       await notifyUser(auth.supabaseAdmin, userId, {
-        title: '💰 Créditos recibidos',
-        body: `Recibiste ${creditos} ${creditos === 1 ? 'crédito' : 'créditos'} en tu cuenta Venezuela Inmuebles. Nuevo balance: ${nuevoBalance}.`,
+        title: '🎁 Créditos de cortesía recibidos',
+        body: `Recibiste +${creditos} ${creditos === 1 ? 'crédito' : 'créditos'} en tu cuenta Venezuela Inmuebles. Nuevo balance: ${nuevoBalance}.`,
         tag: 'creditos',
         icon: '/icon-192.png',
-        click_url: '/creditos',
+        click_url: '/dashboard?tab=productos',
       })
-      await notificarCreditosAgregados(auth.supabaseAdmin, userId, creditos)
+      if (notificarEmail !== false) {
+        await notificarCreditosAgregados(auth.supabaseAdmin, userId, creditos, {
+          esRegaloAdmin: true,
+          motivo: motivoTexto,
+          balanceTotal: nuevoBalance,
+        })
+      }
     }
 
     return NextResponse.json({ ok: true, nuevoBalance, idempotent: yaAplicado })

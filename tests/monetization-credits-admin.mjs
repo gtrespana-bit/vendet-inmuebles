@@ -97,6 +97,7 @@ CREATE TABLE public.ordenes_pago (
 
 await db.exec(readFileSync('supabase/migrations/011_cambio_plan_durante_prueba.sql', 'utf8'))
 await db.exec(readFileSync('supabase/migrations/016_monetizacion_creditos_y_admin_atomico.sql', 'utf8'))
+await db.exec(readFileSync('supabase/migrations/019_admin_planes_tiempo_extra.sql', 'utf8'))
 
 const one = async (sql, params = []) => (await db.query(sql, params)).rows[0]
 
@@ -236,7 +237,107 @@ test('admin_agregar_creditos y admin_cambiar_plan son atómicos, idempotentes y 
     assert.equal((await one("SELECT has_function_privilege($1, 'public.consumir_creditos_usuario(uuid, integer)', 'EXECUTE') AS ok", [role])).ok, false)
     assert.equal((await one("SELECT has_function_privilege($1, 'public.admin_agregar_creditos(uuid, uuid, integer, text, text)', 'EXECUTE') AS ok", [role])).ok, false)
     assert.equal((await one("SELECT has_function_privilege($1, 'public.admin_cambiar_plan(uuid, uuid, text, text)', 'EXECUTE') AS ok", [role])).ok, false)
+    assert.equal((await one("SELECT has_function_privilege($1, 'public.admin_gestionar_plan(uuid, uuid, text, text, text, integer, integer, text)', 'EXECUTE') AS ok", [role])).ok, false)
   }
+})
+
+test('admin_gestionar_plan permite sumar tiempo extra manual a agencias seleccionadas y aprovisiona agencia + auditoría', async () => {
+  await db.exec(`
+    ALTER TABLE public.perfiles ADD COLUMN IF NOT EXISTS nombre text;
+    ALTER TABLE public.perfiles ADD COLUMN IF NOT EXISTS empresa_nombre text;
+
+    CREATE TABLE IF NOT EXISTS public.agencias (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      nombre text NOT NULL,
+      owner_id uuid NOT NULL UNIQUE REFERENCES public.perfiles(id) ON DELETE CASCADE,
+      creado_en timestamptz NOT NULL DEFAULT now(),
+      actualizado_en timestamptz NOT NULL DEFAULT now()
+    );
+
+    CREATE TABLE IF NOT EXISTS public.agencia_miembros (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      agencia_id uuid NOT NULL REFERENCES public.agencias(id) ON DELETE CASCADE,
+      user_id uuid NOT NULL REFERENCES public.perfiles(id) ON DELETE CASCADE,
+      rol text NOT NULL CHECK (rol IN ('admin', 'agente')),
+      estado text NOT NULL DEFAULT 'activo' CHECK (estado IN ('activo', 'suspendido')),
+      UNIQUE (agencia_id, user_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS public.auditoria (
+      id bigserial PRIMARY KEY,
+      usuario_id uuid,
+      tabla_afectada text NOT NULL,
+      operacion text NOT NULL CHECK (operacion IN ('INSERT', 'UPDATE', 'DELETE')),
+      registro_id uuid,
+      datos_anteriores jsonb,
+      datos_nuevos jsonb,
+      fecha_registro timestamptz NOT NULL DEFAULT now()
+    );
+  `)
+
+  const { id: adminId } = await one("INSERT INTO perfiles (nombre) VALUES ('Admin') RETURNING id")
+  const { id: agenciaElegida } = await one(
+    "INSERT INTO perfiles (nombre, empresa_nombre, tipo_cuenta) VALUES ('Ana', 'Inmobiliaria Caracas', 'agencia') RETURNING id"
+  )
+  const { id: otraAgencia } = await one(
+    "INSERT INTO perfiles (nombre, empresa_nombre, tipo_cuenta) VALUES ('Luis', 'Inmobiliaria Valencia', 'agencia') RETURNING id"
+  )
+
+  // Ambas agencias inician con sus 30 días estándar de prueba
+  await db.query(
+    `INSERT INTO suscripciones (user_id, plan, estado, inicio, fin, trial_ends_at, creditos_incluidos, creditos_usados_mes, proxima_renovacion_creditos)
+     VALUES
+       ($1, 'agencia', 'trial', now(), now() + interval '30 days', now() + interval '30 days', 20, 0, now() + interval '30 days'),
+       ($2, 'agencia', 'trial', now(), now() + interval '30 days', now() + interval '30 days', 20, 0, now() + interval '30 days')`,
+    [agenciaElegida, otraAgencia]
+  )
+
+  // Admin regala +30 días extra SOLO a agenciaElegida -> debe quedar en ~60 días totales
+  const ext = (await one(
+    "SELECT admin_gestionar_plan($1, $2, 'extender', 'agencia', 'trial', 30, NULL, 'Cortesía nueva agencia') AS r",
+    [agenciaElegida, adminId]
+  )).r
+  assert.equal(ext.ok, true)
+  assert.equal(ext.operacion, 'extender')
+  assert.equal(ext.dias, 30)
+
+  const diasElegida = Number((await one(
+    "SELECT EXTRACT(EPOCH FROM (fin - now())) / 86400.0 AS d FROM suscripciones WHERE user_id = $1 AND estado = 'trial'",
+    [agenciaElegida]
+  )).d)
+  const diasOtra = Number((await one(
+    "SELECT EXTRACT(EPOCH FROM (fin - now())) / 86400.0 AS d FROM suscripciones WHERE user_id = $1 AND estado = 'trial'",
+    [otraAgencia]
+  )).d)
+
+  assert.ok(diasElegida > 59 && diasElegida < 61, `Se esperaban ~60 días en agencia elegida y obtuvo ${diasElegida}`)
+  assert.ok(diasOtra > 29 && diasOtra < 31, `Otra agencia no debía alterarse y obtuvo ${diasOtra}`)
+
+  // Verifica auto-aprovisionamiento de agencia + membresía admin + registro en auditoría
+  const agRow = await one('SELECT id, nombre FROM agencias WHERE owner_id = $1', [agenciaElegida])
+  assert.equal(agRow.nombre, 'Inmobiliaria Caracas')
+  const memRow = await one('SELECT rol, estado FROM agencia_miembros WHERE agencia_id = $1 AND user_id = $2', [agRow.id, agenciaElegida])
+  assert.equal(memRow.rol, 'admin')
+  assert.equal(memRow.estado, 'activo')
+
+  const audRow = await one("SELECT operacion, datos_nuevos FROM auditoria WHERE registro_id = $1 ORDER BY id DESC LIMIT 1", [ext.suscripcion.id])
+  assert.equal(audRow.operacion, 'UPDATE')
+  assert.equal(audRow.datos_nuevos.accion, 'extender_tiempo_extra')
+  assert.equal(audRow.datos_nuevos.dias, 30)
+
+  // Asignación manual por 90 días con cupo personalizado de 35 créditos mensuales
+  const asig = (await one(
+    "SELECT admin_gestionar_plan($1, $2, 'asignar', 'agencia', 'activa', 90, 35, 'Acuerdo trimestral') AS r",
+    [agenciaElegida, adminId]
+  )).r
+  assert.equal(asig.ok, true)
+  assert.equal(asig.suscripcion.estado, 'activa')
+  assert.equal(asig.suscripcion.creditos_incluidos, 35)
+  const diasAsig = Number((await one(
+    "SELECT EXTRACT(EPOCH FROM (fin - now())) / 86400.0 AS d FROM suscripciones WHERE id = $1",
+    [asig.suscripcion.id]
+  )).d)
+  assert.ok(diasAsig > 89 && diasAsig < 91)
 })
 
 test('circuito antiguo retirado y bandeja admin de pagos priorizada y bajo demanda', () => {
