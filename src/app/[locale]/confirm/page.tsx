@@ -2,136 +2,295 @@
 
 import { useEffect, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
-import { routing } from '@/i18n/routing'
-import { CheckCircle, XCircle, Loader2 } from 'lucide-react'
-import LocalLink from '@/components/LocalLink'
-import { supabase } from '@/lib/supabase'
+import { CheckCircle2, XCircle, Loader2, ArrowRight, Sparkles } from 'lucide-react'
 import { useTranslations } from 'next-intl'
+import LocalLink from '@/components/LocalLink'
+import AuthShell from '@/components/AuthShell'
+import { supabase } from '@/lib/supabase'
+import { routing } from '@/i18n/routing'
+import { localizePath, safeInternalPath } from '@/lib/auth-redirect'
+import { parseConfirmationCallback, type ConfirmOtpType } from '@/lib/auth-confirm'
+
+// Captura inicial a nivel de módulo en navegador por si GoTrueClient limpia ?code= antes del useEffect
+const INITIAL_BROWSER_SEARCH = typeof window !== 'undefined' ? window.location.search : ''
+const INITIAL_BROWSER_HASH = typeof window !== 'undefined' ? window.location.hash : ''
+
+// Evita doble consumo del mismo token_hash en React 18 Strict Mode
+const inflightTokenVerifications = new Map<string, Promise<any>>()
+
+function verifyTokenHashOnce(tokenHash: string, type: ConfirmOtpType) {
+  const key = `${type}:${tokenHash}`
+  const existing = inflightTokenVerifications.get(key)
+  if (existing) return existing
+  const promise = supabase.auth.verifyOtp({ token_hash: tokenHash, type }).finally(() => {
+    setTimeout(() => inflightTokenVerifications.delete(key), 15_000)
+  })
+  inflightTokenVerifications.set(key, promise)
+  return promise
+}
 
 export default function ConfirmEmailPage() {
-  const t = useTranslations('auth')
+  const t = useTranslations('confirmEmail')
   const router = useRouter()
   const pathname = usePathname()
   const locale = pathname === '/en' || pathname.startsWith('/en/') ? 'en' : routing.defaultLocale
-  const loginPath = locale === routing.defaultLocale ? '/login' : `/${locale}/login`
+
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading')
+  const [hasSession, setHasSession] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
+  const [nextAfterAuth, setNextAfterAuth] = useState<string | null>(null)
 
   useEffect(() => {
-    // Supabase envía el token en el hash de la URL: #access_token=xxx&type=signup
-    const hash = window.location.hash
-    if (!hash || hash.length < 2) {
-      setStatus('error')
-      setErrorMsg(t('noToken'))
-      return
+    let cancelled = false
+
+    const storedRedirect = safeInternalPath(localStorage.getItem('vi:after-auth-redirect'))
+    if (storedRedirect) {
+      setNextAfterAuth(localizePath(storedRedirect, locale))
     }
 
-    const params = new URLSearchParams(hash.substring(1))
-    const type = params.get('type')
-    const token = params.get('access_token')
+    const currentSearch = window.location.search || INITIAL_BROWSER_SEARCH
+    const currentHash = window.location.hash || INITIAL_BROWSER_HASH
+    const parsed = parseConfirmationCallback(currentSearch, currentHash)
 
-    async function confirmAccount() {
-      // Verificar token con Supabase
-      const { error } = await supabase.auth.verifyOtp({
-        token_hash: token || '',
-        type: (type as 'signup') || 'signup',
-      })
-
-      if (error) {
-        setStatus('error')
-        setErrorMsg(error.message)
-      } else {
-        setStatus('success')
-        // Actualizar la sesión del AuthProvider
-        setTimeout(() => {
-          router.push(loginPath)
-        }, 3000)
+    const markConfirmedUrl = () => {
+      try {
+        const cleanPath = window.location.pathname
+        window.history.replaceState(window.history.state, '', `${cleanPath}?confirmed=1`)
+      } catch {
+        // Ignorar en entornos restringidos
+      }
+      try {
+        sessionStorage.removeItem('tempEmail')
+        sessionStorage.removeItem('vi:signup-summary')
+      } catch {
+        // Ignorar si sessionStorage no está disponible
       }
     }
 
-    if (type && token) {
-      confirmAccount()
-    } else {
-      // Sin tipo/token específico, intentar getSession por si supabase ya lo procesó
-      supabase.auth.getSession().then((res: any) => { const session = res?.data?.session;
-        if (session?.user?.email_confirmed_at) {
-          setStatus('success')
-          setTimeout(() => router.push(loginPath), 3000)
-        } else {
+    async function runVerification() {
+      try {
+        if (parsed.kind === 'error') {
+          const { data } = await supabase.auth.getSession()
+          if (cancelled) return
+          if (data?.session?.user?.email_confirmed_at) {
+            setHasSession(true)
+            setStatus('success')
+            markConfirmedUrl()
+            return
+          }
+          setErrorMsg(parsed.isExpiredOrUsed ? t('expiredDesc') : parsed.errorDescription || t('confirmError'))
           setStatus('error')
-          setErrorMsg(t('confirmError'))
+          return
         }
-      })
+
+        if (parsed.kind === 'token_hash') {
+          const { data, error } = await verifyTokenHashOnce(parsed.tokenHash, parsed.type)
+          if (cancelled) return
+
+          if (!error) {
+            if (parsed.type === 'recovery') {
+              router.replace(localizePath('/reset-password', locale))
+              return
+            }
+            setHasSession(Boolean(data?.session))
+            setStatus('success')
+            markConfirmedUrl()
+            return
+          }
+
+          // Si falló (p. ej. enlace abierto dos veces), comprobar si ya existe sesión confirmada
+          const { data: sessionData } = await supabase.auth.getSession()
+          if (cancelled) return
+          if (sessionData?.session?.user?.email_confirmed_at) {
+            setHasSession(true)
+            setStatus('success')
+            markConfirmedUrl()
+            return
+          }
+
+          setErrorMsg(t('expiredDesc'))
+          setStatus('error')
+          return
+        }
+
+        if (parsed.kind === 'implicit') {
+          const { data, error } = await supabase.auth.setSession({
+            access_token: parsed.accessToken,
+            refresh_token: parsed.refreshToken,
+          })
+          if (cancelled) return
+
+          if (parsed.type === 'recovery') {
+            router.replace(localizePath('/reset-password', locale))
+            return
+          }
+
+          if (!error && data?.session) {
+            setHasSession(true)
+            setStatus('success')
+            markConfirmedUrl()
+            return
+          }
+
+          // Incluso si setSession fallara, el correo ya fue verificado en /auth/v1/verify
+          setHasSession(false)
+          setStatus('success')
+          markConfirmedUrl()
+          return
+        }
+
+        if (parsed.kind === 'pkce') {
+          // GoTrueClient (_initialize) intercambia ?code= automáticamente cuando existe code_verifier en este navegador.
+          const { data } = await supabase.auth.getSession()
+          if (cancelled) return
+
+          if (parsed.type === 'recovery') {
+            router.replace(localizePath('/reset-password', locale))
+            return
+          }
+
+          // Si no hay sesión (por ejemplo, el usuario se registró en PC y abrió el correo en su móvil),
+          // el endpoint /auth/v1/verify de Supabase YA confirmó email_confirmed_at antes de redirigir con ?code=.
+          setHasSession(Boolean(data?.session?.user))
+          setStatus('success')
+          markConfirmedUrl()
+          return
+        }
+
+        if (parsed.kind === 'confirmed_flag') {
+          const { data } = await supabase.auth.getSession()
+          if (cancelled) return
+          setHasSession(Boolean(data?.session?.user))
+          setStatus('success')
+          return
+        }
+
+        // Sin parámetros explícitos: comprobar si la sesión ya quedó activa y confirmada
+        const { data } = await supabase.auth.getSession()
+        if (cancelled) return
+        if (data?.session?.user?.email_confirmed_at) {
+          setHasSession(true)
+          setStatus('success')
+          markConfirmedUrl()
+        } else {
+          setErrorMsg(t('noToken'))
+          setStatus('error')
+        }
+      } catch {
+        if (!cancelled) {
+          setErrorMsg(t('confirmError'))
+          setStatus('error')
+        }
+      }
     }
-  }, [loginPath, router, t])
+
+    void runVerification()
+
+    return () => {
+      cancelled = true
+    }
+  }, [locale, router, t])
+
+  const handleContinueDashboard = () => {
+    if (nextAfterAuth) {
+      localStorage.removeItem('vi:after-auth-redirect')
+      router.push(nextAfterAuth)
+      router.refresh()
+      return
+    }
+    router.push(localizePath('/dashboard?confirmed=1', locale))
+    router.refresh()
+  }
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <LocalLink href="/" className="text-brand-primary font-black text-2xl">
-            Venezuela Inmuebles
-          </LocalLink>
+    <AuthShell heading={t('heading')} subheading={t('subheading')}>
+      {status === 'loading' && (
+        <div className="py-6 text-center" role="status" aria-live="polite">
+          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-[#f4f1e9]">
+            <Loader2 className="animate-spin text-[#16294B]" size={34} aria-hidden="true" />
+          </div>
+          <h2 className="text-xl font-bold text-[#16294B]">{t('loading')}</h2>
+          <p className="mt-2 text-sm text-slate-600">{t('loadingDesc')}</p>
         </div>
+      )}
 
-        <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
-          {status === 'loading' && (
-            <>
-              <div className="flex justify-center mb-6">
-                <Loader2 className="text-brand-primary animate-spin" size={48} />
-              </div>
-              <h2 className="text-2xl font-bold text-gray-800 mb-4 text-center">
-                Confirmando tu cuenta...
-              </h2>
-              <p className="text-gray-500 text-center">{t('loadingDesc')}</p>
-            </>
-          )}
+      {status === 'success' && (
+        <div className="py-2 text-center" role="status" aria-live="polite">
+          <div className="mx-auto mb-4 inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-emerald-800">
+            <Sparkles size={13} aria-hidden="true" />
+            {t('badgeVerified')}
+          </div>
 
-          {status === 'success' && (
-            <>
-              <div className="flex justify-center mb-6">
-                <div className="bg-green-100 rounded-full p-4">
-                  <CheckCircle className="text-green-600" size={48} />
+          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100">
+            <CheckCircle2 className="text-emerald-700" size={38} aria-hidden="true" />
+          </div>
+
+          <h2 className="text-2xl font-bold text-[#16294B]">{t('success')}</h2>
+          <p className="mt-3 text-sm leading-relaxed text-slate-600">
+            {hasSession ? t('successDescSession') : t('successDescLogin')}
+          </p>
+
+          <div className="mt-7 space-y-3">
+            {hasSession ? (
+              <>
+                <button
+                  type="button"
+                  onClick={handleContinueDashboard}
+                  className="reg-btn reg-btn--primary w-full justify-center py-3.5 text-base"
+                >
+                  {t('goDashboard')}
+                  <ArrowRight size={17} aria-hidden="true" />
+                </button>
+                <div className="flex flex-wrap items-center justify-center gap-4 pt-1 text-sm">
+                  <LocalLink href="/publicar-inmueble" className="font-semibold text-[#16294B] hover:underline">
+                    {t('publishNow')}
+                  </LocalLink>
+                  <span className="text-slate-300" aria-hidden="true">·</span>
+                  <LocalLink href="/catalogo" className="font-medium text-slate-600 hover:underline">
+                    {t('exploreCatalog')}
+                  </LocalLink>
                 </div>
-              </div>
-              <h2 className="text-2xl font-bold text-gray-800 mb-4 text-center">
-                ¡Email confirmado con éxito!
-              </h2>
-              <p className="text-green-700 text-center mb-6">
-                Tu cuenta está lista. Redirigiendo al login...
-              </p>
-              <LocalLink
-                href={loginPath}
-                className="block w-full bg-brand-primary text-white py-3 rounded-lg font-bold hover:bg-brand-dark transition text-center"
-              >
-                Ir al login ahora
-              </LocalLink>
-            </>
-          )}
-
-          {status === 'error' && (
-            <>
-              <div className="flex justify-center mb-6">
-                <div className="bg-red-100 rounded-full p-4">
-                  <XCircle className="text-red-600" size={48} />
+              </>
+            ) : (
+              <>
+                <LocalLink
+                  href="/login?confirmed=1"
+                  className="reg-btn reg-btn--primary flex w-full items-center justify-center gap-2 py-3.5 text-base"
+                >
+                  {t('goLogin')}
+                  <ArrowRight size={17} aria-hidden="true" />
+                </LocalLink>
+                <div className="pt-1 text-sm">
+                  <LocalLink href="/catalogo" className="font-medium text-slate-600 hover:underline">
+                    {t('exploreCatalog')}
+                  </LocalLink>
                 </div>
-              </div>
-              <h2 className="text-2xl font-bold text-gray-800 mb-4 text-center">
-                No se pudo confirmar
-              </h2>
-              <p className="text-red-600 text-center mb-6 text-sm">
-                {errorMsg || t('errorDefault')}
-              </p>
-              <LocalLink
-                href={loginPath}
-                className="block w-full bg-brand-primary text-white py-3 rounded-lg font-bold hover:bg-brand-dark transition text-center"
-              >
-                Ir al login para reenviar
-              </LocalLink>
-            </>
-          )}
+              </>
+            )}
+          </div>
         </div>
-      </div>
-    </div>
+      )}
+
+      {status === 'error' && (
+        <div className="py-2 text-center" role="alert">
+          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-red-50">
+            <XCircle className="text-red-600" size={38} aria-hidden="true" />
+          </div>
+          <h2 className="text-xl font-bold text-[#16294B]">{t('error')}</h2>
+          <p className="mt-3 text-sm leading-relaxed text-slate-600">
+            {errorMsg || t('errorDefault')}
+          </p>
+          <div className="mt-7 space-y-3">
+            <LocalLink
+              href="/login"
+              className="reg-btn reg-btn--primary flex w-full items-center justify-center gap-2 py-3.5 text-base"
+            >
+              {t('resendLogin')}
+              <ArrowRight size={17} aria-hidden="true" />
+            </LocalLink>
+          </div>
+        </div>
+      )}
+    </AuthShell>
   )
 }

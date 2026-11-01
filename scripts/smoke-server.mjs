@@ -113,8 +113,8 @@ try {
     assert.match(html, /Custom storefront URL/)
   }
 
-  // 3. Directivas noindex en páginas transaccionales/autenticación (/login, /pagos)
-  for (const route of ['/login', '/pagos']) {
+  // 3. Directivas noindex en páginas transaccionales/autenticación (/login, /pagos, /confirm, /confirmacion)
+  for (const route of ['/login', '/pagos', '/confirm', '/confirmacion']) {
     const res = await fetch(`${BASE}${route}`)
     assert.equal(res.status, 200, `GET ${route} debe devolver 200`)
     const html = await res.text()

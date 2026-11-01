@@ -12,7 +12,8 @@ const SUBJECTS = JSON.parse(readFileSync(join(TEMPLATES_DIR, 'subjects.json'), '
 
 const SAMPLES = {
   '{{ .ConfirmationURL }}':
-    'https://quxbqmqwiacfwbpqioev.supabase.co/auth/v1/verify?token=preview-token&type=signup&redirect_to=https%3A%2F%2Fvenezuela-inmuebles.online%2Fconfirmacion',
+    'https://venezuela-inmuebles.online/confirm?token_hash=preview_hash_sample&type=email_change',
+  '{{ .TokenHash }}': 'a1b2c3d4e5f60718293a4b5c6d7e8f90',
   '{{ .Token }}': '48291375',
   '{{ .SiteURL }}': 'https://venezuela-inmuebles.online',
   '{{ .NewEmail }}': 'maria.nueva@example.com',

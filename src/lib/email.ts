@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer'
+import { htmlToPlainText } from './plain-text-email'
 
 const smtpPort = Number(process.env.SMTP_PORT) || 465
 const transporter = nodemailer.createTransport({
@@ -26,9 +27,11 @@ export async function enviarEmail(params: EmailParams) {
   try {
     await transporter.sendMail({
       from: process.env.SMTP_FROM || '"Venezuela Inmuebles" <noreply@venezuela-inmuebles.online>',
+      replyTo: 'contacto@venezuela-inmuebles.online',
       to: params.to,
       subject: params.subject,
       html: params.html,
+      text: htmlToPlainText(params.html),
     })
     console.log(`✅ Email enviado a ${params.to}`)
     return { success: true }

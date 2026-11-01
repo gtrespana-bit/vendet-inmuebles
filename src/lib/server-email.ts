@@ -1,6 +1,7 @@
 'use server'
 
 import nodemailer from 'nodemailer'
+import { htmlToPlainText } from './plain-text-email'
 
 const FROM = process.env.SMTP_FROM || '"Venezuela Inmuebles" <noreply@venezuela-inmuebles.online>'
 const CONTACT = 'contacto@venezuela-inmuebles.online'
@@ -46,7 +47,8 @@ async function enviar(to: string, subject: string, html: string, options: Opcion
       to,
       subject,
       html,
-      ...(options.replyTo ? { replyTo: options.replyTo } : {}),
+      text: htmlToPlainText(html),
+      replyTo: options.replyTo || CONTACT,
       ...(options.unsubscribeUrl
         ? {
             headers: {

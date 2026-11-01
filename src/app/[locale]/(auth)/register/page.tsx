@@ -9,6 +9,7 @@ import { useTranslations } from 'next-intl'
 import { routing } from '@/i18n/routing'
 import AuthShell from '@/components/AuthShell'
 import { localizePath, safeInternalPath } from '@/lib/auth-redirect'
+import { buildEmailConfirmRedirectUrl } from '@/lib/auth-confirm'
 import { trackEvent } from '@/lib/analytics-client'
 import { ESTADOS, CIUDADES_POR_ESTADO } from '@/lib/ubicaciones'
 import {
@@ -131,10 +132,14 @@ export default function RegisterPage() {
     setLoading(true)
     try {
       const metadata = buildSignupMetadata({ ...draft, tipoCuenta: tipo })
+      const emailRedirectTo = buildEmailConfirmRedirectUrl(window.location.origin, locale)
       const { error: signUpError } = await supabase.auth.signUp({
         email: draft.email.trim(),
         password: draft.password,
-        options: { data: metadata },
+        options: {
+          data: metadata,
+          emailRedirectTo,
+        },
       })
 
       if (signUpError) {

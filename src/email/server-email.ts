@@ -1,5 +1,6 @@
 'use server'
 import nodemailer from 'nodemailer'
+import { htmlToPlainText } from '@/lib/plain-text-email'
 
 function getTransporter() {
   const port = Number(process.env.SMTP_PORT) || 465
@@ -22,9 +23,11 @@ async function enviar(fromName: string, email: string, subject: string, html: st
   try {
     await getTransporter().sendMail({
       from: process.env.SMTP_FROM || `"${fromName}" <noreply@venezuela-inmuebles.online>`,
+      replyTo: 'contacto@venezuela-inmuebles.online',
       to: email,
       subject,
       html,
+      text: htmlToPlainText(html),
     })
     console.log(`✅ Email a ${email}: ${subject}`)
     return true

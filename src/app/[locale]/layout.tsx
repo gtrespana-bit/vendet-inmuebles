@@ -10,6 +10,7 @@ import '@fontsource-variable/fraunces/opsz-italic.css'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
 import { AuthProvider } from '@/components/AuthProvider'
+import EmailConfirmationRedirect from '@/components/EmailConfirmationRedirect'
 import { ServiceWorkerRegistration } from '@/components/ServiceWorkerRegistration'
 import AnalyticsGate from '@/components/AnalyticsGate'
 import GoogleAnalyticsTracker from '@/components/GoogleAnalyticsTracker'
@@ -124,6 +125,7 @@ export default async function LocaleLayout({
       </a>
       <NextIntlClientProvider locale={locale} messages={messages}>
         <AuthProvider>
+          <EmailConfirmationRedirect />
           <Header />
           <main id="main-content" className="min-h-screen bg-white">{children}</main>
           <Footer />
