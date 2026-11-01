@@ -110,13 +110,30 @@ export default function DashboardPage() {
   const [destacadoTarget, setDestacadoTarget] = useState<{ productId: string; titulo: string } | null>(null)
   const [tasaBs, setTasaBs] = useState(0)
 
-  // Read tab from URL
+  // Read tab or confirmation notice from URL
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const tab = params.get('tab')
     if (tab === 'mensajes') { router.replace(pathname.startsWith('/en') ? '/en/chat' : '/chat'); return }
     if (tab && ['resumen', 'productos', 'equipo', 'creditos', 'favoritos', 'verificacion', 'reputacion', 'perfil'].includes(tab)) {
       setActiveTab(tab)
+    }
+    if (params.get('confirmed') === '1' || params.get('confirmed') === 'true') {
+      const isEn = pathname === '/en' || pathname.startsWith('/en/')
+      data.setToast(
+        isEn
+          ? '✅ Email confirmed successfully! Your account is now active.'
+          : '✅ ¡Correo confirmado con éxito! Tu cuenta ya está activa.'
+      )
+      params.delete('confirmed')
+      const qs = params.toString()
+      try {
+        window.history.replaceState(window.history.state, '', `${window.location.pathname}${qs ? `?${qs}` : ''}`)
+      } catch {
+        // Ignorar
+      }
+      const timer = setTimeout(() => data.setToast(null), 6000)
+      return () => clearTimeout(timer)
     }
   }, [router, pathname])
 

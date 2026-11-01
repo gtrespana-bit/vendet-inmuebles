@@ -8,7 +8,7 @@ import { AlertCircle } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
 export default function ResetPasswordPage() {
-  const t = useTranslations('auth')
+  const t = useTranslations('resetPassword')
   const router = useRouter()
   const [password, setPassword] = useState('')
   const [confirmedPassword, setConfirmedPassword] = useState('')
@@ -18,25 +18,37 @@ export default function ResetPasswordPage() {
   const [checkingSession, setCheckingSession] = useState(true)
 
   useEffect(() => {
-    // Supabase redirige al usuario aquí después de hacer clic en el enlace del email.
-    // El token viene en el hash de la URL (#access_token=...). Supabase lo procesa
-    // automáticamente al cargar la página, así solo verificamos que haya sesión.
     const checkSession = async () => {
+      const query = new URLSearchParams(window.location.search)
+      const tokenHash = query.get('token_hash')
+      const type = query.get('type')
+
+      if (tokenHash && (!type || type === 'recovery')) {
+        const { error: verifyError } = await supabase.auth.verifyOtp({
+          token_hash: tokenHash,
+          type: 'recovery',
+        })
+        try {
+          window.history.replaceState(window.history.state, '', window.location.pathname)
+        } catch {
+          // Ignorar
+        }
+        if (!verifyError) {
+          setCheckingSession(false)
+          return
+        }
+      }
+
       const { data: { session } } = await supabase.auth.getSession()
 
-      // Si no hay sesión, puede que el token aún no se haya procesado.
-      // Supabase suele establecer la sesión automáticamente desde el hash.
-      // Si no hay sesión después de un momento, mostramos un error.
       if (!session) {
-        // Escuchamos cambios de auth (el hash se procesa asíncronamente)
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-          if (session) {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: string, nextSession: unknown) => {
+          if (nextSession) {
             subscription.unsubscribe()
             setCheckingSession(false)
           }
         })
 
-        // Timeout de 5 segundos — si no llega sesión, asumimos token inválido
         setTimeout(() => {
           setCheckingSession(false)
           subscription.unsubscribe()
@@ -46,7 +58,7 @@ export default function ResetPasswordPage() {
       }
     }
 
-    checkSession()
+    void checkSession()
   }, [])
 
   const handleReset = async (e: React.FormEvent) => {

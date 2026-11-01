@@ -20,7 +20,12 @@ const TEMPLATE_KEYS = [
   'identity_unlinked_notification',
 ]
 
-const LINK_TEMPLATES = ['confirmation', 'email_change', 'invite', 'magic_link', 'recovery']
+const FIRST_PARTY_TOKEN_TEMPLATES = [
+  ['confirmation', '{{ .SiteURL }}/confirm?token_hash={{ .TokenHash }}&type=signup'],
+  ['invite', '{{ .SiteURL }}/confirm?token_hash={{ .TokenHash }}&type=invite'],
+  ['magic_link', '{{ .SiteURL }}/confirm?token_hash={{ .TokenHash }}&type=magiclink'],
+  ['recovery', '{{ .SiteURL }}/reset-password?token_hash={{ .TokenHash }}&type=recovery'],
+]
 
 test('existen las 13 plantillas de auth y su asunto en español', () => {
   const subjects = JSON.parse(readFileSync(`${DIR}/subjects.json`, 'utf8'))
@@ -32,10 +37,12 @@ test('existen las 13 plantillas de auth y su asunto en español', () => {
   }
 })
 
-test('cada plantilla respeta el límite de 5000 caracteres de Supabase', () => {
+test('cada plantilla respeta el límite de 5000 caracteres de Supabase y evita estilos ocultos penalizados por antispam', () => {
   for (const key of TEMPLATE_KEYS) {
     const html = readFileSync(`${DIR}/${key}.html`, 'utf8')
     assert.ok([...html].length < 5000, `${key}.html supera los 5000 caracteres`)
+    assert.doesNotMatch(html, /color:transparent/i, `${key}.html no debe usar color:transparent (penalización SpamAssassin)`)
+    assert.doesNotMatch(html, /opacity:0/i, `${key}.html no debe usar opacity:0 en texto`)
   }
 })
 
@@ -50,17 +57,21 @@ test('las plantillas usan la identidad visual y el logotipo del sitio', () => {
   }
 })
 
-test('los enlaces de confirmación y el código de reautenticación usan variables de Supabase', () => {
-  for (const key of LINK_TEMPLATES) {
+test('los enlaces de confirmación usan dominio first-party (SiteURL + TokenHash) para evitar bloqueos de spam y escáneres', () => {
+  for (const [key, expectedUrl] of FIRST_PARTY_TOKEN_TEMPLATES) {
     const html = readFileSync(`${DIR}/${key}.html`, 'utf8')
-    assert.match(html, /href="\{\{ \.ConfirmationURL \}\}"/, `${key} debe enlazar a ConfirmationURL`)
+    assert.ok(
+      html.includes(`href="${expectedUrl}"`),
+      `${key} debe enlazar first-party a ${expectedUrl}`
+    )
   }
+
+  const emailChange = readFileSync(`${DIR}/email_change.html`, 'utf8')
+  assert.match(emailChange, /href="\{\{ \.ConfirmationURL \}\}"/)
+  assert.match(emailChange, /\{\{ \.NewEmail \}\}/)
 
   const reauth = readFileSync(`${DIR}/reauthentication.html`, 'utf8')
   assert.match(reauth, /\{\{ \.Token \}\}/)
-
-  const emailChange = readFileSync(`${DIR}/email_change.html`, 'utf8')
-  assert.match(emailChange, /\{\{ \.NewEmail \}\}/)
 
   const emailChanged = readFileSync(`${DIR}/email_changed_notification.html`, 'utf8')
   assert.match(emailChanged, /\{\{ \.OldEmail \}\}/)
@@ -80,6 +91,7 @@ test('los enlaces de confirmación y el código de reautenticación usan variabl
 test('solo se usan variables de plantilla admitidas por Supabase', () => {
   const allowed = new Set([
     'ConfirmationURL',
+    'TokenHash',
     'Token',
     'SiteURL',
     'Email',
@@ -104,6 +116,7 @@ test('las plantillas publicadas no contienen datos de la vista previa', () => {
     const html = readFileSync(`${DIR}/${key}.html`, 'utf8')
     assert.doesNotMatch(html, /example\.com/)
     assert.doesNotMatch(html, /preview-token/)
+    assert.doesNotMatch(html, /preview_hash_sample/)
     assert.doesNotMatch(html, /48291375/)
   }
 })

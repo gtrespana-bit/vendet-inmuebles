@@ -9,6 +9,7 @@ import { useTranslations } from 'next-intl'
 import { routing } from '@/i18n/routing'
 import AuthShell from '@/components/AuthShell'
 import { localizePath, safeInternalPath } from '@/lib/auth-redirect'
+import { buildEmailConfirmRedirectUrl } from '@/lib/auth-confirm'
 
 function getLocaleFromPathname(pathname: string): string {
   return pathname === '/en' || pathname.startsWith('/en/') ? 'en' : routing.defaultLocale
@@ -31,15 +32,20 @@ export default function LoginPage() {
   const [resetLoading, setResetLoading] = useState(false)
   const [resetError, setResetError] = useState('')
   const [returnPath, setReturnPath] = useState<string | null>(null)
+  const [confirmedBanner, setConfirmedBanner] = useState(false)
 
   const redirectPath = (path: string) => localizePath(path, locale)
 
   useEffect(() => {
-    const redirect = safeInternalPath(new URLSearchParams(window.location.search).get('redirect'))
+    const params = new URLSearchParams(window.location.search)
+    const redirect = safeInternalPath(params.get('redirect'))
     if (redirect) {
       const localized = localizePath(redirect, locale)
       setReturnPath(localized)
       localStorage.setItem('vi:after-auth-redirect', localized)
+    }
+    if (params.get('confirmed') === '1' || params.get('confirmed') === 'true') {
+      setConfirmedBanner(true)
     }
   }, [locale])
 
@@ -113,7 +119,12 @@ export default function LoginPage() {
     setResendSuccess(false)
 
     try {
-      const { error: resendError } = await supabase.auth.resend({ type: 'signup', email })
+      const emailRedirectTo = buildEmailConfirmRedirectUrl(window.location.origin, locale)
+      const { error: resendError } = await supabase.auth.resend({
+        type: 'signup',
+        email,
+        options: { emailRedirectTo },
+      })
       if (resendError) {
         setError(resendError.message === 'User not found'
           ? (locale === 'en' ? 'No account was found for this email.' : 'No existe una cuenta con este email.')
@@ -152,6 +163,16 @@ export default function LoginPage() {
 
   return (
     <AuthShell heading={t('login.title')} subheading={t('login.subtitle')}>
+      {confirmedBanner && (
+        <div role="status" aria-live="polite" className="flex items-start gap-2.5 rounded-lg border border-emerald-200 bg-emerald-50 p-3.5 mb-5 text-sm text-emerald-900">
+          <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-emerald-700" aria-hidden="true" />
+          <div>
+            <p className="font-bold">{t('login.confirmed_banner_title')}</p>
+            <p className="mt-0.5 text-xs text-emerald-800">{t('login.confirmed_banner_desc')}</p>
+          </div>
+        </div>
+      )}
+
       {error && (
         <div role="alert" className="flex items-start gap-2 bg-red-50 text-red-700 p-3 rounded-lg mb-5 text-sm">
           <AlertCircle size={18} className="mt-0.5 shrink-0" aria-hidden="true" />

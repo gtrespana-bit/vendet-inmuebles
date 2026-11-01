@@ -1,6 +1,8 @@
 /**
  * Genera las plantillas HTML de los correos de autenticación de Supabase con
- * la identidad visual de Venezuela Inmuebles.
+ * la identidad visual de Venezuela Inmuebles y criterios de alta entregabilidad
+ * antispam (alineación de dominio first-party con {{ .SiteURL }} + {{ .TokenHash }},
+ * preheader sin estilos penalizados por SpamAssassin y asuntos naturales en español).
  *
  * Uso: node scripts/generate-auth-email-templates.mjs
  *
@@ -16,6 +18,11 @@ const OUT_DIR = join(process.cwd(), 'supabase', 'email-templates')
 
 const SANS = 'font-family:Arial,Helvetica,sans-serif'
 const SERIF = "font-family:Georgia,'Times New Roman',serif"
+
+const CONFIRM_SIGNUP_URL = '{{ .SiteURL }}/confirm?token_hash={{ .TokenHash }}&type=signup'
+const CONFIRM_INVITE_URL = '{{ .SiteURL }}/confirm?token_hash={{ .TokenHash }}&type=invite'
+const CONFIRM_MAGIC_URL = '{{ .SiteURL }}/confirm?token_hash={{ .TokenHash }}&type=magiclink'
+const RESET_PASSWORD_URL = '{{ .SiteURL }}/reset-password?token_hash={{ .TokenHash }}&type=recovery'
 
 const paragraph = (text) =>
   `<p style="margin:0 0 14px;${SANS};font-size:15px;line-height:1.65;color:#334155;">${text}</p>`
@@ -33,27 +40,27 @@ const tokenBox = (token) =>
   `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:4px 0 20px;background:#F4F1E9;border:1px solid #E6DFD3;border-radius:10px;"><tr><td align="center" style="padding:22px 18px;${SANS};font-size:34px;font-weight:700;letter-spacing:8px;color:#16294B;">${token}</td></tr></table>`
 
 function layout({ title, preheader, eyebrow, heading, body, note }) {
-  return `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light only"><title>${title}</title></head><body style="margin:0;padding:0;background:#F4F1E9;"><div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">${preheader}</div><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F4F1E9;"><tr><td align="center" style="padding:28px 12px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#FFFFFF;border:1px solid #E6DFD3;border-radius:14px;overflow:hidden;"><tr><td style="padding:26px 30px 16px;"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td><img src="${LOGO}" width="42" height="42" alt="Venezuela Inmuebles" style="display:block;border:0;border-radius:10px;"></td><td style="padding-left:11px;${SERIF};font-size:17px;font-weight:700;color:#16294B;">Venezuela <span style="font-weight:400;color:#1E293B;">Inmuebles</span></td></tr></table></td></tr><tr><td style="height:3px;background:#B08542;font-size:0;line-height:0;">&nbsp;</td></tr><tr><td style="padding:30px 30px 10px;"><p style="margin:0 0 10px;${SANS};font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#8A6430;">${eyebrow}</p><h1 style="margin:0 0 14px;${SERIF};font-size:26px;line-height:1.25;font-weight:400;color:#16294B;">${heading}</h1>${body}</td></tr><tr><td style="padding:0 30px 28px;"><p style="margin:16px 0 0;padding-top:16px;border-top:1px solid #E2E8F0;${SANS};font-size:12px;line-height:1.6;color:#64748B;">${note}</p></td></tr><tr><td style="background:#F4F1E9;border-top:1px solid #E6DFD3;padding:20px 30px;${SANS};font-size:11px;line-height:1.6;color:#64748B;text-align:center;"><p style="margin:0 0 3px;font-weight:700;color:#16294B;">Venezuela Inmuebles</p><p style="margin:0 0 3px;">El marketplace de inmuebles de Venezuela</p><p style="margin:0;"><a href="mailto:contacto@venezuela-inmuebles.online" style="color:#16294B;text-decoration:none;">contacto@venezuela-inmuebles.online</a> · <a href="${SITE}" style="color:#16294B;text-decoration:none;">venezuela-inmuebles.online</a></p></td></tr></table></td></tr></table></body></html>`
+  return `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light only"><title>${title}</title></head><body style="margin:0;padding:0;background:#F4F1E9;"><div style="display:none;font-size:1px;line-height:1px;max-height:0;max-width:0;overflow:hidden;mso-hide:all;">${preheader}</div><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F4F1E9;"><tr><td align="center" style="padding:28px 12px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#FFFFFF;border:1px solid #E6DFD3;border-radius:14px;overflow:hidden;"><tr><td style="padding:26px 30px 16px;"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td><img src="${LOGO}" width="42" height="42" alt="Venezuela Inmuebles" style="display:block;border:0;border-radius:10px;"></td><td style="padding-left:11px;${SERIF};font-size:17px;font-weight:700;color:#16294B;">Venezuela <span style="font-weight:400;color:#1E293B;">Inmuebles</span></td></tr></table></td></tr><tr><td style="height:3px;background:#B08542;font-size:0;line-height:0;">&nbsp;</td></tr><tr><td style="padding:30px 30px 10px;"><p style="margin:0 0 10px;${SANS};font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#8A6430;">${eyebrow}</p><h1 style="margin:0 0 14px;${SERIF};font-size:26px;line-height:1.25;font-weight:400;color:#16294B;">${heading}</h1>${body}</td></tr><tr><td style="padding:0 30px 28px;"><p style="margin:16px 0 0;padding-top:16px;border-top:1px solid #E2E8F0;${SANS};font-size:12px;line-height:1.6;color:#64748B;">${note}</p></td></tr><tr><td style="background:#F4F1E9;border-top:1px solid #E6DFD3;padding:20px 30px;${SANS};font-size:11px;line-height:1.6;color:#64748B;text-align:center;"><p style="margin:0 0 3px;font-weight:700;color:#16294B;">Venezuela Inmuebles</p><p style="margin:0 0 3px;">El marketplace de inmuebles de Venezuela</p><p style="margin:0;"><a href="mailto:contacto@venezuela-inmuebles.online" style="color:#16294B;text-decoration:none;">contacto@venezuela-inmuebles.online</a> · <a href="${SITE}" style="color:#16294B;text-decoration:none;">venezuela-inmuebles.online</a></p></td></tr></table></td></tr></table></body></html>`
 }
 
 const templates = {
   confirmation: {
-    title: 'Confirma tu correo · Venezuela Inmuebles',
-    subject: 'Confirma tu correo · Venezuela Inmuebles',
+    title: 'Confirma tu correo en Venezuela Inmuebles',
+    subject: 'Confirma tu correo en Venezuela Inmuebles',
     preheader: 'Un paso más para activar tu cuenta en Venezuela Inmuebles.',
     eyebrow: 'Tu cuenta',
     heading: 'Confirma tu correo',
     body:
       paragraph('Hola, gracias por unirte a Venezuela Inmuebles. Confirma tu dirección de correo para activar tu cuenta y empezar a publicar o encontrar inmuebles.') +
-      button('Confirmar mi correo', '{{ .ConfirmationURL }}') +
-      fallback('{{ .ConfirmationURL }}') +
+      button('Confirmar mi correo', CONFIRM_SIGNUP_URL) +
+      fallback(CONFIRM_SIGNUP_URL) +
       box('El enlace es personal y de un solo uso. Si no creaste esta cuenta, puedes ignorar este correo.'),
-    note: 'Recibes este correo porque se creó una cuenta con {{ .Email }} en Venezuela Inmuebles.',
+    note: 'Recibes este correo transaccional porque se solicitó crear una cuenta con {{ .Email }} en Venezuela Inmuebles.',
   },
 
   email_change: {
-    title: 'Confirma tu nuevo correo · Venezuela Inmuebles',
-    subject: 'Confirma tu nuevo correo · Venezuela Inmuebles',
+    title: 'Confirma tu nuevo correo en Venezuela Inmuebles',
+    subject: 'Confirma tu nuevo correo en Venezuela Inmuebles',
     preheader: 'Confirma el nuevo correo de tu cuenta.',
     eyebrow: 'Seguridad',
     heading: 'Confirma tu nuevo correo',
@@ -73,28 +80,28 @@ const templates = {
     heading: 'Te invitaron a Venezuela Inmuebles',
     body:
       paragraph('Has recibido una invitación para crear una cuenta en Venezuela Inmuebles, el marketplace de inmuebles de Venezuela. Acepta la invitación para empezar a publicar y recibir contactos.') +
-      button('Aceptar invitación', '{{ .ConfirmationURL }}') +
-      fallback('{{ .ConfirmationURL }}') +
+      button('Aceptar invitación', CONFIRM_INVITE_URL) +
+      fallback(CONFIRM_INVITE_URL) +
       box('Este enlace es personal y de un solo uso. Si no esperabas esta invitación, puedes ignorarla.'),
     note: 'Invitación enviada a {{ .Email }}.',
   },
 
   magic_link: {
-    title: 'Tu enlace de acceso · Venezuela Inmuebles',
-    subject: 'Tu enlace de acceso · Venezuela Inmuebles',
+    title: 'Tu enlace de acceso a Venezuela Inmuebles',
+    subject: 'Tu enlace de acceso a Venezuela Inmuebles',
     preheader: 'Inicia sesión sin contraseña en Venezuela Inmuebles.',
     eyebrow: 'Acceso',
     heading: 'Tu enlace de acceso',
     body:
       paragraph('Usa el botón para iniciar sesión sin contraseña. El enlace es de un solo uso y caduca en 1 hora.') +
-      button('Iniciar sesión', '{{ .ConfirmationURL }}') +
-      fallback('{{ .ConfirmationURL }}') +
+      button('Iniciar sesión', CONFIRM_MAGIC_URL) +
+      fallback(CONFIRM_MAGIC_URL) +
       box('Si no intentaste iniciar sesión, ignora este correo. Nadie puede acceder a tu cuenta sin este enlace.'),
     note: 'Recibes este correo porque se solicitó un acceso para {{ .Email }}.',
   },
 
   reauthentication: {
-    title: 'Tu código de verificación · Venezuela Inmuebles',
+    title: 'Tu código de verificación en Venezuela Inmuebles',
     subject: 'Tu código de verificación: {{ .Token }}',
     preheader: 'Usa tu código para confirmar tu identidad.',
     eyebrow: 'Seguridad',
@@ -107,22 +114,22 @@ const templates = {
   },
 
   recovery: {
-    title: 'Restablece tu contraseña · Venezuela Inmuebles',
-    subject: 'Restablece tu contraseña · Venezuela Inmuebles',
+    title: 'Restablece tu contraseña en Venezuela Inmuebles',
+    subject: 'Restablece tu contraseña en Venezuela Inmuebles',
     preheader: 'Crea una nueva contraseña para tu cuenta.',
     eyebrow: 'Acceso',
     heading: 'Restablece tu contraseña',
     body:
       paragraph('Recibimos una solicitud para restablecer la contraseña de tu cuenta. Pulsa el botón para crear una nueva. El enlace caduca en 1 hora.') +
-      button('Crear nueva contraseña', '{{ .ConfirmationURL }}') +
-      fallback('{{ .ConfirmationURL }}') +
+      button('Crear nueva contraseña', RESET_PASSWORD_URL) +
+      fallback(RESET_PASSWORD_URL) +
       box('Si no solicitaste el cambio, ignora este correo: tu contraseña actual sigue siendo válida y nadie más puede modificarla.'),
     note: 'Recibes este correo porque se solicitó un cambio de contraseña para {{ .Email }}.',
   },
 
   password_changed_notification: {
-    title: 'Tu contraseña fue actualizada · Venezuela Inmuebles',
-    subject: 'Tu contraseña fue actualizada · Venezuela Inmuebles',
+    title: 'Tu contraseña fue actualizada en Venezuela Inmuebles',
+    subject: 'Tu contraseña fue actualizada en Venezuela Inmuebles',
     preheader: 'Confirmación de seguridad de tu cuenta.',
     eyebrow: 'Seguridad',
     heading: 'Tu contraseña fue actualizada',
@@ -134,8 +141,8 @@ const templates = {
   },
 
   email_changed_notification: {
-    title: 'Tu correo fue actualizado · Venezuela Inmuebles',
-    subject: 'Tu correo fue actualizado · Venezuela Inmuebles',
+    title: 'Tu correo fue actualizado en Venezuela Inmuebles',
+    subject: 'Tu correo fue actualizado en Venezuela Inmuebles',
     preheader: 'Confirmación de seguridad de tu cuenta.',
     eyebrow: 'Seguridad',
     heading: 'Tu correo fue actualizado',
@@ -147,8 +154,8 @@ const templates = {
   },
 
   phone_changed_notification: {
-    title: 'Tu teléfono fue actualizado · Venezuela Inmuebles',
-    subject: 'Tu teléfono fue actualizado · Venezuela Inmuebles',
+    title: 'Tu teléfono fue actualizado en Venezuela Inmuebles',
+    subject: 'Tu teléfono fue actualizado en Venezuela Inmuebles',
     preheader: 'Confirmación de seguridad de tu cuenta.',
     eyebrow: 'Seguridad',
     heading: 'Tu teléfono fue actualizado',
@@ -160,8 +167,8 @@ const templates = {
   },
 
   mfa_factor_enrolled_notification: {
-    title: 'Se añadió un método de verificación · Venezuela Inmuebles',
-    subject: 'Se añadió un método de verificación · Venezuela Inmuebles',
+    title: 'Se añadió un método de verificación en Venezuela Inmuebles',
+    subject: 'Se añadió un método de verificación en Venezuela Inmuebles',
     preheader: 'Confirmación de seguridad de tu cuenta.',
     eyebrow: 'Seguridad',
     heading: 'Se añadió un método de verificación',
@@ -173,8 +180,8 @@ const templates = {
   },
 
   mfa_factor_unenrolled_notification: {
-    title: 'Se eliminó un método de verificación · Venezuela Inmuebles',
-    subject: 'Se eliminó un método de verificación · Venezuela Inmuebles',
+    title: 'Se eliminó un método de verificación en Venezuela Inmuebles',
+    subject: 'Se eliminó un método de verificación en Venezuela Inmuebles',
     preheader: 'Confirmación de seguridad de tu cuenta.',
     eyebrow: 'Seguridad',
     heading: 'Se eliminó un método de verificación',
@@ -186,8 +193,8 @@ const templates = {
   },
 
   identity_linked_notification: {
-    title: 'Se vinculó un nuevo método de acceso · Venezuela Inmuebles',
-    subject: 'Se vinculó un nuevo método de acceso · Venezuela Inmuebles',
+    title: 'Se vinculó un nuevo método de acceso en Venezuela Inmuebles',
+    subject: 'Se vinculó un nuevo método de acceso en Venezuela Inmuebles',
     preheader: 'Confirmación de seguridad de tu cuenta.',
     eyebrow: 'Seguridad',
     heading: 'Se vinculó un nuevo método de acceso',
@@ -199,8 +206,8 @@ const templates = {
   },
 
   identity_unlinked_notification: {
-    title: 'Se eliminó un método de acceso · Venezuela Inmuebles',
-    subject: 'Se eliminó un método de acceso · Venezuela Inmuebles',
+    title: 'Se eliminó un método de acceso en Venezuela Inmuebles',
+    subject: 'Se eliminó un método de acceso en Venezuela Inmuebles',
     preheader: 'Confirmación de seguridad de tu cuenta.',
     eyebrow: 'Seguridad',
     heading: 'Se eliminó un método de acceso',

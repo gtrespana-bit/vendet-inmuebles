@@ -8,6 +8,7 @@ import { CheckCircle, Mail, ExternalLink, ArrowRight, RefreshCw, Clock } from 'l
 import LocalLink from '@/components/LocalLink'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { buildEmailConfirmRedirectUrl } from '@/lib/auth-confirm'
 import { TRIAL_DAYS } from '@/lib/plan-catalog'
 
 function ConfirmacionContent() {
@@ -47,9 +48,11 @@ function ConfirmacionContent() {
     setResendStatus('idle')
 
     try {
+      const emailRedirectTo = buildEmailConfirmRedirectUrl(window.location.origin, locale)
       const { error } = await supabase.auth.resend({
         type: 'signup',
         email: email,
+        options: { emailRedirectTo },
       })
 
       if (error) {
@@ -139,23 +142,23 @@ function ConfirmacionContent() {
               {resending ? (
                 <>
                   <RefreshCw size={16} className="animate-spin" />
-                  Enviando...
+                  {t('confirmacion.resending')}
                 </>
               ) : resendStatus === 'success' ? (
                 <>
                   <CheckCircle size={16} />
-                  ¡Email reenviado!
+                  {t('confirmacion.resent')}
                 </>
               ) : (
                 <>
                   <RefreshCw size={16} />
-                  Reenviar email de confirmación
+                  {t('confirmacion.resend_button')}
                 </>
               )}
             </button>
             {resendStatus === 'error' && (
               <p className="text-xs text-red-600 mt-2">
-                Error al reenviar. Verifica que el email sea correcto.
+                {t('confirmacion.resend_error')}
               </p>
             )}
           </div>

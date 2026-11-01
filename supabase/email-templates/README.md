@@ -75,9 +75,10 @@ El token se usa solo en la variable de entorno; no lo guardes en el repositorio.
 
 | Variable | Uso en las plantillas |
 | --- | --- |
-| `{{ .ConfirmationURL }}` | Botón y enlace alternativo de confirmación, invitación, acceso y recuperación. |
+| `{{ .TokenHash }}` | Verificación first-party en `venezuela-inmuebles.online/confirm` y `/reset-password` (evita enlaces cruzados a `supabase.co` y pre-escaneos de antivirus). |
+| `{{ .ConfirmationURL }}` | Confirmación de doble paso en `email_change`. |
 | `{{ .Token }}` | Código de 8 dígitos en reautenticación (también en su asunto). |
-| `{{ .SiteURL }}` | Enlaces a `/login` y `/dashboard` en los avisos de seguridad. |
+| `{{ .SiteURL }}` | Dominio propio (`https://venezuela-inmuebles.online`) para todos los enlaces de acción y avisos de seguridad. |
 | `{{ .Email }}` | Correo de la cuenta en pies y avisos. |
 | `{{ .NewEmail }}` | Nuevo correo en la confirmación de cambio. |
 | `{{ .OldEmail }}` | Correo anterior en el aviso de cambio. |
