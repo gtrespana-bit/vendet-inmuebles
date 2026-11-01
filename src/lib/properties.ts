@@ -139,6 +139,24 @@ export async function getProperties(filters: PropertyFilter = {}): Promise<{
     query = query.eq('destacado', true);
   }
 
+  // Filtros numéricos y de amenidades aplicados en SQL ANTES de paginar (F19)
+  // para no distorsionar `total`, `hasMore` ni páginas incompletas.
+  if (min_bedrooms !== undefined) {
+    query = query.gte('habitaciones', min_bedrooms);
+  }
+
+  if (min_bathrooms !== undefined) {
+    query = query.gte('banos', min_bathrooms);
+  }
+
+  if (min_area !== undefined) {
+    query = query.gte('area_total', min_area);
+  }
+
+  if (amenities && amenities.length > 0) {
+    query = query.contains('caracteristicas', JSON.stringify(amenities));
+  }
+
   // Ordenamiento
   switch (sort_by) {
     case 'oldest':
@@ -171,26 +189,7 @@ export async function getProperties(filters: PropertyFilter = {}): Promise<{
     throw new Error('Failed to fetch properties');
   }
 
-  // Filtrar por características si es necesario (filtros que no se pueden hacer en SQL directo)
-  let inmuebles = data || [];
-  
-  if (min_bedrooms !== undefined) {
-    inmuebles = inmuebles.filter(p => 
-      (p.bedrooms || 0) >= min_bedrooms
-    );
-  }
-  
-  if (min_bathrooms !== undefined) {
-    inmuebles = inmuebles.filter(p => 
-      (p.bathrooms || 0) >= min_bathrooms
-    );
-  }
-  
-  if (min_area !== undefined) {
-    inmuebles = inmuebles.filter(p => 
-      (Number(p.area_size) || 0) >= min_area
-    );
-  }
+  const inmuebles = data || [];
 
   return {
     data: inmuebles.map(mapInmuebleToProperty),

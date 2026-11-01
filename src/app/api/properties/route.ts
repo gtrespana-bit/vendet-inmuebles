@@ -5,6 +5,8 @@ import { checkPlanLimits } from '@/lib/plans'
 import { savePropertyFeatures } from '@/lib/property-features'
 import { sanitizarMetodosContacto } from '@/lib/contact-methods'
 import { isPlanQuotaError, planQuotaResponse } from '@/lib/quota-errors'
+import { checkRateLimit } from '@/lib/rate-limit'
+import { evaluarModeracionServidor } from '@/lib/moderacion'
 
 export async function POST(req: NextRequest) {
   try {
@@ -43,6 +45,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Sesión inválida' }, { status: 401 })
     }
 
+    const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown'
+    const rateLimit = await checkRateLimit('producto:create', user.id, { ip })
+    if (!rateLimit.ok) {
+      return NextResponse.json(
+        { error: `Demasiadas publicaciones. Espera ${Math.ceil(rateLimit.resetIn / 60000)} min`, resetIn: rateLimit.resetIn },
+        { status: 429 }
+      )
+    }
+
     const planData = await checkPlanLimits(user.id)
     if (!planData.canPublish) {
       return NextResponse.json(
@@ -59,6 +70,14 @@ export async function POST(req: NextRequest) {
 
     if (!tituloLimpio || !descripcionLimpia || !estadoLimpio || !ciudadLimpia || !Number.isFinite(precioNumerico) || precioNumerico <= 0) {
       return NextResponse.json({ error: 'Completa título, descripción, precio y ubicación válida' }, { status: 400 })
+    }
+
+    const moderacion = evaluarModeracionServidor(tituloLimpio, descripcionLimpia)
+    if (!moderacion.permitido) {
+      return NextResponse.json(
+        { error: 'La publicación contiene términos no permitidos por nuestras normas.' },
+        { status: 400 }
+      )
     }
 
     const operacionSlug = tipo_operacion === 'alquiler' ? 'alquiler' : 'venta'
@@ -134,7 +153,8 @@ export async function POST(req: NextRequest) {
       // `{}` = solo chat interno; `null` = sin configurar.
       metodos_contacto: sanitizarMetodosContacto(metodos_contacto),
       activo: true,
-      estado_moderacion: 'aprobado',
+      estado_moderacion: moderacion.estadoModeracion,
+      motivo_moderacion: moderacion.motivoModeracion,
       publicado_en: new Date().toISOString(),
     }
 
@@ -267,6 +287,19 @@ export async function PATCH(req: NextRequest) {
     if (titulo !== undefined) cambios.titulo = titulo
     const descripcion = str(body.descripcion, 6000)
     if (descripcion !== undefined) cambios.descripcion = descripcion
+    if (titulo !== undefined || descripcion !== undefined) {
+      const modEdicion = evaluarModeracionServidor(titulo, descripcion)
+      if (!modEdicion.permitido) {
+        return NextResponse.json(
+          { error: 'La edición contiene términos no permitidos por nuestras normas.' },
+          { status: 400 }
+        )
+      }
+      if (modEdicion.estadoModeracion === 'pendiente') {
+        cambios.estado_moderacion = 'pendiente'
+        cambios.motivo_moderacion = modEdicion.motivoModeracion
+      }
+    }
     const precio = num(body.precio)
     if (precio !== undefined) cambios.precio = precio
     const ciudad = str(body.ciudad, 100)

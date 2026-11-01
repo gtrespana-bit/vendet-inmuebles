@@ -9,16 +9,16 @@ export const palabrasProhibidas: string[] = [
   // Armas y munición
   'ametralladora', 'bala', 'c4', 'cartucho', 'dinamita', 'escopeta', 'fusil',
   'granada', 'lanzacohetes', 'mina antipersona', 'mortero', 'pistola',
-  'polvera', 'pulsora', 'rifl', 'revolver', 'revólver', 'rifle', 'semiautomática',
+  'polvera', 'pulsora', 'revolver', 'revólver', 'rifle', 'semiautomática',
   'sniper', 'subfusil', 'trabuco', 'armas de fuego', 'armas blancas',
   'fabricación de armas', 'modificación de armas',
 
   // Drogas y sustancias ilegales
   'basuco', 'cocaína', 'cocaina', 'crack', 'droga sintética', 'droga',
-  'extasis', 'éxtasis', 'farmaco', 'fármaco recetado', 'hashish', 'hashís',
+  'extasis', 'éxtasis', 'fármaco recetado', 'hashish', 'hashís',
   'heroina', 'heroína', 'ketamina', 'lsd', 'marihuana', 'mdma', 'metanfetamina',
-  'pastilla', 'piedra base', 'perico', 'polvillo', 'thc', 'tripi', 'tripis',
-  'alucinógeno', 'alucinogeno', 'psicotrópico', 'psicotrópico',
+  'piedra base', 'thc', 'tripi', 'tripis',
+  'alucinógeno', 'alucinogeno', 'psicotrópico',
   'venta de drogas', 'narco',
 
   // Ilegalidad general
@@ -33,11 +33,11 @@ export const palabrasProhibidas: string[] = [
   // Pornografía y contenido sexual explícito
   'pornografía', 'porno', 'sex server', 'cam show', 'chat erotico',
   'chat erótico', 'striptease', 'servicio sexual', 'prostitución', 'prostitucion',
-  'put', 'whore', 'escort servicios', 'escorts', 'servicios acompañante',
+  'puta', 'whore', 'escort servicios', 'escorts', 'servicios acompañante',
 
   // Órganos humanos
   'riñon en venta', 'riñón en venta', 'organos humanos', 'órganos humanos',
-  'compra de organos', 'compra de órganos', 'vientre', 'alquiler vientre',
+  'compra de organos', 'compra de órganos', 'alquiler vientre',
 
   // Fraude/estafa directa
   'hackeo', 'hackear', 'robar cuenta', 'robar clave', 'clonar tarjeta',
@@ -59,8 +59,24 @@ export const palabrasSospechosas: string[] = [
   'habla por telegram', 'enviame por correo',
 ]
 
+function normalizarTextoModeracion(valor: string): string {
+  return valor
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+}
+
+function contieneTerminoCompleto(textoNormalizado: string, termino: string): boolean {
+  const normalizado = normalizarTextoModeracion(termino).trim()
+  if (!normalizado) return false
+  const escapado = normalizado.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const patron = new RegExp(`(^|[^a-z0-9])${escapado}($|[^a-z0-9])`)
+  return patron.test(textoNormalizado)
+}
+
 /**
- * Verifica texto contra la lista de moderación
+ * Verifica texto contra la lista de moderación usando límites de palabra/frase
+ * para no bloquear términos legítimos que contienen subcadenas cortas.
  * @returns
  *   - { nivel: 'prohibido', palabras: string[] }
  *   - { nivel: 'sospechoso', palabras: string[] }
@@ -72,16 +88,14 @@ export function verificarContenido(texto: string): {
 } {
   if (!texto?.trim()) return { nivel: 'limpio', palabras: [] }
 
-  const textoNormalizado = texto.toLowerCase().normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '') // quita acentos para matching más amplio
+  const textoNormalizado = normalizarTextoModeracion(texto)
 
   const encontradasProhibidas: string[] = []
   const encontradasSospechosas: string[] = []
 
   // Revisa prohibidas
   for (const palabra of palabrasProhibidas) {
-    const normalizada = palabra.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    if (textoNormalizado.includes(normalizada)) {
+    if (contieneTerminoCompleto(textoNormalizado, palabra)) {
       encontradasProhibidas.push(palabra)
     }
   }
@@ -92,8 +106,7 @@ export function verificarContenido(texto: string): {
 
   // Revisa sospechosas
   for (const palabra of palabrasSospechosas) {
-    const normalizada = palabra.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    if (textoNormalizado.includes(normalizada)) {
+    if (contieneTerminoCompleto(textoNormalizado, palabra)) {
       encontradasSospechosas.push(palabra)
     }
   }
@@ -103,6 +116,45 @@ export function verificarContenido(texto: string): {
   }
 
   return { nivel: 'limpio', palabras: [] }
+}
+
+/**
+ * Política única de moderación en el servidor (F19): nunca confía en el estado
+ * enviado por el navegador.
+ */
+export function evaluarModeracionServidor(...partes: Array<string | null | undefined>): {
+  permitido: boolean
+  estadoModeracion: 'aprobado' | 'pendiente'
+  motivoModeracion: string | null
+  palabras: string[]
+  nivel: 'prohibido' | 'sospechoso' | 'limpio'
+} {
+  const resultado = verificarContenido(partes.filter(Boolean).join(' '))
+  if (resultado.nivel === 'prohibido') {
+    return {
+      permitido: false,
+      estadoModeracion: 'pendiente',
+      motivoModeracion: `Contenido no permitido (${resultado.palabras.slice(0, 5).join(', ')})`,
+      palabras: resultado.palabras,
+      nivel: 'prohibido',
+    }
+  }
+  if (resultado.nivel === 'sospechoso') {
+    return {
+      permitido: true,
+      estadoModeracion: 'pendiente',
+      motivoModeracion: `Revisión automática (${resultado.palabras.slice(0, 5).join(', ')})`,
+      palabras: resultado.palabras,
+      nivel: 'sospechoso',
+    }
+  }
+  return {
+    permitido: true,
+    estadoModeracion: 'aprobado',
+    motivoModeracion: null,
+    palabras: [],
+    nivel: 'limpio',
+  }
 }
 
 /**

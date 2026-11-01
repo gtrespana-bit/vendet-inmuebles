@@ -9,6 +9,7 @@ import { sanitizarMetodosContacto } from '@/lib/contact-methods'
 import { checkPlanLimits } from '@/lib/plans'
 import { isPlanQuotaError, planQuotaResponse } from '@/lib/quota-errors'
 import { emailProductoPublicado, emailPropiedadEnRevision } from '@/lib/server-email'
+import { evaluarModeracionServidor } from '@/lib/moderacion'
 
 export async function POST(req: NextRequest) {
   try {
@@ -98,7 +99,16 @@ export async function POST(req: NextRequest) {
     const firstImage = typeof body.imagen_url === 'string' && body.imagen_url.startsWith('https://')
       ? body.imagen_url
       : imageUrls[0] || null
-    const moderationState = body.estado_moderacion === 'pendiente' ? 'pendiente' : 'aprobado'
+
+    // Moderación decidida exclusivamente en el servidor (F19).
+    const moderacion = evaluarModeracionServidor(titulo, descripcion, body.subcategoria, body.marca)
+    if (!moderacion.permitido) {
+      return NextResponse.json(
+        { error: 'La publicación contiene términos no permitidos por nuestras normas.' },
+        { status: 400 }
+      )
+    }
+    const moderationState = moderacion.estadoModeracion
 
     const insertData = {
       usuario_id: auth.user.id,
@@ -118,7 +128,7 @@ export async function POST(req: NextRequest) {
       metodos_contacto: sanitizarMetodosContacto(body.metodos_contacto),
       activo: true,
       estado_moderacion: moderationState,
-      motivo_moderacion: moderationState === 'pendiente' ? sanitizeString(body.motivo_moderacion || '', 500) || null : null,
+      motivo_moderacion: moderacion.motivoModeracion,
       publicado_en: new Date().toISOString(),
     }
 
@@ -182,8 +192,7 @@ export async function POST(req: NextRequest) {
       console.error('Error enviando confirmación de publicación:', emailError)
     }
 
-    const alert = body.moderacionAlerta
-    if (moderationState === 'pendiente' && alert?.nivel) {
+    if (moderationState === 'pendiente' && moderacion.palabras.length > 0) {
       const bot = process.env.TELEGRAM_BOT_TOKEN
       const chat = process.env.TELEGRAM_CHAT_ID
       if (bot && chat) {
@@ -192,7 +201,7 @@ export async function POST(req: NextRequest) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             chat_id: chat,
-            text: `⚠️ <b>ALERTA MODERACIÓN — ${sanitizeString(String(alert.nivel).toUpperCase(), 20)}</b>\n\n📝 "${titulo}"\n👤 ${auth.user.email || auth.user.id}\n🚫 Palabras: ${Array.isArray(alert.palabras) ? alert.palabras.map((word: unknown) => sanitizeString(String(word), 50)).slice(0, 20).join(', ') : 'N/A'}`,
+            text: `⚠️ <b>ALERTA MODERACIÓN — SOSPECHOSO</b>\n\n📝 "${titulo}"\n👤 ${auth.user.email || auth.user.id}\n🚫 Palabras: ${moderacion.palabras.map((word) => sanitizeString(String(word), 50)).slice(0, 20).join(', ')}`,
             parse_mode: 'HTML',
           }),
         }).catch(() => undefined)
