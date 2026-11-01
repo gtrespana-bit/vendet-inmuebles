@@ -1,12 +1,15 @@
 'use client'
 
 import { ArrowUpRight } from 'lucide-react'
+import { useLocale } from 'next-intl'
 import LocalLink from '@/components/LocalLink'
 import { BrandMark } from '@/components/BrandMark'
 import { useLocalizedMessages } from '@/hooks/useLocalizedMessages'
+import { openCookieSettings } from '@/lib/cookie-consent'
 
 export function Footer() {
   const { t } = useLocalizedMessages()
+  const en = useLocale() === 'en'
   const year = new Date().getFullYear()
 
   const categoryLinks = [
@@ -57,6 +60,13 @@ export function Footer() {
           <h2>{t('footer.legal')}</h2>
           <LocalLink href="/terminos-y-condiciones">{t('footer.terms')}</LocalLink>
           <LocalLink href="/politica-de-privacidad">{t('footer.privacy')}</LocalLink>
+          <button
+            type="button"
+            onClick={openCookieSettings}
+            className="text-left hover:underline"
+          >
+            {en ? 'Cookie preferences' : 'Preferencias de cookies'}
+          </button>
         </nav>
       </div>
 
