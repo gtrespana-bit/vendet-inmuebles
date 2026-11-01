@@ -2,14 +2,15 @@
 
 import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
-import { ArrowUpRight, Globe, Menu, Search, X, MessageCircle } from 'lucide-react'
+import { ArrowUpRight, Globe, Menu, Search, X, MessageCircle, UserPlus } from 'lucide-react'
 import LocalLink from '@/components/LocalLink'
 import { BrandMark } from '@/components/BrandMark'
 import { useAuth } from '@/components/AuthProvider'
 import { useUnreadMessages } from '@/hooks/useUnreadMessages'
 import { useLocalizedMessages } from '@/hooks/useLocalizedMessages'
 
-const publishRedirect = '/register?redirect=%2Fpublicar-inmueble'
+/** Sin sesión no se ofrece «publicar»: se invita a crear la cuenta y se conserva la intención. */
+const registerRedirect = '/register?redirect=%2Fpublicar-inmueble'
 
 export function Header() {
   const { user } = useAuth()
@@ -21,7 +22,8 @@ export function Header() {
   const alternateLocaleHref = isEnglish
     ? (pathname.replace(/^\/en(?=\/|$)/, '') || '/')
     : `/en${pathname === '/' ? '' : pathname}`
-  const publishHref = user ? '/publicar-inmueble' : publishRedirect
+  const primaryHref = user ? '/publicar-inmueble' : registerRedirect
+  const primaryLabel = user ? t('header.publishProperty') : t('header.signUp')
   const catalogAction = isEnglish ? '/en/catalogo' : '/catalogo'
 
   useEffect(() => {
@@ -74,9 +76,9 @@ export function Header() {
           ) : (
             <LocalLink href="/login" className="site-header__account">{t('header.signIn')}</LocalLink>
           )}
-          <LocalLink href={publishHref} className="site-header__publish" aria-label={t('header.publishProperty')}>
-            <span>{t('header.publishProperty')}</span>
-            <ArrowUpRight size={16} aria-hidden="true" />
+          <LocalLink href={primaryHref} className="site-header__publish" aria-label={primaryLabel}>
+            <span>{primaryLabel}</span>
+            {user ? <ArrowUpRight size={16} aria-hidden="true" /> : <UserPlus size={16} aria-hidden="true" />}
           </LocalLink>
         </div>
 
@@ -113,7 +115,7 @@ export function Header() {
             {user && <LocalLink href="/dashboard" onClick={closeMenu}>{t('header.myPanel')}</LocalLink>}
             <a href={alternateLocaleHref} onClick={closeMenu} lang={isEnglish ? 'es' : 'en'}>{isEnglish ? 'Español' : 'English'}</a>
             {!user && <LocalLink href="/login" onClick={closeMenu}>{t('header.signIn')}</LocalLink>}
-            <LocalLink href={publishHref} className="site-mobile-menu__publish" onClick={closeMenu}>{t('header.publishProperty')}</LocalLink>
+            <LocalLink href={primaryHref} className="site-mobile-menu__publish" onClick={closeMenu}>{primaryLabel}</LocalLink>
           </nav>
         </div>
       )}

@@ -250,7 +250,7 @@ export default function PlanesTab({ notify }: { notify: (msg: string) => void })
 
               {modal.plan === 'gratuita' && (
                 <p className="text-xs text-gray-500 bg-gray-50 rounded-lg p-3">
-                  Se cancelarán las suscripciones vigentes y el usuario volverá al plan Gratuito (1 anuncio activo).
+                  Se cancelarán las suscripciones vigentes y el usuario volverá al plan Gratuito (3 anuncios activos).
                 </p>
               )}
 

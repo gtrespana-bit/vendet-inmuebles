@@ -4,10 +4,11 @@ import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { routing } from '@/i18n/routing'
 import { useTranslations } from 'next-intl'
-import { CheckCircle, Mail, ExternalLink, ArrowRight, RefreshCw } from 'lucide-react'
+import { CheckCircle, Mail, ExternalLink, ArrowRight, RefreshCw, Clock } from 'lucide-react'
 import LocalLink from '@/components/LocalLink'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { TRIAL_DAYS } from '@/lib/plan-catalog'
 
 function ConfirmacionContent() {
   const t = useTranslations('auth')
@@ -18,15 +19,27 @@ function ConfirmacionContent() {
   const [email, setEmail] = useState('')
   const [resending, setResending] = useState(false)
   const [resendStatus, setResendStatus] = useState<'idle' | 'success' | 'error'>('idle')
+  const [signup, setSignup] = useState<{ plan?: string; tipoCuenta?: string; trialEndsAt?: string } | null>(null)
 
   useEffect(() => {
     setEmail(sessionStorage.getItem('tempEmail') || 'tu correo electrónico')
+    try {
+      const raw = sessionStorage.getItem('vi:signup-summary')
+      if (raw) setSignup(JSON.parse(raw))
+    } catch {
+      setSignup(null)
+    }
   }, [])
 
   const handleConfirmClick = () => {
     sessionStorage.removeItem('tempEmail')
+    sessionStorage.removeItem('vi:signup-summary')
     router.push(loginPath)
   }
+
+  const trialEnd = signup?.trialEndsAt
+    ? new Date(signup.trialEndsAt).toLocaleDateString(locale === 'en' ? 'en-US' : 'es-VE', { day: 'numeric', month: 'long', year: 'numeric' })
+    : null
 
   const handleResend = async () => {
     if (!email || email === 'tu correo electrónico') return
@@ -92,6 +105,22 @@ function ConfirmacionContent() {
             <p>
               {t('confirmacion.instructions')}
             </p>
+          </div>
+
+          <div className="mb-6 rounded-lg border border-[#e7dfcd] bg-[#faf6ec] p-4">
+            <div className="flex items-start gap-3">
+              <Clock size={18} className="mt-0.5 text-[#8a6430]" aria-hidden="true" />
+              <div>
+                <p className="text-sm font-bold text-[#5f4a24]">{t('confirmacion.trialTitle', { days: TRIAL_DAYS })}</p>
+                {signup?.plan && (
+                  <p className="mt-1 text-xs text-[#6f6553]">
+                    {t('confirmacion.trialPlan', { plan: t(`register.planNames.${signup.plan}`) })}
+                    {trialEnd ? ` · ${t('confirmacion.trialUntil', { date: trialEnd })}` : ''}
+                  </p>
+                )}
+                <p className="mt-1 text-xs text-[#6f6553]">{t('confirmacion.trialNote')}</p>
+              </div>
+            </div>
           </div>
 
           {/* Reenviar email */}

@@ -1109,6 +1109,24 @@
   color: var(--ink-3);
 }
 
+.planTrial {
+  display: inline-flex;
+  width: -moz-fit-content;
+  width: fit-content;
+  align-items: center;
+  gap: 6px;
+  margin: 10px 0 14px;
+  padding: 4px 9px;
+  border-radius: 99px;
+  background: rgba(176, 133, 66, 0.12);
+  color: #7a5f2c;
+  font-size: 10.5px;
+  font-weight: 750;
+  letter-spacing: 0.02em;
+}
+
+.planTrial svg { flex: none; }
+
 .planFeatures {
   display: grid;
   gap: 9px;

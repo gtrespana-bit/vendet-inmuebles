@@ -45,6 +45,8 @@ export function PlanActionButton({ plan, className }: { plan: PlanName; classNam
   if (action === 'loading') return <span className={`${className} opacity-60`} role="status">{t('loading')}</span>
   if (action === 'current') return <span className="block w-full text-center py-3 rounded-lg font-medium bg-gray-100 text-gray-700" aria-label={t('current')}>{t('current')}</span>
   if (action === 'error') return <div className="text-center"><p role="alert" className="text-sm text-red-700 mb-2">{t('error')}</p><LocalLink href="/dashboard" className={className}>{t('dashboard')}</LocalLink></div>
-  if (action === 'register') return <LocalLink href="/register" className={className}>{t('register')}</LocalLink>
+  if (action === 'register') {
+    return <LocalLink href={`/register?plan=${plan}&redirect=${encodeURIComponent('/publicar-inmueble')}`} className={className}>{t('register')}</LocalLink>
+  }
   return <div><LocalLink href="/contacto" className={className}>{t('contact')}</LocalLink><p className="text-xs text-gray-500 text-center mt-2">{t('contactHint')}</p></div>
 }

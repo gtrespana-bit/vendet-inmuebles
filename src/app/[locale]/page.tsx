@@ -10,6 +10,7 @@ import {
   Briefcase,
   Building2,
   Check,
+  Clock,
   Home,
   MapPin,
   MessagesSquare,
@@ -206,9 +207,9 @@ const CATEGORIES = [
 const CITIES = ['Caracas', 'Maracaibo', 'Valencia', 'Barquisimeto', 'Maracay', 'Lechería', 'Mérida', 'Porlamar']
 
 const PLANS = [
-  { nameKey: 'planFree', price: '$0', periodKey: 'planFreePeriod', features: ['planFreeFeature1', 'planFreeFeature2', 'planFreeFeature3'], featured: false },
-  { nameKey: 'planPro', price: '$9,99', periodKey: 'planProPeriod', features: ['planProFeature1', 'planProFeature2', 'planProFeature3'], featured: true },
-  { nameKey: 'planAgency', price: '$39,99', periodKey: 'planAgencyPeriod', features: ['planAgencyFeature1', 'planAgencyFeature2', 'planAgencyFeature3'], featured: false },
+  { nameKey: 'planFree', price: '$0', periodKey: 'planFreePeriod', features: ['planFreeFeature1', 'planFreeFeature2', 'planFreeFeature3'], featured: false, trial: true },
+  { nameKey: 'planPro', price: '$9,99', periodKey: 'planProPeriod', features: ['planProFeature1', 'planProFeature2', 'planProFeature3'], featured: true, trial: true },
+  { nameKey: 'planAgency', price: '$39,99', periodKey: 'planAgencyPeriod', features: ['planAgencyFeature1', 'planAgencyFeature2', 'planAgencyFeature3'], featured: false, trial: true },
 ] as const
 
 export default async function HomePage() {
@@ -571,6 +572,12 @@ export default async function HomePage() {
                     <small>{t(plan.periodKey)}</small>
                   </span>
                 </div>
+                {plan.trial && (
+                  <p className={styles.planTrial}>
+                    <Clock size={13} aria-hidden="true" />
+                    {t('planTrial')}
+                  </p>
+                )}
                 <ul className={styles.planFeatures}>
                   {plan.features.map((featureKey) => (
                     <li key={featureKey}>

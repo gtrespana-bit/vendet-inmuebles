@@ -294,21 +294,101 @@
     },
     "register": {
       "title": "Crear cuenta",
-      "name": "Nombre completo",
-      "email": "Correo electrónico",
-      "phone": "Teléfono (opcional)",
-      "password": "Contraseña",
-      "repeat_password": "Repetir contraseña",
-      "state": "Estado (opcional)",
-      "city": "Ciudad (opcional)",
-      "submit": "Registrarse",
+      "subtitle": "Elige tu tipo de cuenta y empieza con 30 días de prueba gratis, sin tarjeta.",
+      "stepsLabel": "Pasos del registro",
+      "steps": {
+        "type": "Tipo de cuenta",
+        "plan": "Plan",
+        "details": "Tus datos"
+      },
+      "stepTypeTitle": "¿Cómo vas a usar Venezuela Inmuebles?",
+      "stepTypeLead": "Elige el tipo de cuenta y te pediremos solo los datos que necesitas.",
+      "typeHint": "Podrás cambiar de plan más adelante desde la página de planes.",
+      "stepPlanTitle": "Elige tu plan",
+      "stepPlanLead": "Todos los planes incluyen 30 días de prueba gratis.",
+      "planHint": "Sin tarjeta de crédito y sin cobros automáticos. Al terminar la prueba tu cuenta pasa al plan Gratuita (3 anuncios activos) y no pierdes lo que hayas publicado.",
+      "stepDetailsTitle": "Tus datos",
+      "stepDetailsLead": "Solo lo necesario para crear tu cuenta. Los campos marcados son obligatorios.",
+      "types": {
+        "particular": {
+          "name": "Particular",
+          "description": "Vendo o alquilo mi propio inmueble."
+        },
+        "profesional": {
+          "name": "Profesional",
+          "description": "Soy agente o corredor inmobiliario independiente."
+        },
+        "agencia": {
+          "name": "Agencia",
+          "description": "Represento a una inmobiliaria o equipo de agentes."
+        }
+      },
+      "listingsChip": "{max} anuncios activos",
+      "listingsUnlimited": "Anuncios sin límite",
+      "photosChip": "{max} fotos por inmueble",
+      "trialBadge": "30 días de prueba",
+      "trialBanner": "Activamos {days} días de prueba gratis en el plan que elijas: empiezan hoy y terminan el {date}.",
+      "recommended": "Recomendado",
+      "planNames": {
+        "gratuita": "Gratuita",
+        "profesional": "Profesional",
+        "agencia": "Agencia"
+      },
+      "planDescriptions": {
+        "gratuita": "Publica tu propio inmueble. Hasta {max} anuncios activos.",
+        "profesional": "Para agentes independientes. Hasta {max} anuncios activos.",
+        "agencia": "Para inmobiliarias y equipos. Anuncios ilimitados."
+      },
+      "summaryPlan": "Plan {plan}",
+      "summaryTrial": "{days} días de prueba",
+      "fields": {
+        "name": "Nombre",
+        "surname": "Apellido",
+        "responsable": "Nombre del responsable",
+        "empresa": "Nombre de la agencia",
+        "licencia": "Licencia de corretaje",
+        "email": "Correo electrónico",
+        "phone": "Teléfono o WhatsApp",
+        "state": "Estado",
+        "city": "Ciudad",
+        "password": "Contraseña",
+        "repeatPassword": "Repetir contraseña"
+      },
+      "placeholders": {
+        "name": "Tu nombre",
+        "surname": "Tu apellido",
+        "empresa": "Inmobiliaria o equipo",
+        "licencia": "Número de licencia",
+        "password": "Mínimo 8 caracteres",
+        "repeatPassword": "Repite tu contraseña"
+      },
+      "optional": "opcional",
+      "choose": "Selecciona…",
+      "rules": {
+        "length": "8 caracteres",
+        "upper": "Una mayúscula",
+        "number": "Un número"
+      },
+      "continue": "Continuar",
+      "back": "Volver",
+      "submit": "Crear cuenta y activar 30 días",
+      "creating": "Creando cuenta…",
       "has_account": "¿Ya tienes una cuenta?",
       "login": "Inicia sesión",
-      "password_mismatch": "Las contraseñas no coinciden",
-      "error": "Error al registrar",
-      "subtitle": "Crea tu cuenta para gestionar tus inmuebles y consultas.",
-      "creating": "Creando cuenta...",
-      "password_hint": "Usa al menos 8 caracteres, una mayúscula y un número."
+      "errors": {
+        "type": "Elige el tipo de cuenta para continuar.",
+        "name": "Escribe tu nombre (al menos 2 caracteres).",
+        "surname": "Escribe tu apellido (al menos 2 caracteres).",
+        "empresa": "Escribe el nombre de la agencia.",
+        "email": "Ingresa un correo electrónico válido.",
+        "password": "La contraseña debe tener al menos 8 caracteres.",
+        "passwordUpper": "La contraseña debe tener al menos una mayúscula.",
+        "passwordNumber": "La contraseña debe tener al menos un número.",
+        "passwordMismatch": "Las contraseñas no coinciden.",
+        "accountExists": "Ya existe una cuenta con este correo. Inicia sesión o recupera tu contraseña.",
+        "connection": "No pudimos conectar. Inténtalo de nuevo.",
+        "generic": "No pudimos crear la cuenta. Inténtalo de nuevo."
+      }
     },
     "confirmacion": {
       "title": "¡Casi listo!",
@@ -318,7 +398,11 @@
       "footer": "Cuando recibas el email, confirma tu cuenta y luego regresa a hacer login.",
       "not_received": "🔒 ¿Email de confirmación no enviado aún?",
       "resend_hint": "Regresa al login y haz clic en \"¿No recibiste el email de confirmación? Reenviarlo\"",
-      "go_to_login": "Ir al login"
+      "go_to_login": "Ir al login",
+      "trialTitle": "Tu prueba gratis de {days} días está activa",
+      "trialPlan": "Plan {plan}",
+      "trialUntil": "hasta el {date}",
+      "trialNote": "Se activa al confirmar tu correo. Sin tarjeta de crédito y sin cobros automáticos."
     },
     "story": {
       "eyebrow": "EL MERCADO INMOBILIARIO, CON MÁS CLARIDAD",
@@ -1690,16 +1774,16 @@
     "planProPeriod": "al mes",
     "planAgency": "Agencia",
     "planAgencyPeriod": "al mes",
-    "planFreeFeature1": "1 anuncio activo",
+    "planFreeFeature1": "3 anuncios activos",
     "planFreeFeature2": "8 fotos por inmueble",
     "planFreeFeature3": "Verificación gratuita",
-    "planProFeature1": "5 anuncios activos",
+    "planProFeature1": "10 anuncios activos",
     "planProFeature2": "20 fotos por inmueble",
     "planProFeature3": "5 créditos al mes",
     "planAgencyFeature1": "Anuncios sin límite",
     "planAgencyFeature2": "30 fotos por inmueble",
     "planAgencyFeature3": "Hasta 5 usuarios",
-    "plansNote": "30 días de prueba en los planes de pago. Sin tarjeta de crédito y sin cobros automáticos: al vencer, la cuenta vuelve al plan Gratuita.",
+    "plansNote": "30 días de prueba gratis en cualquiera de los planes. Sin tarjeta de crédito y sin cobros automáticos: al vencer, la cuenta vuelve al plan Gratuita con 3 anuncios activos.",
     "plansCta": "Comparar planes",
     "closingEyebrow": "EMPIEZA HOY",
     "closingTitle": "Tu próximo inmueble está a una búsqueda de distancia.",
@@ -1712,7 +1796,8 @@
     "cardPriceOnRequest": "Precio a consultar",
     "cardBedrooms": "hab",
     "cardBathrooms": "baños",
-    "viewMap": "Ver en el mapa"
+    "viewMap": "Ver en el mapa",
+    "planTrial": "30 días de prueba gratis"
   },
   "map": {
     "eyebrow": "Búsqueda por mapa",
