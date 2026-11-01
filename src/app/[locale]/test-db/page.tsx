@@ -4,7 +4,7 @@ import LocalLink from '@/components/LocalLink';
 
 export const dynamic = 'force-dynamic';
 
-export default async function TestDBPage({ params }: { params: { locale: string } }) {
+export default async function TestDBPage({ params }: { params: Promise<{ locale: string }> }) {
   devOnlyPage()
   const { locale } = await params;
   

@@ -1,5 +1,6 @@
 'use client'
 
+import { useParams } from 'next/navigation'
 import { devOnlyPage } from '@/lib/dev-only'
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
@@ -31,9 +32,9 @@ const AI_SAMPLE = {
   ubicacion: 'Caracas, Miranda',
 }
 
-export default function DiagnosticoPage({ params }: { params: { locale: string } }) {
+export default function DiagnosticoPage() {
   devOnlyPage()
-  const { locale } = params
+  const { locale } = useParams<{ locale: string }>()
   const t = useTranslations('diagnostico')
   const { user, loading } = useAuth()
 

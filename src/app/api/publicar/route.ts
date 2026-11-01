@@ -87,8 +87,12 @@ export async function POST(req: NextRequest) {
     }
 
     const imageUrls = Array.isArray(body.imagenes)
-      ? body.imagenes.filter((url: unknown): url is string => typeof url === 'string' && url.startsWith('https://')).slice(0, planData.limits.maxFotos)
+      ? body.imagenes.filter((url: unknown): url is string => typeof url === 'string' && url.startsWith('https://'))
       : []
+    if (imageUrls.length > planData.limits.maxFotos) {
+      return NextResponse.json({ error: `Máximo ${planData.limits.maxFotos} fotos para este plan` }, { status: 403 })
+    }
+
     const firstImage = typeof body.imagen_url === 'string' && body.imagen_url.startsWith('https://')
       ? body.imagen_url
       : imageUrls[0] || null
@@ -122,7 +126,7 @@ export async function POST(req: NextRequest) {
       .select('*')
       .single()
     if (insertError || !property) {
-      return NextResponse.json({ error: insertError?.message || 'Error al publicar' }, { status: 500 })
+      return NextResponse.json({ error: insertError?.message || 'Error al publicar' }, { status: insertError?.code === '23514' ? 403 : 500 })
     }
 
     if (imageUrls.length > 0) {

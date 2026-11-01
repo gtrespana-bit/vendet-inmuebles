@@ -137,9 +137,10 @@ function sampleListings(locale: string): HomeListing[] {
   ]
 }
 
-export async function generateMetadata({ params }: { params: { locale: string } }): Promise<Metadata> {
-  const t = await getTranslations({ locale: params.locale, namespace: 'homePage' })
-  const localePrefix = params.locale === 'es' ? '' : `/${params.locale}`
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale } = await params
+  const t = await getTranslations({ locale, namespace: 'homePage' })
+  const localePrefix = locale === 'es' ? '' : `/${locale}`
 
   return {
     title: t('metaTitle'),
@@ -153,7 +154,7 @@ export async function generateMetadata({ params }: { params: { locale: string } 
     },
     openGraph: {
       type: 'website',
-      locale: params.locale === 'es' ? 'es_VE' : 'en_US',
+      locale: locale === 'es' ? 'es_VE' : 'en_US',
       url: `${SITE_URL}${localePrefix || '/'}`,
       siteName: 'Venezuela Inmuebles',
       title: t('metaTitle'),

@@ -91,9 +91,12 @@ export async function POST(req: NextRequest) {
     }
 
     const imageUrls = Array.isArray(imagenes)
-      ? imagenes.filter((url: unknown): url is string => typeof url === 'string' && url.startsWith('https://')).slice(0, planData.limits.maxFotos)
+      ? imagenes.filter((url: unknown): url is string => typeof url === 'string' && url.startsWith('https://'))
       : []
 
+    if (imageUrls.length > planData.limits.maxFotos) {
+      return NextResponse.json({ error: `Máximo ${planData.limits.maxFotos} fotos para este plan` }, { status: 403 })
+    }
     const lat = Number(latitud)
     const lng = Number(longitud)
     const hasCoords =
@@ -141,7 +144,7 @@ export async function POST(req: NextRequest) {
 
     if (insertError || !property) {
       console.error('Error al crear inmueble:', insertError)
-      return NextResponse.json({ error: insertError?.message || 'Error al crear el inmueble' }, { status: 500 })
+      return NextResponse.json({ error: insertError?.message || 'Error al crear el inmueble' }, { status: insertError?.code === '23514' ? 403 : 500 })
     }
 
     if (imageUrls.length > 0) {
@@ -224,6 +227,26 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'Inmueble no encontrado' }, { status: 404 })
     }
 
+    // Reject over-quota/invalid images BEFORE any mutation. Never truncate a saved gallery.
+    const editPlan = await checkPlanLimits(user.id)
+    if (Array.isArray(body.imagenes)) {
+      if (body.imagenes.some((img: any) => !img || typeof img.url !== 'string' || !img.url.startsWith('https://'))) {
+        return NextResponse.json({ error: 'Imagen no válida' }, { status: 400 })
+      }
+      // Grandfather existing photos after a downgrade, but do not allow new ones above quota.
+      if (body.imagenes.length > editPlan.limits.maxFotos && body.imagenes.some((img: any) => !img.id)) {
+        return NextResponse.json({ error: `El plan ${editPlan.plan} permite ${editPlan.limits.maxFotos} fotos` }, { status: 403 })
+      }
+      const { data: currentImages, error: imageReadError } = await supabase.from('inmueble_imagenes')
+        .select('id').eq('inmueble_id', id)
+      if (imageReadError) throw imageReadError
+      const ownIds = new Set((currentImages || []).map(img => img.id))
+      const ids = body.imagenes.filter((img: any) => img.id).map((img: any) => img.id)
+      if (ids.some((imageId: string) => !ownIds.has(imageId)) || new Set(ids).size !== ids.length) {
+        return NextResponse.json({ error: 'Imagen no válida' }, { status: 400 })
+      }
+    }
+
     // Campos editables
     const cambios: Record<string, unknown> = {}
     const str = (v: unknown, max: number) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, max) : undefined)
@@ -295,8 +318,7 @@ export async function PATCH(req: NextRequest) {
     if (Array.isArray(body.imagenes)) {
       const nuevas = body.imagenes
         .filter((img: unknown): img is { id?: string; url: string } =>
-          !!img && typeof (img as { url?: unknown }).url === 'string' && !!(img as { url: string }).url.startsWith('http'))
-        .slice(0, 20)
+          !!img && typeof (img as { url?: unknown }).url === 'string' && !!(img as { url: string }).url.startsWith('https://'))
 
       const { data: filasActuales, error: imagesReadError } = await supabase
         .from('inmueble_imagenes').select('id, orden').eq('inmueble_id', id)
@@ -352,7 +374,7 @@ export async function PATCH(req: NextRequest) {
     console.error('Error updating property:', error)
     return NextResponse.json(
       { error: error?.message || 'Error interno del servidor' },
-      { status: 500 }
+      { status: error?.code === '23514' ? 403 : 500 }
     )
   }
 }
