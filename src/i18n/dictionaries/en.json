@@ -733,7 +733,10 @@
     },
     "applyFilters": "Apply filters",
     "applyChanges": "Apply changes",
-    "pendingChanges": "{count, plural, one {# change not applied} other {# changes not applied}}"
+    "pendingChanges": "{count, plural, one {# change not applied} other {# changes not applied}}",
+    "sortRelevance": "Featured & relevant",
+    "sortPricePerM2Asc": "Lowest price per m²",
+    "sortAreaDesc": "Largest area (m²)"
   },
   "productCard": {
     "featured": "Featured",
@@ -1694,7 +1697,18 @@
     "chatAuto": "Internal chat is always enabled on every listing.",
     "invalidPhone": "The phone number is invalid: use 7 to 15 digits, it may start with +.",
     "invalidEmail": "The contact email is invalid.",
-    "invalidMessenger": "The Messenger link must start with http:// or https://."
+    "invalidMessenger": "The Messenger link must start with http:// or https://.",
+    "neighborhood": "Neighborhood, sector or zone",
+    "neighborhoodPlaceholder": "e.g. Las Mercedes, El Parral, Mañongo, Costa Azul…",
+    "richMediaTitle": "Video, 360° virtual tour & floor plan",
+    "richMediaSubtitle": "Showcase every space with a walkthrough video, interactive 360° tour or layout floor plan.",
+    "richMediaUpgradeBadge": "Professional & Agency plans",
+    "richMediaLockedNote": "Video links, 360° virtual tours and floor plans are included in the Professional and Agency plans (with a 30-day free trial).",
+    "videoUrlLabel": "Video link (YouTube, Vimeo, Instagram Reel or TikTok)",
+    "virtualTourUrlLabel": "360° virtual tour link (Matterport, Kuula or other)",
+    "floorPlanUrlLabel": "Floor plan (URL or uploaded image)",
+    "uploadFloorPlanBtn": "Upload plan",
+    "invalidMediaUrlError": "Video, 360° tour and floor plan links must start with https:// and be valid public URLs."
   },
   "pushBanner": {
     "title": "Stay up to date",

@@ -52,7 +52,7 @@ export default function ResultadosUbicacion({
           {q && <h1 className="text-xl font-bold text-gray-900">Resultados para &ldquo;{q}&rdquo;</h1>}
           {!loading && <p className="text-sm text-gray-500 mt-1">{resultCount} resultado{resultCount !== 1 ? 's' : ''}</p>}
         </div>
-        <form action="/buscar" method="GET" className="flex gap-2 w-full sm:w-auto">
+        <form action="/catalogo" method="GET" className="flex gap-2 w-full sm:w-auto">
           <div className="relative flex-1 sm:w-60">
             <input name="q" defaultValue={q} placeholder="Buscar..." className="w-full border rounded-lg pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-accent" />
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />

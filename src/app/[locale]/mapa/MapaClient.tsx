@@ -31,7 +31,7 @@ export default function MapaClient({ products, locale }: MapaClientProps) {
 
   const [operacion, setOperacion] = useState(searchParams.get('operacion') || '')
   const [ciudad, setCiudad] = useState(searchParams.get('ciudad') || '')
-  const [q, setQ] = useState(searchParams.get('q') || '')
+  const [q, setQ] = useState(searchParams.get('q') || searchParams.get('zona') || '')
 
   // Si se llega desde un enlace externo (cabecera, catálogo…) con otros parámetros,
   // sincronizamos el estado local con la URL.
@@ -39,7 +39,7 @@ export default function MapaClient({ products, locale }: MapaClientProps) {
   useEffect(() => {
     setOperacion(searchParams.get('operacion') || '')
     setCiudad(searchParams.get('ciudad') || '')
-    setQ(searchParams.get('q') || '')
+    setQ(searchParams.get('q') || searchParams.get('zona') || '')
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchKey])
 

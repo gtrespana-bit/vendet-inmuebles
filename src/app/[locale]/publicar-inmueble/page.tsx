@@ -16,7 +16,9 @@ import { limpiarMetodosContacto, validarMetodosContacto } from '@/lib/contact-me
 import { FORM_AMENITY_GROUPS } from '@/lib/amenities';
 import ContactMethodsFields, { type MetodosContactoForm } from '@/components/ContactMethodsFields';
 import { trackGa4Event } from '@/lib/ga4';
-import { Sparkles, Loader2 } from 'lucide-react';
+import { getUrbanizacionesSugeridas } from '@/lib/urbanizaciones';
+import { canPlanIncludeRichMedia, sanitizeExternalMediaUrl } from '@/lib/property-media';
+import { Sparkles, Loader2, Video, Compass, Layers, Upload } from 'lucide-react';
 
 interface ImagePreview {
   file: File;
@@ -161,6 +163,7 @@ export default function PublicarInmueblePage() {
   // Ubicación
   const [estado, setEstado] = useState('');
   const [ciudad, setCiudad] = useState('');
+  const [zona, setZona] = useState('');
   const [pin, setPin] = useState<{ lat: number; lng: number } | null>(null);
 
   // Detalles
@@ -181,9 +184,52 @@ export default function PublicarInmueblePage() {
   // Métodos de contacto de este anuncio (llamadas / WhatsApp / email / Messenger)
   const [metodosContacto, setMetodosContacto] = useState<MetodosContactoForm>({});
 
-  // Imágenes
+  // Imágenes y multimedia adicional
   const [imagenes, setImagenes] = useState<ImagePreview[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const planoInputRef = useRef<HTMLInputElement>(null);
+  const [videoUrl, setVideoUrl] = useState('');
+  const [virtualTourUrl, setVirtualTourUrl] = useState('');
+  const [planoUrl, setPlanoUrl] = useState('');
+  const [subiendoPlano, setSubiendoPlano] = useState(false);
+
+  const richMediaAllowed = canPlanIncludeRichMedia(
+    planLimits?.effectivePublishingPlan || planLimits?.plan
+  );
+
+  const handlePlanoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !user) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 4 * 1024 * 1024) {
+      setError(tPublish('fileTypeError'));
+      return;
+    }
+    setSubiendoPlano(true);
+    setError(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error(tPublish('sessionExpiredError'));
+      const safeFileName = file.name.normalize('NFKD').replace(/[^a-zA-Z0-9._-]+/g, '_').slice(0, 80);
+      const key = `${user.id}/planos/${Date.now()}-${safeFileName}`;
+      const compressed = await compressImage(file);
+      const fd = new FormData();
+      fd.append('key', key);
+      fd.append('file', compressed);
+      const uploadRes = await fetch('/api/r2-upload', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session.access_token}` },
+        body: fd,
+      });
+      if (!uploadRes.ok) throw new Error(tPublish('uploadError'));
+      const { publicUrl } = await uploadRes.json();
+      setPlanoUrl(publicUrl);
+    } catch (err: any) {
+      setError(err.message || tPublish('uploadError'));
+    } finally {
+      setSubiendoPlano(false);
+    }
+  };
 
   const toggleAmenidad = (nombre: string) => {
     setAmenidades(prev => prev.includes(nombre) ? prev.filter(a => a !== nombre) : [...prev, nombre]);
@@ -309,6 +355,14 @@ export default function PublicarInmueblePage() {
         throw new Error(tPublish('invalidMessenger'));
       }
 
+      if (richMediaAllowed) {
+        for (const rawLink of [videoUrl, virtualTourUrl, planoUrl]) {
+          if (rawLink.trim() && !sanitizeExternalMediaUrl(rawLink)) {
+            throw new Error(tPublish('invalidMediaUrlError'));
+          }
+        }
+      }
+
       const { data: { session } } = await supabase.auth.getSession();
       if (!session || session.user.id !== user.id) {
         throw new Error(tPublish('sessionExpiredError'));
@@ -368,6 +422,7 @@ export default function PublicarInmueblePage() {
           tipo_propiedad: tipoPropiedad,
           estado,
           ciudad,
+          zona: zona.trim() || null,
           habitaciones,
           banos,
           area: areaTerreno ? parseFloat(areaTerreno) : null,
@@ -376,6 +431,9 @@ export default function PublicarInmueblePage() {
           condicion: condicion || null,
           caracteristicas,
           imagenes: imageUrls,
+          video_url: richMediaAllowed && videoUrl.trim() ? videoUrl.trim() : null,
+          virtual_tour_url: richMediaAllowed && virtualTourUrl.trim() ? virtualTourUrl.trim() : null,
+          plano_url: richMediaAllowed && planoUrl.trim() ? planoUrl.trim() : null,
           latitud: pin?.lat ?? null,
           longitud: pin?.lng ?? null,
           metodos_contacto: limpiarMetodosContacto(metodosContacto),
@@ -653,6 +711,27 @@ export default function PublicarInmueblePage() {
                       </option>
                     ))}
                 </select>
+              </div>
+
+              <div className="md:col-span-2">
+                <label htmlFor="zona" className="block text-sm font-medium text-gray-700 mb-2">
+                  {tPublish('neighborhood')} <span className="text-gray-400 font-normal">({tPublish('optional')})</span>
+                </label>
+                <input
+                  type="text"
+                  id="zona"
+                  list="publish-zonas-datalist"
+                  value={zona}
+                  onChange={(e) => setZona(e.target.value)}
+                  maxLength={120}
+                  placeholder={tPublish('neighborhoodPlaceholder')}
+                  className={inputClass}
+                />
+                <datalist id="publish-zonas-datalist">
+                  {getUrbanizacionesSugeridas(estado || undefined, ciudad || undefined).map((z) => (
+                    <option key={z} value={z} />
+                  ))}
+                </datalist>
               </div>
             </div>
 
@@ -977,6 +1056,100 @@ export default function PublicarInmueblePage() {
             {imagenes.length > 1 && (
               <p className="mt-2 text-xs text-gray-500">{tPublish('reorderHint')}</p>
             )}
+
+            {/* Multimedia adicional: Vídeo, Recorrido 360° y Plano */}
+            <div className="mt-6 rounded-xl border border-[#E5DEC9] bg-white p-5 space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <h3 className="text-base font-semibold text-gray-900">
+                    {tPublish('richMediaTitle')}
+                  </h3>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {tPublish('richMediaSubtitle')}
+                  </p>
+                </div>
+                {!richMediaAllowed && (
+                  <LocalLink
+                    href="/planes"
+                    className="inline-flex items-center gap-1.5 rounded-full bg-[#F3EBD9] border border-[#E1D0A9] px-3 py-1 text-xs font-semibold text-[#755B2C] hover:bg-[#eadcc0]"
+                  >
+                    <Sparkles size={13} aria-hidden="true" />
+                    {tPublish('richMediaUpgradeBadge')}
+                  </LocalLink>
+                )}
+              </div>
+
+              {!richMediaAllowed ? (
+                <p className="text-xs text-gray-600 bg-[#FAF8F3] border border-[#EAE3D5] rounded-lg p-3">
+                  {tPublish('richMediaLockedNote')}
+                </p>
+              ) : (
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="video-url" className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1.5">
+                      <Video size={15} className="text-brand-primary" aria-hidden="true" />
+                      {tPublish('videoUrlLabel')} <span className="text-gray-400 font-normal">({tPublish('optional')})</span>
+                    </label>
+                    <input
+                      type="url"
+                      id="video-url"
+                      value={videoUrl}
+                      onChange={(e) => setVideoUrl(e.target.value)}
+                      placeholder="https://www.youtube.com/watch?v=... / Instagram Reel / TikTok"
+                      className={inputClass}
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="tour-url" className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1.5">
+                      <Compass size={15} className="text-brand-primary" aria-hidden="true" />
+                      {tPublish('virtualTourUrlLabel')} <span className="text-gray-400 font-normal">({tPublish('optional')})</span>
+                    </label>
+                    <input
+                      type="url"
+                      id="tour-url"
+                      value={virtualTourUrl}
+                      onChange={(e) => setVirtualTourUrl(e.target.value)}
+                      placeholder="https://my.matterport.com/show/?m=... / https://kuula.co/share/..."
+                      className={inputClass}
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="plano-url" className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1.5">
+                      <Layers size={15} className="text-brand-primary" aria-hidden="true" />
+                      {tPublish('floorPlanUrlLabel')} <span className="text-gray-400 font-normal">({tPublish('optional')})</span>
+                    </label>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <input
+                        type="url"
+                        id="plano-url"
+                        value={planoUrl}
+                        onChange={(e) => setPlanoUrl(e.target.value)}
+                        placeholder="https://..."
+                        className={inputClass}
+                      />
+                      <input
+                        ref={planoInputRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        onChange={handlePlanoUpload}
+                        className="hidden"
+                      />
+                      <button
+                        type="button"
+                        disabled={subiendoPlano}
+                        onClick={() => planoInputRef.current?.click()}
+                        className="shrink-0 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg border border-[#DCD4C6] bg-[#FAF8F3] text-xs font-semibold text-gray-800 hover:bg-[#F1ECE0] disabled:opacity-50"
+                      >
+                        {subiendoPlano ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+                        {tPublish('uploadFloorPlanBtn')}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </section>
 
           {/* ============ 5. PRECIO ============ */}

@@ -1,6 +1,8 @@
 import Image from 'next/image'
 import LocalLink from '@/components/LocalLink'
-import { Bath, BedDouble, MapPin, Ruler } from 'lucide-react'
+import FavoriteCardButton from '@/components/FavoriteCardButton'
+import { Bath, BedDouble, Compass, MapPin, Ruler, Video } from 'lucide-react'
+import { calculatePricePerM2 } from '@/lib/urbanizaciones'
 import styles from './home.module.css'
 
 export type HomeListing = {
@@ -12,12 +14,17 @@ export type HomeListing = {
   operation: string | null
   city: string | null
   state: string | null
+  zone?: string | null
   image: string | null
   bedrooms: number | null
   bathrooms: number | null
   area: number | null
+  builtArea?: number | null
   featured: boolean
   verified: boolean
+  ownerId?: string | null
+  hasVideo?: boolean
+  hasTour?: boolean
   sample?: boolean
 }
 
@@ -32,9 +39,13 @@ export type ListingCardLabels = {
   bathrooms: string
 }
 
-function operationLabel(listing: HomeListing, labels: ListingCardLabels) {
+function isRentListing(listing: HomeListing): boolean {
   const raw = (listing.operation || '').toLowerCase()
-  return raw.startsWith('alq') || raw.startsWith('rent') ? labels.rent : labels.sale
+  return raw.startsWith('alq') || raw.startsWith('rent')
+}
+
+function operationLabel(listing: HomeListing, labels: ListingCardLabels) {
+  return isRentListing(listing) ? labels.rent : labels.sale
 }
 
 function formatPrice(listing: HomeListing, locale: string, labels: ListingCardLabels) {
@@ -63,10 +74,28 @@ export default function ListingCard({
   priority?: boolean
 }) {
   const href = `/inmueble/${listing.slug || listing.id}`
-  const location = [listing.city, listing.state].filter(Boolean).join(', ')
+  const locationParts = listing.zone
+    ? [listing.zone, listing.city || listing.state].filter(Boolean)
+    : [listing.city, listing.state].filter(Boolean)
+  const location = locationParts.join(', ')
+  const isRent = isRentListing(listing)
+  const displayArea = listing.builtArea && listing.builtArea > 0 ? listing.builtArea : listing.area
+  const pricePerM2 = !isRent
+    ? calculatePricePerM2(listing.price, listing.builtArea, listing.area)
+    : null
+  const normalizedLocale = locale === 'en' ? 'en-US' : 'es-VE'
 
   return (
     <article className={styles.card}>
+      {!listing.sample ? (
+        <FavoriteCardButton
+          propertyId={listing.id}
+          propertySlug={listing.slug}
+          ownerId={listing.ownerId}
+          locale={locale}
+          className={styles.cardFav}
+        />
+      ) : null}
       <div className={styles.cardMedia}>
         <Image
           src={listing.image || '/sinimagen.webp'}
@@ -83,6 +112,20 @@ export default function ListingCard({
             <span className={`${styles.badge} ${styles.badgeGold}`}>{labels.featured}</span>
           ) : null}
         </div>
+        {(listing.hasVideo || listing.hasTour) && (
+          <div className={styles.cardMediaPills}>
+            {listing.hasVideo ? (
+              <span className={styles.cardMediaPill}>
+                <Video size={11} aria-hidden="true" /> Video
+              </span>
+            ) : null}
+            {listing.hasTour ? (
+              <span className={styles.cardMediaPill}>
+                <Compass size={11} aria-hidden="true" /> 360°
+              </span>
+            ) : null}
+          </div>
+        )}
       </div>
 
       <div className={styles.cardBody}>
@@ -93,10 +136,20 @@ export default function ListingCard({
 
         <h3 className={styles.cardTitle}>{listing.title}</h3>
 
-        <p className={styles.cardPrice}>
-          {formatPrice(listing, locale, labels)}
-          {listing.verified ? <small>{labels.verified}</small> : null}
-        </p>
+        <div className={styles.cardPriceRow}>
+          <p className={styles.cardPrice}>
+            {formatPrice(listing, locale, labels)}
+            {isRent && listing.price > 0 ? (
+              <small>{locale === 'en' ? '/mo' : '/mes'}</small>
+            ) : null}
+            {listing.verified ? <small>{labels.verified}</small> : null}
+          </p>
+          {pricePerM2 != null ? (
+            <span className={styles.cardUnitPrice}>
+              ${pricePerM2.toLocaleString(normalizedLocale)}/m²
+            </span>
+          ) : null}
+        </div>
 
         <div className={styles.cardSpecs}>
           {listing.bedrooms ? (
@@ -111,10 +164,10 @@ export default function ListingCard({
               {listing.bathrooms} {labels.bathrooms}
             </span>
           ) : null}
-          {listing.area ? (
+          {displayArea ? (
             <span>
               <Ruler size={14} aria-hidden="true" />
-              {listing.area.toLocaleString(locale === 'en' ? 'en-US' : 'es-VE')} m²
+              {displayArea.toLocaleString(normalizedLocale)} m²
             </span>
           ) : null}
         </div>

@@ -28,7 +28,7 @@ import styles from '@/components/home/home.module.css'
 
 const SITE_URL = 'https://venezuela-inmuebles.online'
 const LISTING_COLUMNS =
-  'id, slug, titulo, precio, moneda, operacion_slug, tipo_nombre, ciudad, estado, main_image_url, habitaciones, banos, area_total, destacado, destacado_hasta, vendedor_verificado, creado_en'
+  'id, usuario_id, slug, titulo, precio, moneda, operacion_slug, tipo_nombre, ciudad, estado, zona, main_image_url, habitaciones, banos, area_total, area_construida, video_url, virtual_tour_url, destacado, destacado_hasta, vendedor_verificado, creado_en'
 
 async function getHomeListings(limit: number, featuredOnly = false): Promise<HomeListing[]> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -63,12 +63,17 @@ async function getHomeListings(limit: number, featuredOnly = false): Promise<Hom
         operation: row.operacion_slug || null,
         city: row.ciudad || null,
         state: row.estado || null,
+        zone: row.zona || null,
         image: row.main_image_url || null,
         bedrooms: row.habitaciones == null ? null : Number(row.habitaciones),
         bathrooms: row.banos == null ? null : Number(row.banos),
         area: row.area_total == null ? null : Number(row.area_total),
+        builtArea: row.area_construida == null ? null : Number(row.area_construida),
         featured: Boolean(row.destacado && row.destacado_hasta && new Date(row.destacado_hasta).getTime() > now),
         verified: Boolean(row.vendedor_verificado),
+        ownerId: row.usuario_id || null,
+        hasVideo: Boolean(typeof row.video_url === 'string' && row.video_url.trim()),
+        hasTour: Boolean(typeof row.virtual_tour_url === 'string' && row.virtual_tour_url.trim()),
       }),
     )
 

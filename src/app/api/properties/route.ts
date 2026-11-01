@@ -10,6 +10,7 @@ import { evaluarModeracionServidor } from '@/lib/moderacion'
 import { canUserManageProperty, getUserAgencyContext } from '@/lib/agency-server'
 import { resolveEffectiveAgencyPublisher } from '@/lib/agency'
 import { isValidUUID } from '@/lib/validation'
+import { canPlanIncludeRichMedia, sanitizeExternalMediaUrl } from '@/lib/property-media'
 
 export async function POST(req: NextRequest) {
   try {
@@ -130,9 +131,27 @@ export async function POST(req: NextRequest) {
 
     const areaConstruidaNum = Number(area_construida)
     const condicionLimpia = typeof condicion === 'string' && condicion.trim() ? condicion.trim().slice(0, 60) : null
-    const videoUrlLimpia = typeof body.video_url === 'string' && body.video_url.trim().startsWith('https://') ? body.video_url.trim().slice(0, 500) : null
-    const virtualTourUrlLimpia = typeof body.virtual_tour_url === 'string' && body.virtual_tour_url.trim().startsWith('https://') ? body.virtual_tour_url.trim().slice(0, 500) : null
-    const planoUrlLimpia = typeof body.plano_url === 'string' && body.plano_url.trim().startsWith('https://') ? body.plano_url.trim().slice(0, 500) : null
+    const zonaLimpia = typeof body.zona === 'string' && body.zona.trim() ? body.zona.trim().slice(0, 120) : null
+
+    const rawVideo = typeof body.video_url === 'string' ? body.video_url.trim() : ''
+    const rawTour = typeof body.virtual_tour_url === 'string' ? body.virtual_tour_url.trim() : ''
+    const rawPlano = typeof body.plano_url === 'string' ? body.plano_url.trim() : ''
+
+    const videoUrlLimpia = rawVideo ? sanitizeExternalMediaUrl(rawVideo) : null
+    const virtualTourUrlLimpia = rawTour ? sanitizeExternalMediaUrl(rawTour) : null
+    const planoUrlLimpia = rawPlano ? sanitizeExternalMediaUrl(rawPlano) : null
+
+    if ((rawVideo && !videoUrlLimpia) || (rawTour && !virtualTourUrlLimpia) || (rawPlano && !planoUrlLimpia)) {
+      return NextResponse.json(
+        { error: 'Los enlaces de vídeo, recorrido 360° y planos deben ser URLs públicas válidas con https://' },
+        { status: 400 }
+      )
+    }
+
+    if ((videoUrlLimpia || virtualTourUrlLimpia || planoUrlLimpia) && !canPlanIncludeRichMedia(planData.effectivePublishingPlan)) {
+      const quota = planQuotaResponse('Los enlaces de vídeo, recorrido 360° y planos están incluidos en los planes Profesional y Agencia')
+      return NextResponse.json(quota.body, { status: quota.status })
+    }
 
     const { agency, activeMemberIds } = await getUserAgencyContext(supabase, user.id)
     const requestedAgentId = typeof body.agente_asignado_id === 'string' && isValidUUID(body.agente_asignado_id)
@@ -155,6 +174,7 @@ export async function POST(req: NextRequest) {
       moneda: 'USD',
       estado: estadoLimpio,
       ciudad: ciudadLimpia,
+      zona: zonaLimpia,
       ubicacion_estado_id: estadoData?.id || null,
       ubicacion_ciudad_id: ciudadId,
       operacion_id: operacion.id,
@@ -267,7 +287,7 @@ export async function PATCH(req: NextRequest) {
     // El inmueble debe existir y pertenecer al usuario o estar bajo su gestión autorizada de agencia
     const { data: existing, error: existingError } = await supabase
       .from('inmuebles')
-      .select('id, usuario_id, agencia_id, agente_asignado_id')
+      .select('id, usuario_id, agencia_id, agente_asignado_id, video_url, virtual_tour_url, plano_url')
       .eq('id', id)
       .maybeSingle()
     if (existingError) throw existingError
@@ -336,6 +356,32 @@ export async function PATCH(req: NextRequest) {
     if (puestos !== undefined) cambios.puestos_estacionamiento = puestos
     const condicion = str(body.condicion, 60)
     if (condicion !== undefined) cambios.condicion = condicion || null
+    if ('zona' in body) {
+      cambios.zona = typeof body.zona === 'string' && body.zona.trim() ? body.zona.trim().slice(0, 120) : null
+    }
+
+    for (const mediaKey of ['video_url', 'virtual_tour_url', 'plano_url'] as const) {
+      if (!(mediaKey in body)) continue
+      const rawVal = typeof body[mediaKey] === 'string' ? body[mediaKey].trim() : ''
+      if (!rawVal) {
+        cambios[mediaKey] = null
+        continue
+      }
+      const cleanVal = sanitizeExternalMediaUrl(rawVal)
+      if (!cleanVal) {
+        return NextResponse.json(
+          { error: 'Los enlaces de vídeo, recorrido 360° y planos deben ser URLs públicas válidas con https://' },
+          { status: 400 }
+        )
+      }
+      const prevVal = typeof existing[mediaKey] === 'string' ? existing[mediaKey].trim() : ''
+      const isUnchanged = prevVal && (prevVal === rawVal || prevVal === cleanVal)
+      if (!isUnchanged && !canPlanIncludeRichMedia(editPlan.effectivePublishingPlan)) {
+        const quota = planQuotaResponse('Los enlaces de vídeo, recorrido 360° y planos están incluidos en los planes Profesional y Agencia')
+        return NextResponse.json(quota.body, { status: quota.status })
+      }
+      cambios[mediaKey] = cleanVal
+    }
     for (const [key, limit] of [['latitud', 90], ['longitud', 180]] as const) {
       const value = body[key]
       if (value === null || (typeof value === 'number' && Number.isFinite(value) && Math.abs(value) <= limit)) cambios[key] = value
