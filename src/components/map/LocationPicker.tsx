@@ -14,6 +14,8 @@ type Point = { lat: number; lng: number }
 type LocationPickerProps = {
   value: Point | null
   center: Point
+  zoom?: number
+  viewKey?: string
   onChange: (point: Point | null) => void
   labels: MapLabels
   hint: string
@@ -25,6 +27,8 @@ type LocationPickerProps = {
 export default function LocationPicker({
   value,
   center,
+  zoom = 13.5,
+  viewKey,
   onChange,
   labels,
   hint,
@@ -44,6 +48,9 @@ export default function LocationPicker({
       }
     : null
 
+  const effectiveViewKey =
+    viewKey ?? `${center.lat.toFixed(5)},${center.lng.toFixed(5)}:${zoom}`
+
   return (
     <div className="location-picker">
       <div className="location-picker__canvas">
@@ -53,7 +60,10 @@ export default function LocationPicker({
           variant="full"
           fit={false}
           initialCenter={center}
-          initialZoom={12}
+          initialZoom={zoom}
+          viewCenter={center}
+          viewZoom={zoom}
+          viewKey={effectiveViewKey}
           onMapClick={(point) => onChange(point)}
         />
       </div>

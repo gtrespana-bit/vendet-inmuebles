@@ -8,8 +8,8 @@ import { getSupabaseAuthHeaders } from '@/lib/supabase-auth-headers'
 import { useAuth } from '@/components/AuthProvider'
 import LocalLink from '@/components/LocalLink'
 import LocationPicker from '@/components/map/LocationPicker'
-import { ESTADOS, getMunicipiosNombres } from '@/lib/ubicaciones'
-import { resolveListingGeo } from '@/lib/geo/venezuela'
+import { ESTADOS, MUNICIPIOS_POR_ESTADO } from '@/lib/ubicaciones'
+import { resolveLocationViewport } from '@/lib/geo/venezuela'
 import { compressImage } from '@/lib/image-compress'
 import { limpiarMetodosContacto, tieneMetodosConfigurados, validarMetodosContacto } from '@/lib/contact-methods'
 import { FORM_AMENITY_GROUPS, claveAmenidad, nombreCanonicoAmenidad } from '@/lib/amenities'
@@ -80,6 +80,7 @@ export default function EditarInmueblePage() {
   const [caracteristicas, setCaracteristicas] = useState<string[]>([])
   const [lat, setLat] = useState<number | null>(null)
   const [lng, setLng] = useState<number | null>(null)
+  const [initialSavedPin, setInitialSavedPin] = useState<{ lat: number; lng: number } | null>(null)
   const [metodosContacto, setMetodosContacto] = useState<MetodosContactoForm>({})
   const [metodosConfigurados, setMetodosConfigurados] = useState(false)
 
@@ -197,8 +198,13 @@ export default function EditarInmueblePage() {
       setAreaTerreno(data.area_total != null ? String(data.area_total) : '')
       setPuestos(data.puestos_estacionamiento != null ? String(data.puestos_estacionamiento) : '')
       setCondicion(data.condicion || '')
-      setLat(data.latitud != null ? Number(data.latitud) : null)
-      setLng(data.longitud != null ? Number(data.longitud) : null)
+      const loadedLat = data.latitud != null ? Number(data.latitud) : null
+      const loadedLng = data.longitud != null ? Number(data.longitud) : null
+      setLat(loadedLat)
+      setLng(loadedLng)
+      if (loadedLat != null && loadedLng != null) {
+        setInitialSavedPin({ lat: loadedLat, lng: loadedLng })
+      }
 
       const metodos = data.metodos_contacto as Record<string, unknown> | null
       const configurados = tieneMetodosConfigurados(metodos)
@@ -771,6 +777,7 @@ export default function EditarInmueblePage() {
                   setCiudad('')
                   setLat(null)
                   setLng(null)
+                  setInitialSavedPin(null)
                 }}
                 className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white"
               >
@@ -784,14 +791,32 @@ export default function EditarInmueblePage() {
               <label className="block text-sm font-medium text-gray-700 mb-1">{tp('city')}</label>
               <select
                 value={ciudad}
-                onChange={(e) => setCiudad(e.target.value)}
+                onChange={(e) => {
+                  setCiudad(e.target.value)
+                  setLat(null)
+                  setLng(null)
+                  setInitialSavedPin(null)
+                }}
                 disabled={!estado}
                 className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white disabled:bg-gray-50"
               >
                 <option value="">{estado ? tp('selectCity') : t('selectEstadoFirst')}</option>
-                {getMunicipiosNombres(estado).map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
+                {(() => {
+                  const muns = [...(MUNICIPIOS_POR_ESTADO[estado] || [])].sort((a, b) =>
+                    a.capital.localeCompare(b.capital, 'es')
+                  )
+                  const hasCurrent = !ciudad || muns.some((m) => m.capital === ciudad)
+                  return (
+                    <>
+                      {!hasCurrent && <option key={`legacy-${ciudad}`} value={ciudad}>{ciudad}</option>}
+                      {muns.map((mun) => (
+                        <option key={mun.nombre} value={mun.capital}>
+                          {mun.capital === mun.nombre ? mun.capital : `${mun.capital} (${mun.nombre})`}
+                        </option>
+                      ))}
+                    </>
+                  )
+                })()}
               </select>
             </div>
           </div>
@@ -799,30 +824,43 @@ export default function EditarInmueblePage() {
             <MapPin size={14} />
             {lat != null && lng != null ? tp('mapPinSet') : tp('mapHint')}
           </div>
-          <LocationPicker
-            value={lat != null && lng != null ? { lat, lng } : null}
-            center={(() => {
-              const geo = resolveListingGeo({ ciudad, estado })
-              return geo.point ?? { lat: 8.6, lng: -66.2 }
-            })()}
-            onChange={(p) => { setLat(p?.lat ?? null); setLng(p?.lng ?? null) }}
-            labels={{
-              approximate: tp('mapApproximate'),
-              exact: tp('mapExact'),
-              viewListing: '',
-              bedrooms: '',
-              bathrooms: '',
-              area: '',
-              empty: '',
-              zoomIn: '',
-              zoomOut: '',
-              resetView: '',
-            }}
-            hint={tp('mapHint')}
-            clearLabel={tp('mapClear')}
-            emptyLabel={tp('mapEmpty')}
-            placeLabel={tp('mapPlace')}
-          />
+          {(() => {
+            const editViewport = resolveLocationViewport({
+              latitud: initialSavedPin?.lat ?? null,
+              longitud: initialSavedPin?.lng ?? null,
+              ciudad,
+              estado,
+            })
+            return (
+              <LocationPicker
+                value={lat != null && lng != null ? { lat, lng } : null}
+                center={editViewport.center}
+                zoom={editViewport.zoom}
+                viewKey={editViewport.key}
+                onChange={(p) => {
+                  setLat(p?.lat ?? null)
+                  setLng(p?.lng ?? null)
+                  if (!p) setInitialSavedPin(null)
+                }}
+                labels={{
+                  approximate: tp('mapApproximate'),
+                  exact: tp('mapExact'),
+                  viewListing: '',
+                  bedrooms: '',
+                  bathrooms: '',
+                  area: '',
+                  empty: '',
+                  zoomIn: '',
+                  zoomOut: '',
+                  resetView: '',
+                }}
+                hint={tp('mapHint')}
+                clearLabel={tp('mapClear')}
+                emptyLabel={tp('mapEmpty')}
+                placeLabel={tp('mapPlace')}
+              />
+            )
+          })()}
         </section>
 
         {/* Métodos de contacto del anuncio (Llamar / WhatsApp / email / Messenger) */}

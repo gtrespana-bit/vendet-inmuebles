@@ -10,7 +10,7 @@ import { supabase } from '@/lib/supabase';
 import { getSupabaseAuthHeaders } from '@/lib/supabase-auth-headers';
 import { ESTADOS, MUNICIPIOS_POR_ESTADO } from '@/lib/ubicaciones';
 import LocationPicker from '@/components/map/LocationPicker';
-import { resolveListingGeo } from '@/lib/geo/venezuela';
+import { resolveLocationViewport } from '@/lib/geo/venezuela';
 import { compressImage } from '@/lib/image-compress';
 import { limpiarMetodosContacto, validarMetodosContacto } from '@/lib/contact-methods';
 import { FORM_AMENITY_GROUPS } from '@/lib/amenities';
@@ -617,6 +617,7 @@ export default function PublicarInmueblePage() {
                   onChange={(e) => {
                     setEstado(e.target.value);
                     setCiudad('');
+                    setPin(null);
                   }}
                   className={inputClass}
                   required
@@ -635,17 +636,22 @@ export default function PublicarInmueblePage() {
                 <select
                   id="ciudad"
                   value={ciudad}
-                  onChange={(e) => setCiudad(e.target.value)}
+                  onChange={(e) => {
+                    setCiudad(e.target.value);
+                    setPin(null);
+                  }}
                   className={inputClass}
                   disabled={!estado}
                   required
                 >
                   <option value="">{tPublish('selectCity')}</option>
-                  {estado && MUNICIPIOS_POR_ESTADO[estado]?.map((mun) => (
-                    <option key={mun.nombre} value={mun.capital}>
-                      {mun.capital} ({mun.nombre})
-                    </option>
-                  ))}
+                  {estado && [...(MUNICIPIOS_POR_ESTADO[estado] || [])]
+                    .sort((a, b) => a.capital.localeCompare(b.capital, 'es'))
+                    .map((mun) => (
+                      <option key={mun.nombre} value={mun.capital}>
+                        {mun.capital === mun.nombre ? mun.capital : `${mun.capital} (${mun.nombre})`}
+                      </option>
+                    ))}
                 </select>
               </div>
             </div>
@@ -658,30 +664,34 @@ export default function PublicarInmueblePage() {
                 </label>
                 <span className="text-xs text-gray-500">{tPublish('mapOptional')}</span>
               </div>
-              <LocationPicker
-                value={pin}
-                center={(() => {
-                  const geo = resolveListingGeo({ ciudad, estado });
-                  return geo.point ?? { lat: 8.6, lng: -66.2 };
-                })()}
-                onChange={setPin}
-                labels={{
-                  approximate: tPublish('mapApproximate'),
-                  exact: tPublish('mapExact'),
-                  viewListing: '',
-                  bedrooms: '',
-                  bathrooms: '',
-                  area: '',
-                  empty: '',
-                  zoomIn: '',
-                  zoomOut: '',
-                  resetView: '',
-                }}
-                hint={tPublish('mapHint')}
-                clearLabel={tPublish('mapClear')}
-                emptyLabel={tPublish('mapEmpty')}
-                placeLabel={tPublish('mapPlace')}
-              />
+              {(() => {
+                const mapViewport = resolveLocationViewport({ estado, ciudad });
+                return (
+                  <LocationPicker
+                    value={pin}
+                    center={mapViewport.center}
+                    zoom={mapViewport.zoom}
+                    viewKey={mapViewport.key}
+                    onChange={setPin}
+                    labels={{
+                      approximate: tPublish('mapApproximate'),
+                      exact: tPublish('mapExact'),
+                      viewListing: '',
+                      bedrooms: '',
+                      bathrooms: '',
+                      area: '',
+                      empty: '',
+                      zoomIn: '',
+                      zoomOut: '',
+                      resetView: '',
+                    }}
+                    hint={tPublish('mapHint')}
+                    clearLabel={tPublish('mapClear')}
+                    emptyLabel={tPublish('mapEmpty')}
+                    placeLabel={tPublish('mapPlace')}
+                  />
+                );
+              })()}
               <p className="mt-2 text-xs text-gray-500">{tPublish('mapDescription')}</p>
             </div>
           </section>
