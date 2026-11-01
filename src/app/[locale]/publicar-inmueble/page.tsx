@@ -109,9 +109,12 @@ export default function PublicarInmueblePage() {
   const { user, loading: authLoading } = useAuth();
   const [maxFotos, setMaxFotos] = useState(8);
   const [planLimits, setPlanLimits] = useState<any>(null);
+  const [agencyMembers, setAgencyMembers] = useState<Array<{ user_id: string; nombre: string; esDueno: boolean }>>([]);
+  const [agenteAsignadoId, setAgenteAsignadoId] = useState<string>('');
 
   useEffect(() => {
     if (!user) return;
+    setAgenteAsignadoId(user.id);
     let cancelled = false;
     (async () => {
       try {
@@ -122,6 +125,15 @@ export default function PublicarInmueblePage() {
         if (!cancelled && d.limits) {
           setMaxFotos(d.limits.maxFotos);
           setPlanLimits(d);
+        }
+        if (!cancelled && d.agencia?.esAdmin) {
+          const agRes = await fetch('/api/agencia', { headers });
+          if (agRes.ok) {
+            const agData = await agRes.json();
+            if (!cancelled && Array.isArray(agData.miembros)) {
+              setAgencyMembers(agData.miembros);
+            }
+          }
         }
       } catch {
         // Sin plan info seguimos con el mínimo (8 fotos)
@@ -366,6 +378,9 @@ export default function PublicarInmueblePage() {
           latitud: pin?.lat ?? null,
           longitud: pin?.lng ?? null,
           metodos_contacto: limpiarMetodosContacto(metodosContacto),
+          ...(planLimits?.agencia?.esAdmin && agenteAsignadoId
+            ? { agente_asignado_id: agenteAsignadoId }
+            : {}),
         }),
       });
 
@@ -421,8 +436,41 @@ export default function PublicarInmueblePage() {
           <p className="max-w-2xl text-sm leading-6 text-gray-600">{tPublish('intro')}</p>
           {planLimits && (
             <p className="mt-3 text-xs text-gray-500">
-              {tPublish('planUsageNote', { plan: planLimits.plan, active: planLimits.activeCount, max: planLimits.limits?.maxAnuncios >= 999999 ? '∞' : String(planLimits.limits?.maxAnuncios ?? '?') })}
+              {tPublish('planUsageNote', { plan: planLimits.effectivePublishingPlan || planLimits.plan, active: planLimits.activeCount, max: planLimits.limits?.maxAnuncios >= 999999 ? '∞' : String(planLimits.limits?.maxAnuncios ?? '?') })}
             </p>
+          )}
+          {planLimits?.agencia?.planAgenciaActivo && (
+            <div className="mt-4 bg-white border border-[#E5DEC9] rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-brand-primary">
+                  {locale === 'en' ? 'Agency Portfolio' : 'Cartera de Agencia'} · {planLimits.agencia.nombre}
+                </p>
+                <p className="text-xs text-gray-600 mt-0.5">
+                  {locale === 'en'
+                    ? 'This property belongs to your agency portfolio (up to 30 photos). Calls, WhatsApp & chat route to the assigned advisor.'
+                    : 'Este inmueble quedará protegido en la cartera de la agencia (hasta 30 fotos) y los clientes contactarán al agente asignado.'}
+                </p>
+              </div>
+              {planLimits.agencia.esAdmin && agencyMembers.length > 0 && (
+                <div className="shrink-0">
+                  <label htmlFor="publish-assigned-agent" className="block text-[11px] font-semibold text-gray-600 mb-1">
+                    {locale === 'en' ? 'Assigned advisor:' : 'Agente responsable:'}
+                  </label>
+                  <select
+                    id="publish-assigned-agent"
+                    value={agenteAsignadoId}
+                    onChange={(e) => setAgenteAsignadoId(e.target.value)}
+                    className="border border-gray-300 rounded-lg px-3 py-1.5 text-xs font-semibold bg-[#FAF8F4] text-gray-900"
+                  >
+                    {agencyMembers.map((m) => (
+                      <option key={m.user_id} value={m.user_id}>
+                        {m.nombre} {m.esDueno ? (locale === 'en' ? '(Owner)' : '(Titular)') : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
           )}
         </header>
 

@@ -23,7 +23,7 @@ const STATIC_SEGMENTS = new Set([
   'login', 'register', 'iniciar-sesion', 'registrarse', 'reset-password',
   'confirm', 'confirmacion',
   // Rutas con segundo segmento dinámico
-  'inmueble', 'vendedor', 'propiedades',
+  'inmueble', 'vendedor', 'propiedades', 'invitacion',
 ])
 
 /**

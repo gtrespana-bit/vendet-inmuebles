@@ -54,6 +54,10 @@ const LIMITS: Record<string, { max: number; windowMs: number }> = {
   'cron:alerta-provisionales': { max: 1, windowMs: 6 * 60 * 60 * 1000 },
   // Edición de escaparate y URL personalizada: 15 cada 5 min por usuario
   'perfil:escaparate': { max: 15, windowMs: 5 * 60 * 1000 },
+  // Invitaciones de equipo de agencia: 30 por hora por titular/admin
+  'agencia:invitar': { max: 30, windowMs: 60 * 60 * 1000 },
+  // Aceptación de invitaciones de agencia: 15 por hora por usuario
+  'agencia:aceptar': { max: 15, windowMs: 60 * 60 * 1000 },
 }
 
 function getSupabaseClient() {
@@ -73,6 +77,7 @@ const FAIL_CLOSED = new Set([
   'auth:login', 'auth:register', 'auth:reset', 'pagos:crear', 'creditos:comprar',
   'ai-descripcion', 'contacto:send', 'r2-upload', 'producto:create', 'mensaje:create',
   'push:send', 'denuncia:create', 'conversacion:create', 'foto-perfil:update',
+  'agencia:invitar', 'agencia:aceptar',
   'perfil:escaparate',
 ])
 

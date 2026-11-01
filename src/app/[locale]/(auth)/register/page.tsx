@@ -74,7 +74,17 @@ export default function RegisterPage() {
 
     // La página de planes puede enviar aquí el plan elegido, y así se deduce el tipo de cuenta.
     const requested = params.get('plan')
-    if (isPlanName(requested)) {
+    const isInvite = params.get('invitacion') === '1'
+    const invitedEmail = params.get('email')?.trim() || ''
+
+    if (isInvite) {
+      setTipo('particular')
+      setDraft((current) => ({
+        ...applyAccountType({ ...current, plan: 'gratuita' }, 'particular'),
+        ...(invitedEmail ? { email: invitedEmail } : {}),
+      }))
+      setStep(3)
+    } else if (isPlanName(requested)) {
       const tipoSugerido = accountTypeForPlan(requested)
       setTipo(tipoSugerido)
       // Se sincroniza también el tipo de cuenta para que el paso de datos pida

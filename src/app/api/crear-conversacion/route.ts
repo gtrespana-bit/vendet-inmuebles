@@ -26,11 +26,14 @@ export async function POST(req: NextRequest) {
 
     const { data: property, error: propertyError } = await auth.supabaseAdmin
       .from('inmuebles')
-      .select('id, usuario_id, activo, vendido, estado_moderacion')
+      .select('id, usuario_id, agencia_id, agente_asignado_id, activo, vendido, estado_moderacion')
       .eq('id', productoId)
       .maybeSingle()
     if (propertyError) return NextResponse.json({ error: propertyError.message }, { status: 500 })
-    if (!property || property.usuario_id !== vendedorId || !property.activo || property.vendido || property.estado_moderacion !== 'aprobado') {
+    const validRecipient =
+      property &&
+      (property.usuario_id === vendedorId || (property.agente_asignado_id && property.agente_asignado_id === vendedorId))
+    if (!property || !validRecipient || !property.activo || property.vendido || property.estado_moderacion !== 'aprobado') {
       return NextResponse.json({ error: 'Inmueble no disponible' }, { status: 404 })
     }
 
@@ -48,7 +51,13 @@ export async function POST(req: NextRequest) {
 
     const { data: conversation, error } = await auth.supabaseAdmin
       .from('conversaciones')
-      .insert({ user1_id: user1Id, user2_id: user2Id, producto_id: productoId })
+      .insert({
+        user1_id: user1Id,
+        user2_id: user2Id,
+        producto_id: productoId,
+        agencia_id: property.agencia_id || null,
+        agente_asignado_id: property.agente_asignado_id || null,
+      })
       .select('id, user1_id, user2_id, producto_id')
       .single()
     if (error?.code === '23505') {

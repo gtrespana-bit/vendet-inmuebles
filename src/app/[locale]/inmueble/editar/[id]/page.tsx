@@ -88,6 +88,13 @@ export default function EditarInmueblePage() {
   const [maxFotos, setMaxFotos] = useState<number | null>(null)
   const [aiLoading, setAiLoading] = useState(false)
   const [aiError, setAiError] = useState('')
+  const [agencyContext, setAgencyContext] = useState<{
+    id: string
+    nombre: string
+    esAdmin: boolean
+    miembros: Array<{ user_id: string; nombre: string; esDueno: boolean }>
+  } | null>(null)
+  const [agenteAsignadoId, setAgenteAsignadoId] = useState<string>('')
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const dragIndexRef = useRef<number | null>(null)
@@ -123,10 +130,35 @@ export default function EditarInmueblePage() {
     let cancelado = false
 
     const cargar = async () => {
+      // Consultar contexto de agencia (si el usuario es dueño/admin o agente vinculado)
+      let loadedAgency: {
+        id: string
+        nombre: string
+        esAdmin: boolean
+        miembros: Array<{ user_id: string; nombre: string; esDueno: boolean }>
+      } | null = null
+      try {
+        const agRes = await fetch('/api/agencia', { headers: await getSupabaseAuthHeaders() })
+        if (agRes.ok) {
+          const agJson = await agRes.json()
+          if (agJson?.agencia) {
+            loadedAgency = {
+              id: agJson.agencia.id,
+              nombre: agJson.agencia.nombre,
+              esAdmin: Boolean(agJson.agencia.esAdmin),
+              miembros: Array.isArray(agJson.miembros) ? agJson.miembros : [],
+            }
+            if (!cancelado) setAgencyContext(loadedAgency)
+          }
+        }
+      } catch {
+        // ignore
+      }
+
       const { data, error: loadError } = await supabase
         .from('inmuebles')
         .select(`
-          id, usuario_id, titulo, precio, descripcion, ciudad, estado,
+          id, usuario_id, agencia_id, agente_asignado_id, titulo, precio, descripcion, ciudad, estado,
           area_construida, area_total, puestos_estacionamiento,
           condicion, latitud, longitud, metodos_contacto,
           tipo:tipo_id ( slug ),
@@ -143,11 +175,17 @@ export default function EditarInmueblePage() {
         setLoading(false)
         return
       }
-      if (!data || data.usuario_id !== user.id) {
+      const canManageByAgency = Boolean(
+        data &&
+          (data.agente_asignado_id === user.id ||
+            (loadedAgency && data.agencia_id && loadedAgency.id === data.agencia_id && loadedAgency.esAdmin))
+      )
+      if (!data || (data.usuario_id !== user.id && !canManageByAgency)) {
         setNoExiste(true)
         setLoading(false)
         return
       }
+      setAgenteAsignadoId(data.agente_asignado_id || data.usuario_id)
 
       setTitulo(data.titulo || '')
       setPrecio(data.precio != null ? String(data.precio) : '')
@@ -265,6 +303,9 @@ export default function EditarInmueblePage() {
           ],
           imagenes: imagenes.map((img) => ({ id: img.id, url: img.url })),
           metodos_contacto: limpiarMetodosContacto(metodosContacto),
+          ...(agencyContext?.esAdmin && agenteAsignadoId
+            ? { agente_asignado_id: agenteAsignadoId }
+            : {}),
         }),
       })
 
@@ -463,6 +504,39 @@ export default function EditarInmueblePage() {
       )}
 
       <form onSubmit={guardar} className="space-y-8 listing-form">
+        {agencyContext && (
+          <div className="bg-[#FAF8F4] border border-[#E5DEC9] rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-brand-primary">
+                {idioma === 'en' ? 'Agency Portfolio' : 'Cartera de Agencia'} · {agencyContext.nombre}
+              </p>
+              <p className="text-xs text-gray-600 mt-0.5">
+                {idioma === 'en'
+                  ? 'Calls, WhatsApp & chat messages for this listing go to the assigned advisor.'
+                  : 'Las llamadas, WhatsApp y mensajes de este anuncio llegan al agente asignado.'}
+              </p>
+            </div>
+            {agencyContext.esAdmin && agencyContext.miembros.length > 0 && (
+              <div className="shrink-0">
+                <label htmlFor="edit-assigned-agent" className="block text-[11px] font-semibold text-gray-600 mb-1">
+                  {idioma === 'en' ? 'Assigned advisor:' : 'Agente responsable:'}
+                </label>
+                <select
+                  id="edit-assigned-agent"
+                  value={agenteAsignadoId}
+                  onChange={(e) => setAgenteAsignadoId(e.target.value)}
+                  className="border border-gray-300 rounded-lg px-3 py-1.5 text-xs font-semibold bg-white text-gray-900"
+                >
+                  {agencyContext.miembros.map((m) => (
+                    <option key={m.user_id} value={m.user_id}>
+                      {m.nombre} {m.esDueno ? (idioma === 'en' ? '(Owner)' : '(Titular)') : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
+        )}
         {/* Fotos */}
         <section>
           <h2 className="text-lg font-semibold text-gray-900 mb-3">{tp('sectionPhotos')}</h2>

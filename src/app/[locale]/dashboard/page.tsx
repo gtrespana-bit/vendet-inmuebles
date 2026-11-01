@@ -7,7 +7,7 @@ import { getSupabaseAuthHeaders } from '@/lib/supabase-auth-headers'
 import dynamic from 'next/dynamic'
 import { getTasaBCVClient, actualizarTasaClient } from '@/lib/tasaBCV'
 import { useTranslations } from 'next-intl'
-import { Package, CreditCard, Heart, X, Star, ShieldCheck, BarChart3, Settings } from 'lucide-react'
+import { Package, CreditCard, Heart, X, Star, ShieldCheck, BarChart3, Settings, Users } from 'lucide-react'
 import LocalLink from '@/components/LocalLink'
 import { routing } from '@/i18n/routing'
 
@@ -23,6 +23,7 @@ import DestacadoModal from './components/modals/DestacadoModal'
 
 // Lazy-load heavy tabs
 const TabProductos = lazy(() => import('./components/tabs/TabProductos'))
+const TabEquipo = dynamic(() => import('./components/tabs/TabEquipo'), { ssr: false })
 const SolicitarVerificacion = dynamic(() => import('@/components/SolicitarVerificacion'), { ssr: false })
 const TabReputacion = dynamic(() => import('./components/tabs/TabReputacion'), { ssr: false })
 
@@ -114,7 +115,7 @@ export default function DashboardPage() {
     const params = new URLSearchParams(window.location.search)
     const tab = params.get('tab')
     if (tab === 'mensajes') { router.replace(pathname.startsWith('/en') ? '/en/chat' : '/chat'); return }
-    if (tab && ['resumen', 'productos', 'creditos', 'favoritos', 'verificacion', 'reputacion', 'perfil'].includes(tab)) {
+    if (tab && ['resumen', 'productos', 'equipo', 'creditos', 'favoritos', 'verificacion', 'reputacion', 'perfil'].includes(tab)) {
       setActiveTab(tab)
     }
   }, [router, pathname])
@@ -232,6 +233,7 @@ export default function DashboardPage() {
   const tabs = [
     { id: 'resumen', label: t('tabSummary'), icon: BarChart3 },
     { id: 'productos', label: t('tabListings'), icon: Package },
+    { id: 'equipo', label: t('tabTeam'), icon: Users },
     { id: 'creditos', label: t('tabCredits'), icon: CreditCard },
     { id: 'favoritos', label: t('tabFavorites'), icon: Heart },
     { id: 'verificacion', label: t('tabVerification'), icon: ShieldCheck },
@@ -346,6 +348,15 @@ export default function DashboardPage() {
                 promotedCount={promotedCount}
               />
             </Suspense>
+          )}
+          {activeTab === 'equipo' && (
+            <TabEquipo
+              userId={user!.id}
+              onToast={data.setToast}
+              onRefreshDashboard={data.refreshAll}
+              onBoost={setBoostTarget}
+              onDestacar={setDestacadoTarget}
+            />
           )}
           {activeTab === 'creditos' && (
             <TabCreditos

@@ -5,6 +5,7 @@ import { useAuth } from '@/components/AuthProvider'
 
 export interface PlanInfo {
   plan: string
+  effectivePublishingPlan?: string
   estado: string | null
   trialEndsAt: string | null
   fin: string | null
@@ -14,6 +15,17 @@ export interface PlanInfo {
   limits: { maxAnuncios: number; maxFotos: number; creditosMes: number }
   activeCount: number
   canPublish: boolean
+  agencia?: {
+    id: string
+    nombre: string
+    logo_url: string | null
+    owner_id: string
+    rol: 'admin' | 'agente'
+    esDueno: boolean
+    esAdmin: boolean
+    planAgenciaActivo: boolean
+    totalMiembros: number
+  } | null
 }
 
 export interface DashboardData {
@@ -67,9 +79,9 @@ export function useDashboard() {
 
     // Supabase client automatically handles auth tokens via persistSession + autoRefreshToken
     Promise.all([
-      supabase.from('vw_propiedades_publicas').select('id, titulo, precio, estado, ciudad, activo, visitas, creado_en, main_image_url, operacion_nombre, destacado, destacado_hasta, boosteado_en, estado_moderacion, vendido').eq('usuario_id', user.id).order('creado_en', { ascending: false }).then(({ data }: { data: any[] | null }) => setProductos(data || [])),
+      supabase.from('vw_propiedades_publicas').select('id, titulo, slug, precio, estado, ciudad, activo, visitas, creado_en, main_image_url, operacion_nombre, destacado, destacado_hasta, boosteado_en, estado_moderacion, vendido, agencia_id, agente_asignado_id, agente_nombre').or(`usuario_id.eq.${user.id},agente_asignado_id.eq.${user.id}`).order('creado_en', { ascending: false }).then(({ data }: { data: any[] | null }) => setProductos(data || [])),
 
-      supabase.from('vw_propiedades_publicas').select('visitas').eq('usuario_id', user.id).then(({ data }: { data: any[] | null }) => setVisitasTotales(data?.reduce((sum: number, p: { visitas: number | null }) => sum + (p.visitas || 0), 0) || 0)),
+      supabase.from('vw_propiedades_publicas').select('visitas').or(`usuario_id.eq.${user.id},agente_asignado_id.eq.${user.id}`).then(({ data }: { data: any[] | null }) => setVisitasTotales(data?.reduce((sum: number, p: { visitas: number | null }) => sum + (p.visitas || 0), 0) || 0)),
       supabase.from('favoritos').select('producto_id, creado_en').eq('user_id', user.id).order('creado_en', { ascending: false }).then(async ({ data }: { data: any[] | null }) => {
         const favoriteRows = data || []
         const propertyIds = favoriteRows.map((favorite: any) => favorite.producto_id)
@@ -98,7 +110,7 @@ export function useDashboard() {
           setCreadoEn(data.creado_en || null)
         }
       }),
-      supabase.from('vw_propiedades_publicas').select('*', { count: 'exact' }).eq('user_id', user.id).eq('activo', true).then(({ count }: { count: number | null }) => setPubCount(count || 0)),
+      supabase.from('vw_propiedades_publicas').select('*', { count: 'exact' }).or(`user_id.eq.${user.id},agente_asignado_id.eq.${user.id}`).eq('activo', true).then(({ count }: { count: number | null }) => setPubCount(count || 0)),
       supabase.from('resenas').select('id, puntuacion, comentario, producto_id, producto_titulo, creado_en').eq('vendedor_id', user.id).order('creado_en', { ascending: false }).then(async ({ data }: { data: any[] | null }) => {
         const reviews = data || []
         const propertyIds = Array.from(new Set(reviews.map((review: any) => review.producto_id).filter(Boolean)))

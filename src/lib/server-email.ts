@@ -556,3 +556,36 @@ export async function emailPropiedadEnRevision(
     `${URL}/dashboard`,
   ))
 }
+
+// ─── 14. Invitación a equipo de Agencia Inmobiliaria ───────
+
+export async function emailInvitacionAgencia(
+  email: string,
+  agenciaNombre: string,
+  invitadorNombre: string,
+  rol: 'admin' | 'agente',
+  inviteUrl: string,
+): Promise<boolean> {
+  const rolTexto = rol === 'admin' ? 'Administrador de Agencia' : 'Agente Inmobiliario'
+  return enviar(
+    email,
+    `Invitación para unirte a ${agenciaNombre} en Venezuela Inmuebles`,
+    emailLayout(
+      `Únete al equipo de ${esc(agenciaNombre)}`,
+      `<p style="margin:0 0 16px">Hola,</p>
+       <p style="margin:0 0 20px"><strong>${esc(invitadorNombre)}</strong> te ha invitado a formar parte del equipo de <strong>${esc(agenciaNombre)}</strong> como <strong>${rolTexto}</strong> en Venezuela Inmuebles.</p>
+       ${card(`
+         <p style="margin:0 0 8px;font-weight:700;font-size:15px;color:${COLORS.dark}">Beneficios incluidos en el equipo:</p>
+         <p style="margin:0;color:${COLORS.gray};font-size:14px;line-height:1.6">
+           • Publicación ilimitada de inmuebles bajo la cartera de ${esc(agenciaNombre)}<br>
+           • Hasta 30 fotografías de alta resolución, vídeo y planos por propiedad<br>
+           • Atención directa de clientes interesados en tus inmuebles asignados por chat y WhatsApp
+         </p>
+       `)}
+       <p style="margin:20px 0 0;color:${COLORS.gray};font-size:14px">Pulsa el botón para aceptar la invitación (si aún no tienes cuenta, podrás crearla gratis en menos de un minuto con este mismo correo). El enlace es válido durante 7 días.</p>`,
+      'Aceptar invitación al equipo',
+      inviteUrl,
+    ),
+    { replyTo: CONTACT }
+  )
+}
