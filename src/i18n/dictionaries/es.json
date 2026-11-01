@@ -756,22 +756,23 @@
     "profile": "Perfil"
   },
   "blog": {
-    "title": "Blog",
-    "subtitle": "Precios del mercado, guías de emprendimiento y consejos para comprar y vender en Venezuela",
+    "title": "Blog Inmobiliario",
+    "subtitle": "Guías legales SAREN, precios por metro cuadrado y consejos para comprar, vender o alquilar inmuebles en Venezuela",
     "featured": "Destacados",
     "allArticles": "Todos los artículos",
     "readMore": "Leer más",
-    "comingSoon": "Pronto más contenido...",
-    "ctaTitle": "¿Quieres vender algo? Publica gratis",
-    "ctaDesc": "Sin comisiones, sin complicaciones. Tu producto visible para compradores en Venezuela.",
-    "ctaButton": "Publicar ahora",
+    "comingSoon": "Pronto más guías inmobiliarias...",
+    "ctaTitle": "¿Quieres vender o alquilar tu inmueble?",
+    "ctaDesc": "Sin comisiones por venta. Publica tu casa, apartamento, terreno o local frente a compradores en toda Venezuela.",
+    "ctaSubtitle": "Sin comisiones por venta. Publica tu casa, apartamento, terreno o local frente a compradores en toda Venezuela.",
+    "ctaButton": "Publicar inmueble",
     "postNotFound": "Artículo no encontrado",
     "backToBlog": "Volver al blog",
     "home": "Inicio",
-    "haveSomething": "¿Tienes algo para vender?",
-    "publishFreeDesc": "Publica gratis en Venezuela Inmuebles y conecta con compradores en toda Venezuela",
-    "publishFree": "Publicar gratis",
-    "moreArticles": "Más artículos"
+    "haveSomething": "¿Tienes una propiedad en venta o alquiler?",
+    "publishFreeDesc": "Publica en Venezuela Inmuebles y conecta directo con compradores e inquilinos en todo el país",
+    "publishFree": "Publicar inmueble",
+    "moreArticles": "Más guías inmobiliarias"
   },
   "productDetail": {
     "notFound": "Producto no encontrado",

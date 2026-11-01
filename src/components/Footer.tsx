@@ -43,8 +43,9 @@ export function Footer() {
 
         <nav className="site-footer__links" aria-label={t('footer.categories')}>
           <h2>{t('footer.categories')}</h2>
-          <LocalLink href="/catalogo?operacion=Venta">{t('header.buy')}</LocalLink>
-          <LocalLink href="/catalogo?operacion=Alquiler">{t('header.rent')}</LocalLink>
+          <LocalLink href="/propiedades/venta">{t('header.buy')}</LocalLink>
+          <LocalLink href="/propiedades/alquiler">{t('header.rent')}</LocalLink>
+          <LocalLink href="/catalogo">{en ? 'Full catalog' : 'Catálogo completo'}</LocalLink>
           <LocalLink href="/mapa">{t('header.map')}</LocalLink>
           {categoryLinks.map((link) => <LocalLink key={link.href} href={link.href}>{link.label}</LocalLink>)}
         </nav>
@@ -52,6 +53,7 @@ export function Footer() {
         <nav className="site-footer__links" aria-label={t('footer.information')}>
           <h2>{t('footer.information')}</h2>
           {informationLinks.map((link) => <LocalLink key={link.href} href={link.href}>{link.label}</LocalLink>)}
+          <LocalLink href="/planes">{en ? 'Plans & Pricing' : 'Planes y tarifas'}</LocalLink>
           <LocalLink href="/faq">FAQ</LocalLink>
           <LocalLink href="/creditos">{t('header.credits')}</LocalLink>
         </nav>

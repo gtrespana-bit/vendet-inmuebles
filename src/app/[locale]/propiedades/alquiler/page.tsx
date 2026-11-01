@@ -2,6 +2,7 @@ import { Metadata } from 'next'
 import LocalLink from '@/components/LocalLink'
 import { createServerClient } from '@/lib/supabase-server'
 import { fetchListingsByLocation } from '@/lib/location-listings'
+import { buildPageAlternates } from '@/lib/seo-metadata'
 import PropertyCard from '@/components/PropertyCard'
 import Breadcrumbs from '@/components/Breadcrumbs'
 
@@ -14,19 +15,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const isEn = locale === 'en'
   const title = isEn ? 'Properties for Rent in Venezuela' : 'Propiedades en Alquiler en Venezuela'
   const description = isEn
-    ? 'Find houses, apartments, commercial spaces and offices for rent across Venezuela.'
-    : 'Encuentra casas, apartamentos, locales y oficinas en alquiler en toda Venezuela.'
+    ? 'Find houses, apartments, commercial spaces and offices for rent across Venezuela with direct contact.'
+    : 'Encuentra casas, apartamentos, locales y oficinas en alquiler en toda Venezuela con contacto directo.'
 
   return {
     title,
     description,
-    alternates: {
-      canonical: `https://venezuela-inmuebles.online${isEn ? '/en' : ''}/propiedades/alquiler`,
-      languages: {
-        'es-VE': 'https://venezuela-inmuebles.online/propiedades/alquiler',
-        'en-US': 'https://venezuela-inmuebles.online/en/propiedades/alquiler',
-      },
-    },
+    alternates: buildPageAlternates(locale, '/propiedades/alquiler'),
   }
 }
 
@@ -45,7 +40,7 @@ export default async function AlquilerPage({ params }: PageProps) {
       <Breadcrumbs items={[{ label: isEn ? 'For Rent' : 'Alquiler' }]} />
 
       <h1 className="text-3xl font-bold mt-4 mb-6">
-        {isEn ? 'Properties for Rent' : 'Propiedades en Alquiler'}
+        {isEn ? 'Properties for Rent in Venezuela' : 'Propiedades en Alquiler en Venezuela'}
       </h1>
 
       {estados && estados.length > 0 && (

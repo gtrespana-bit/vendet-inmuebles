@@ -66,6 +66,8 @@ function getAllSlugs(): string[] {
   return fs.readdirSync(dir).filter(f => f.endsWith('.md')).map(f => f.replace('.md', ''))
 }
 
+export const dynamicParams = false
+
 export function generateStaticParams(): Array<{ locale: string; slug: string }> {
   const slugs = getAllSlugs()
   return routing.locales.flatMap((locale) => slugs.map((slug) => ({ locale, slug })))

@@ -3,8 +3,7 @@ import { Suspense } from 'react'
 import { getTranslations } from 'next-intl/server'
 import { supabase } from '@/lib/supabase'
 import MapaClient from './MapaClient'
-
-const SITE_URL = 'https://venezuela-inmuebles.online'
+import { buildPageAlternates } from '@/lib/seo-metadata'
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params
@@ -12,17 +11,11 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   const english = locale === 'en'
 
   return {
-    title: `${t('title')} | Venezuela Inmuebles`,
+    title: t('title'),
     description: english
-      ? 'Explore properties for sale and rent in Venezuela on a map. Filter by city and area with OpenStreetMap.'
-      : 'Explora inmuebles en venta y alquiler en Venezuela sobre un mapa. Filtra por ciudad y zona con OpenStreetMap.',
-    alternates: {
-      canonical: `${SITE_URL}${english ? '/en' : ''}/mapa`,
-      languages: {
-        'es-VE': `${SITE_URL}/mapa`,
-        'en-US': `${SITE_URL}/en/mapa`,
-      },
-    },
+      ? 'Explore properties for sale and rent in Venezuela on an interactive map. Filter by city and area with OpenStreetMap.'
+      : 'Explora inmuebles en venta y alquiler en Venezuela sobre un mapa interactivo. Filtra por ciudad y zona con OpenStreetMap.',
+    alternates: buildPageAlternates(locale, '/mapa'),
   }
 }
 

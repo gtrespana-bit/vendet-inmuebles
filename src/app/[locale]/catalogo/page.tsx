@@ -4,8 +4,7 @@ import { getTranslations } from 'next-intl/server'
 import { supabase } from '@/lib/supabase'
 import CatalogoClient from './CatalogoPage'
 import type { CatalogPropertyRecord } from '@/types/property'
-
-const SITE_URL = 'https://venezuela-inmuebles.online'
+import { buildPageAlternates } from '@/lib/seo-metadata'
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params
@@ -13,17 +12,11 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   const english = locale === 'en'
 
   return {
-    title: `${t('title')} | Venezuela Inmuebles`,
+    title: t('title'),
     description: english
-      ? 'Explore properties for sale and rent in Venezuela. Filter by listing type, property type and location.'
-      : 'Explora inmuebles en venta y alquiler en Venezuela. Filtra por operación, tipo de propiedad y ubicación.',
-    alternates: {
-      canonical: `${SITE_URL}${english ? '/en' : ''}/catalogo`,
-      languages: {
-        'es-VE': `${SITE_URL}/catalogo`,
-        'en-US': `${SITE_URL}/en/catalogo`,
-      },
-    },
+      ? 'Explore properties for sale and rent in Venezuela. Filter by listing type, property type, amenities and location.'
+      : 'Explora inmuebles en venta y alquiler en Venezuela. Filtra por operación, tipo de propiedad, servicios y ubicación.',
+    alternates: buildPageAlternates(locale, '/catalogo'),
   }
 }
 

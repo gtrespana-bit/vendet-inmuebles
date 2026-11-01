@@ -22,6 +22,8 @@ import {
 import LocalLink from '@/components/LocalLink'
 import HomeSearch from '@/components/home/HomeSearch'
 import ListingCard, { type HomeListing } from '@/components/home/ListingCard'
+import { buildPageAlternates } from '@/lib/seo-metadata'
+import { slugifySeoSegment } from '@/lib/ubicaciones-seo'
 import styles from '@/components/home/home.module.css'
 
 const SITE_URL = 'https://venezuela-inmuebles.online'
@@ -140,22 +142,16 @@ function sampleListings(locale: string): HomeListing[] {
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params
   const t = await getTranslations({ locale, namespace: 'homePage' })
-  const localePrefix = locale === 'es' ? '' : `/${locale}`
+  const alternates = buildPageAlternates(locale, '')
 
   return {
-    title: t('metaTitle'),
+    title: { absolute: t('metaTitle') },
     description: t('metaDescription'),
-    alternates: {
-      canonical: `${SITE_URL}${localePrefix || '/'}`,
-      languages: {
-        'es-VE': SITE_URL,
-        'en-US': `${SITE_URL}/en`,
-      },
-    },
+    alternates,
     openGraph: {
       type: 'website',
       locale: locale === 'es' ? 'es_VE' : 'en_US',
-      url: `${SITE_URL}${localePrefix || '/'}`,
+      url: String(alternates.canonical),
       siteName: 'Venezuela Inmuebles',
       title: t('metaTitle'),
       description: t('metaDescription'),
@@ -205,7 +201,7 @@ const CATEGORIES = [
   { slug: 'galpones', icon: Warehouse, titleKey: 'typeWarehouse', noteKey: 'typeWarehouseNote' },
 ] as const
 
-const CITIES = ['Caracas', 'Maracaibo', 'Valencia', 'Barquisimeto', 'Maracay', 'Lechería', 'Mérida', 'Porlamar']
+const CITIES = ['Caracas', 'Valencia', 'San Diego', 'Maracaibo', 'Barquisimeto', 'Maracay', 'Lechería', 'Mérida']
 
 const PLANS = [
   { nameKey: 'planFree', price: '$0', periodKey: 'planFreePeriod', features: ['planFreeFeature1', 'planFreeFeature2', 'planFreeFeature3'], featured: false, trial: true },
@@ -262,7 +258,7 @@ export default async function HomePage() {
         inLanguage: locale === 'en' ? 'en-US' : 'es-VE',
         potentialAction: {
           '@type': 'SearchAction',
-          target: `${SITE_URL}/buscar?q={search_term_string}`,
+          target: `${SITE_URL}${locale === 'en' ? '/en' : ''}/catalogo?q={search_term_string}`,
           'query-input': 'required name=search_term_string',
         },
       },
@@ -499,7 +495,7 @@ export default async function HomePage() {
 
           <div className={styles.cityGrid}>
             {CITIES.map((city) => (
-              <LocalLink key={city} href={`/catalogo?ciudad=${encodeURIComponent(city)}`} className={styles.cityLink}>
+              <LocalLink key={city} href={`/${slugifySeoSegment(city)}`} className={styles.cityLink}>
                 <span>{city}</span>
                 <ArrowUpRight size={15} aria-hidden="true" />
               </LocalLink>

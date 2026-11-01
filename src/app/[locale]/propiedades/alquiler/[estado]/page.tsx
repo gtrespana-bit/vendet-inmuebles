@@ -1,8 +1,10 @@
+import { cache } from 'react'
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import LocalLink from '@/components/LocalLink'
 import { createServerClient } from '@/lib/supabase-server'
 import { fetchListingsByLocation, resolveStateByParam } from '@/lib/location-listings'
+import { buildPageAlternates } from '@/lib/seo-metadata'
 import PropertyCard from '@/components/PropertyCard'
 import Breadcrumbs from '@/components/Breadcrumbs'
 
@@ -10,55 +12,61 @@ interface PageProps {
   params: Promise<{ locale: string; estado: string }>
 }
 
+const loadStateRentData = cache(async function loadStateRentData(estadoParam: string) {
+  const supabase = createServerClient()
+  const { state, serviceError: stateError } = await resolveStateByParam(supabase, estadoParam)
+  if (!state) {
+    return { state: null, ciudades: null, properties: [], hasError: stateError }
+  }
+  const [{ data: ciudades }, { properties, serviceError: listingsError }] = await Promise.all([
+    supabase.from('cities').select('id, name, slug').eq('state_id', state.id).order('name'),
+    fetchListingsByLocation(supabase, { operacion: 'alquiler', state, limit: 50 }),
+  ])
+  return { state, ciudades, properties, hasError: stateError || listingsError }
+})
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { locale, estado } = await params
   const isEn = locale === 'en'
-  const supabase = createServerClient()
-  const { state } = await resolveStateByParam(supabase, estado)
+  const { state, properties, hasError } = await loadStateRentData(estado)
+
+  if (!state && !hasError) {
+    return {
+      title: isEn ? 'State not found' : 'Estado no encontrado',
+      robots: { index: false, follow: false },
+    }
+  }
+
   const estadoName = state?.name || estado
   const slug = state?.slug || state?.id || estado
+  const shouldIndex = properties.length > 0 || hasError
 
   const title = isEn
-    ? `Properties for rent in ${estadoName}`
-    : `Propiedades en alquiler en ${estadoName}`
+    ? `Properties for Rent in ${estadoName}`
+    : `Propiedades en Alquiler en ${estadoName}`
   const description = isEn
     ? `Find houses, apartments, commercial spaces and offices for rent in ${estadoName}, Venezuela.`
-    : `Encuentra propiedades en alquiler en ${estadoName}. Casas, apartamentos, locales y más.`
+    : `Encuentra propiedades en alquiler en ${estadoName}: casas, apartamentos, locales y oficinas.`
 
   return {
     title,
     description,
-    alternates: {
-      canonical: `https://venezuela-inmuebles.online${isEn ? '/en' : ''}/propiedades/alquiler/${slug}`,
-      languages: {
-        'es-VE': `https://venezuela-inmuebles.online/propiedades/alquiler/${slug}`,
-        'en-US': `https://venezuela-inmuebles.online/en/propiedades/alquiler/${slug}`,
-      },
-    },
+    alternates: buildPageAlternates(locale, `/propiedades/alquiler/${slug}`),
+    robots: { index: shouldIndex, follow: true },
   }
 }
 
 export default async function AlquilerPorEstadoPage({ params }: PageProps) {
   const { locale, estado } = await params
   const isEn = locale === 'en'
-  const supabase = createServerClient()
+  const { state: stateData, ciudades, properties, hasError } = await loadStateRentData(estado)
 
-  const { state: stateData, serviceError: stateError } = await resolveStateByParam(supabase, estado)
-  if (!stateData && !stateError) {
+  if (!stateData && !hasError) {
     notFound()
   }
 
   const stateName = stateData?.name || estado
   const stateSlug = stateData?.slug || stateData?.id || estado
-
-  const [{ data: ciudades }, { properties, serviceError: listingsError }] = stateData
-    ? await Promise.all([
-        supabase.from('cities').select('id, name, slug').eq('state_id', stateData.id).order('name'),
-        fetchListingsByLocation(supabase, { operacion: 'alquiler', state: stateData, limit: 50 }),
-      ])
-    : [{ data: null }, { properties: [], serviceError: true }]
-
-  const hasError = stateError || listingsError
 
   return (
     <div className="container mx-auto px-4 py-8">

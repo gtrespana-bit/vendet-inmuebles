@@ -35,9 +35,6 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   const { locale } = await params
   
   const metadataBase = new URL('https://venezuela-inmuebles.online')
-  const canonicalUrl = locale === 'es' 
-    ? 'https://venezuela-inmuebles.online'
-    : `https://venezuela-inmuebles.online/${locale}`
 
   return {
     metadataBase,
@@ -64,7 +61,6 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
     openGraph: {
       type: 'website',
       locale: locale === 'es' ? 'es_VE' : 'en_US',
-      url: canonicalUrl,
       siteName: 'Venezuela Inmuebles',
       title: locale === 'es'
         ? 'Venezuela Inmuebles | Propiedades en venta y alquiler'

@@ -2,6 +2,7 @@ import { Metadata } from 'next'
 import LocalLink from '@/components/LocalLink'
 import { createServerClient } from '@/lib/supabase-server'
 import { fetchListingsByLocation } from '@/lib/location-listings'
+import { buildPageAlternates } from '@/lib/seo-metadata'
 import PropertyCard from '@/components/PropertyCard'
 import Breadcrumbs from '@/components/Breadcrumbs'
 
@@ -14,19 +15,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const isEn = locale === 'en'
   const title = isEn ? 'Properties for Sale in Venezuela' : 'Propiedades en Venta en Venezuela'
   const description = isEn
-    ? 'Find houses, apartments, land and commercial spaces for sale across Venezuela.'
-    : 'Encuentra casas, apartamentos, terrenos y locales comerciales en venta en toda Venezuela.'
+    ? 'Find houses, apartments, land and commercial spaces for sale across Venezuela with direct owner and agent contact.'
+    : 'Encuentra casas, apartamentos, terrenos y locales comerciales en venta en toda Venezuela con contacto directo.'
 
   return {
     title,
     description,
-    alternates: {
-      canonical: `https://venezuela-inmuebles.online${isEn ? '/en' : ''}/propiedades/venta`,
-      languages: {
-        'es-VE': 'https://venezuela-inmuebles.online/propiedades/venta',
-        'en-US': 'https://venezuela-inmuebles.online/en/propiedades/venta',
-      },
-    },
+    alternates: buildPageAlternates(locale, '/propiedades/venta'),
   }
 }
 
@@ -45,7 +40,7 @@ export default async function VentasPage({ params }: PageProps) {
       <Breadcrumbs items={[{ label: isEn ? 'For Sale' : 'Venta' }]} />
 
       <h1 className="text-3xl font-bold mt-4 mb-6">
-        {isEn ? 'Properties for Sale' : 'Propiedades en Venta'}
+        {isEn ? 'Properties for Sale in Venezuela' : 'Propiedades en Venta en Venezuela'}
       </h1>
 
       {estados && estados.length > 0 && (
