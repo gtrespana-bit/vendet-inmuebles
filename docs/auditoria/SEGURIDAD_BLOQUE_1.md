@@ -85,6 +85,19 @@ Pruebas: **112/112** (3 nuevas en `tests/image-upload-policy.mjs`). No se probó
 
 **Pendiente de F06:** rotación de claves y limpieza de huérfanos en el bucket, y comprobar en el despliegue real que el límite de cuerpo configurado coincide con 4 MB.
 
+## Bloque 4 — Rate limit atómico (F07)
+
+Aplicado en el proyecto real como `rate_limit_atomico`.
+
+- `reservar_rate_limit` cuenta y inserta en la misma transacción, serializada por `pg_advisory_xact_lock` de (operación, identificador): dos peticiones simultáneas ya no pueden gastar el mismo presupuesto.
+- La ventana se recicla en la propia llamada (borra solo las filas de esa clave fuera de ventana) y hay índice de apoyo, así que no crece sin control.
+- Política de fallo por operación: login, registro, reset, pagos, créditos, IA, contacto, subidas, publicaciones, mensajes y push **fallan cerrado** ante error o timeout; analítica, visitas y favoritos siguen fallando abierto para no degradar la navegación.
+- Función sin `EXECUTE` para `anon`/`authenticated`.
+
+Pruebas: **116/116** (4 nuevas en `tests/rate-limit.mjs` con PGlite).
+
+**Pendiente de F07:** allowlist de destinos en los endpoints push (riesgo SSRF) y retención programada de `rate_limit`.
+
 ## Validación realizada
 
 - `npm test`: **101/101 pruebas** (incluye las 4 nuevas de mapeo de cupo), más comprobación de traducciones de edición.
