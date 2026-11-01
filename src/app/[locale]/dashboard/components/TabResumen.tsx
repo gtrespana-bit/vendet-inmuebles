@@ -6,6 +6,7 @@ import { localizePath } from '@/lib/auth-redirect'
 import { useLocale, useTranslations } from 'next-intl'
 import LocalLink from '@/components/LocalLink'
 import Image from 'next/image'
+import { isOptimizableImageSrc } from '@/lib/image-src'
 import {
   PlusCircle, MessageSquare, Coins, ShieldCheck,
   AlertCircle, ArrowRight, Eye, Sparkles, Users,
@@ -176,7 +177,7 @@ export default function TabResumen({
               <div key={p.id} className="dashboard-recent-row">
                 <div className="dashboard-recent-row__media">
                   {p.main_image_url ? (
-                    <Image src={p.main_image_url} alt="" fill sizes="56px" className="object-cover" />
+                    <Image src={p.main_image_url} alt="" fill unoptimized={!isOptimizableImageSrc(p.main_image_url)} sizes="56px" className="object-cover" />
                   ) : (
                     <span aria-hidden="true">🏠</span>
                   )}

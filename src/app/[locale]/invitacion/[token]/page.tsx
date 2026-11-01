@@ -7,7 +7,7 @@ import LocalLink from '@/components/LocalLink'
 import { useAuth } from '@/components/AuthProvider'
 import { getSupabaseAuthHeaders } from '@/lib/supabase-auth-headers'
 import { supabase } from '@/lib/supabase'
-import { isOptimizableImageSrc } from '@/components/PropertyGallery'
+import { isOptimizableImageSrc } from '@/lib/image-src'
 import {
   AlertCircle,
   ArrowRight,

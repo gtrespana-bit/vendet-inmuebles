@@ -4,6 +4,7 @@ import Image from 'next/image'
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { ChevronLeft, ChevronRight, Expand, Image as ImageIcon, X } from 'lucide-react'
+import { isOptimizableImageSrc as checkOptimizableImageSrc } from '@/lib/image-src'
 
 interface PropertyGalleryProps {
   images: string[]
@@ -14,23 +15,12 @@ interface PropertyGalleryProps {
 /**
  * Comprueba si la URL está cubierta por `images.remotePatterns` (o es local),
  * permitiendo usar la optimización AVIF/WebP de Next Image sin romper URLs heredadas (F24).
+ *
+ * NOTA: Los Server Components deben importar `isOptimizableImageSrc` desde `@/lib/image-src`,
+ * nunca desde este archivo `'use client'`.
  */
 export function isOptimizableImageSrc(src: string): boolean {
-  if (!src) return false
-  if (src.startsWith('/') && !src.startsWith('//')) return true
-  try {
-    const parsed = new URL(src)
-    if (parsed.protocol !== 'https:') return false
-    const host = parsed.hostname.toLowerCase()
-    if (host.endsWith('.r2.dev')) return true
-    if (host === 'images.unsplash.com') return true
-    if (host === 'quxbqmqwiacfwbpqioev.supabase.co' && parsed.pathname.startsWith('/storage/v1/object/')) {
-      return true
-    }
-    return false
-  } catch {
-    return false
-  }
+  return checkOptimizableImageSrc(src)
 }
 
 export default function PropertyGallery({ images, title, locale }: PropertyGalleryProps) {

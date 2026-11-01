@@ -6,6 +6,7 @@ import { Search, ChevronRight, XCircle, Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState, useCallback, use } from 'react'
 import Image from 'next/image'
+import { isOptimizableImageSrc } from '@/lib/image-src'
 import { supabase } from '@/lib/supabase'
 import { categoriasData } from '@/lib/categorias'
 import UbicacionSelector from '@/components/UbicacionSelector'
@@ -78,6 +79,7 @@ function ProductCard({ p }: { p: Producto }) {
           alt={p.titulo}
           width={300}
           height={300}
+          unoptimized={!isOptimizableImageSrc(imgUrl)}
           sizes="(max-width: 768px) 50vw, 25vw"
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           loading="lazy"

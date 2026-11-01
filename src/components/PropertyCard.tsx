@@ -1,7 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowUpRight, Bath, BedDouble, Camera, Compass, MapPin, Ruler, Video } from 'lucide-react'
-import { isOptimizableImageSrc } from '@/components/PropertyGallery'
+import { isOptimizableImageSrc } from '@/lib/image-src'
 import FavoriteCardButton from '@/components/FavoriteCardButton'
 import { calculatePricePerM2 } from '@/lib/urbanizaciones'
 
