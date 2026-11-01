@@ -1308,7 +1308,7 @@
     "delLi4": "Publicaciones guardadas (favoritos)",
     "delLi5": "Sesión activa y tokens de autenticación",
     "keptTitle": "Datos que se conservan",
-    "keptText": "Conservamos únicamente los registros mínimos necesarios para cumplir con obligaciones legales y resolver disputas. Estos datos se almacenan de forma anonimizada y se eliminan automáticamente tras un período de 30 días.",
+    "keptText": "Conservamos únicamente los registros contables, de órdenes de pago y de prevención de fraude exigidos por obligaciones legales o necesarios para resolver disputas, desvinculando el perfil público eliminado.",
     "contactTitle": "Contacto",
     "contactText": "Para cualquier consulta sobre tus datos: privacidad@venezuela-inmuebles.online",
     "tagline": "Venezuela Inmuebles — Encuentra el lugar que buscas."
@@ -1786,7 +1786,7 @@
     "planProFeature3": "5 créditos al mes",
     "planAgencyFeature1": "Anuncios sin límite",
     "planAgencyFeature2": "30 fotos por inmueble",
-    "planAgencyFeature3": "Hasta 5 usuarios",
+    "planAgencyFeature3": "20 créditos al mes",
     "plansNote": "30 días de prueba gratis en cualquiera de los planes. Sin tarjeta de crédito y sin cobros automáticos: al vencer, la cuenta vuelve al plan Gratuita con 3 anuncios activos.",
     "plansCta": "Comparar planes",
     "closingEyebrow": "EMPIEZA HOY",

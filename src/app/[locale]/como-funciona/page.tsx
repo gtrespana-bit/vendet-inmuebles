@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { CheckCircle, Shield, MessageCircle, Eye, Camera } from 'lucide-react'
 import LocalLink from '@/components/LocalLink'
 import { getTranslations } from 'next-intl/server'
+import { buildPageAlternates } from '@/lib/seo-metadata'
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params
@@ -10,6 +11,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
     description: locale === 'en'
       ? 'Learn how to search for, list and evaluate properties on Venezuela Inmuebles.'
       : 'Descubre cómo buscar, anunciar y evaluar inmuebles en Venezuela Inmuebles.',
+    alternates: buildPageAlternates(locale, '/como-funciona'),
   }
 }
 

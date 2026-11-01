@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { getTranslations } from 'next-intl/server'
+import { buildPageAlternates } from '@/lib/seo-metadata'
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params
@@ -9,6 +10,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
     description: isEnglish
       ? 'Learn how to explore, list and verify properties on Venezuela Inmuebles.'
       : 'Conoce cómo explorar, anunciar y verificar inmuebles en Venezuela Inmuebles.',
+    alternates: buildPageAlternates(locale, '/faq'),
   }
 }
 

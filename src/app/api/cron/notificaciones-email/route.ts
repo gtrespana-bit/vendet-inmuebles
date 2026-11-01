@@ -18,7 +18,7 @@ export const maxDuration = 60
  * Autenticación: exclusivamente cabecera `Authorization: Bearer $CRON_SECRET`
  * (sin `?secret=` en query para no exponer el secreto en logs de acceso).
  */
-export function isCronAuthorized(authHeader: string | null, secret: string | undefined): boolean {
+function isCronAuthorized(authHeader: string | null, secret: string | undefined): boolean {
   if (!secret || !authHeader) return false
   const expected = Buffer.from(`Bearer ${secret}`, 'utf8')
   const received = Buffer.from(authHeader, 'utf8')

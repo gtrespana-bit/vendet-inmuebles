@@ -309,17 +309,35 @@ export async function procesarNotificacionesEmailPendientes(
     detalle: [],
   }
 
+  const ahoraIso = new Date().toISOString()
   const { data: pendientes, error } = await supabase
     .from('notificaciones_email')
     .select('id, user_id, tipo, clave, intentos, datos')
     .eq('estado', 'pendiente')
-    .lte('programado_para', new Date().toISOString())
+    .lte('programado_para', ahoraIso)
     .order('programado_para', { ascending: true })
     .limit(limite)
 
   if (error) throw new Error(`No se pudo leer la cola de correos: ${error.message}`)
 
   for (const notificacion of (pendientes || []) as NotificacionPendiente[]) {
+    // Reserva atómica por arrendamiento temporal (5 min) antes de enviar:
+    // evita correos duplicados si dos ejecuciones del cron coinciden (F27).
+    const claimAhora = new Date().toISOString()
+    const leaseHasta = new Date(Date.now() + 5 * 60 * 1000).toISOString()
+    const { data: reservada, error: claimError } = await supabase
+      .from('notificaciones_email')
+      .update({ programado_para: leaseHasta, actualizado_en: claimAhora })
+      .eq('id', notificacion.id)
+      .eq('estado', 'pendiente')
+      .lte('programado_para', claimAhora)
+      .select('id')
+      .maybeSingle()
+
+    if (claimError || !reservada) {
+      continue
+    }
+
     resultado.procesadas += 1
     try {
       if (notificacion.tipo !== 'mensaje') {

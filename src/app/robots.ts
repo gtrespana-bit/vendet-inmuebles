@@ -1,34 +1,37 @@
 import type { MetadataRoute } from 'next'
 
+const PRIVATE_PATHS = [
+  '/admin',
+  '/dashboard',
+  '/pagos',
+  '/chat',
+  '/mi-perfil',
+  '/eliminar-cuenta',
+  '/diagnostico',
+  '/login',
+  '/register',
+  '/iniciar-sesion',
+  '/registrarse',
+  '/reset-password',
+  '/confirm',
+  '/confirmacion',
+  '/buscar',
+  '/offline',
+  '/publicar',
+]
+
 export default function robots(): MetadataRoute.Robots {
+  const localizedDisallows = PRIVATE_PATHS.flatMap((p) => [p, `/en${p}`])
+
   return {
     rules: {
       userAgent: '*',
       allow: '/',
       disallow: [
-        // Paneles privados y rutas de cuenta
-        '/admin',
-        '/dashboard',
-        '/chat',
-        '/mi-perfil',
-        '/eliminar-cuenta',
-        '/diagnostico',
-        // Auth
-        '/login',
-        '/register',
-        '/iniciar-sesion',
-        '/registrarse',
-        '/reset-password',
-        '/confirm',
-        '/confirmacion',
-        // APIs y utilidades internas
+        ...localizedDisallows,
         '/api/',
-        // Páginas de desarrollo/prueba
         '/test-',
-        // Búsqueda interna (resultados dinámicos, sin valor SEO propio)
-        '/buscar',
-        // PWA offline
-        '/offline',
+        '/en/test-',
       ],
     },
     sitemap: 'https://venezuela-inmuebles.online/sitemap.xml',

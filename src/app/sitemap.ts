@@ -16,34 +16,41 @@ function slugifyEstado(nombre: string): string {
     .replace(/^-+|-+$/g, '')
 }
 
-// Par es/en con sus hreflang correspondientes
+// Par es/en con sus hreflang correspondientes (sin inventar lastModified cuando no existe fecha real)
 function localized(
   pathname: string,
   priority: number,
   changeFrequency: MetadataRoute.Sitemap[number]['changeFrequency'],
-  lastModified: Date = new Date()
+  lastModified?: Date
 ): MetadataRoute.Sitemap {
   const esPath = pathname || '/'
   const enPath = `/en${pathname}`
+  const esUrl = pathname ? `${SITE_URL}${esPath}` : SITE_URL
+  const languages = {
+    'es-VE': esUrl,
+    'en-US': `${SITE_URL}${enPath}`,
+    'x-default': esUrl,
+  }
   return [
     {
-      url: `${SITE_URL}${esPath}`,
-      lastModified,
+      url: esUrl,
+      ...(lastModified ? { lastModified } : {}),
       changeFrequency,
       priority,
-      alternates: { languages: { 'es-VE': `${SITE_URL}${esPath}`, 'en-US': `${SITE_URL}${enPath}`, 'x-default': `${SITE_URL}${esPath}` } },
+      alternates: { languages },
     },
     {
       url: `${SITE_URL}${enPath}`,
-      lastModified,
+      ...(lastModified ? { lastModified } : {}),
       changeFrequency,
       priority: priority === 1 ? 0.8 : priority,
-      alternates: { languages: { 'es-VE': `${SITE_URL}${esPath}`, 'en-US': `${SITE_URL}${enPath}`, 'x-default': `${SITE_URL}${esPath}` } },
+      alternates: { languages },
     },
   ]
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  // Excluimos rutas bloqueadas en robots o privadas (/buscar, /pagos, /publicar heredado, /login, etc.)
   const sharedPaths: Array<[string, number, MetadataRoute.Sitemap[number]['changeFrequency']]> = [
     ['', 1, 'daily'],
     ['/catalogo', 0.9, 'daily'],
@@ -51,7 +58,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ['/propiedades', 0.8, 'daily'],
     ['/propiedades/venta', 0.9, 'daily'],
     ['/propiedades/alquiler', 0.9, 'daily'],
-    ['/buscar', 0.5, 'weekly'],
     ['/publicar-inmueble', 0.7, 'monthly'],
     ['/blog', 0.8, 'weekly'],
     ['/como-funciona', 0.6, 'monthly'],
@@ -85,7 +91,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         .map((file) => file.replace('.md', ''))
         .flatMap((slug) => {
           const filePath = path.join(blogDirectory, `${slug}.md`)
-          let lastModified = new Date()
+          let lastModified: Date | undefined
           try {
             const raw = fs.readFileSync(filePath, 'utf-8')
             const dateMatch = raw.match(/^date:\s*(.+)$/m)
@@ -93,28 +99,43 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
               const date = new Date(dateMatch[1].trim())
               if (!Number.isNaN(date.getTime())) lastModified = date
             }
-          } catch { /* fecha por defecto */ }
+          } catch { /* sin fecha si falla lectura */ }
           return localized(`/blog/${slug}`, 0.6, 'monthly', lastModified)
         })
     : []
 
-  // Inmuebles activos (dinámico, desde la vista pública)
+  // Inmuebles activos (dinámico, paginado desde la vista pública)
   let propertyPages: MetadataRoute.Sitemap = []
   if (isSupabaseConfigured()) {
     try {
-      const { data } = await supabase
-        .from('vw_propiedades_publicas')
-        .select('id, slug, creado_en, actualizado_en')
-        .eq('activo', true)
-        .limit(5000)
+      const pageSize = 1000
+      const allRows: Array<{ id: string; slug: string | null; creado_en: string | null; actualizado_en: string | null }> = []
+      for (let offset = 0; offset < 10000; offset += pageSize) {
+        const { data, error } = await supabase
+          .from('vw_propiedades_publicas')
+          .select('id, slug, creado_en, actualizado_en')
+          .eq('activo', true)
+          .order('creado_en', { ascending: false })
+          .range(offset, offset + pageSize - 1)
 
-      propertyPages = (data || []).flatMap((property: any) => {
+        if (error) {
+          console.error('[sitemap] Error consultando vw_propiedades_publicas:', error.message)
+          break
+        }
+        if (!data || data.length === 0) break
+        allRows.push(...(data as any))
+        if (data.length < pageSize) break
+      }
+
+      propertyPages = allRows.flatMap((property) => {
         const slug = property.slug || property.id
-        const modified = new Date(property.actualizado_en || property.creado_en || Date.now())
+        const rawDate = property.actualizado_en || property.creado_en
+        const parsed = rawDate ? new Date(rawDate) : undefined
+        const modified = parsed && !Number.isNaN(parsed.getTime()) ? parsed : undefined
         return localized(`/inmueble/${slug}`, 0.8, 'weekly', modified)
       })
-    } catch {
-      // Si Supabase no responde, el sitemap se sirve igualmente con las páginas estáticas.
+    } catch (err) {
+      console.error('[sitemap] Excepción consultando inmuebles:', err)
     }
   }
 

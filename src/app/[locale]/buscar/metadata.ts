@@ -34,8 +34,12 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
     title,
     description,
     robots: {
-      index: true,
-      follow: true,
+      index: false,
+      follow: false,
+      googleBot: {
+        index: false,
+        follow: false,
+      },
     },
   }
 }
