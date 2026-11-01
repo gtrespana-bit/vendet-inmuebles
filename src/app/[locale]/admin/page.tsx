@@ -15,6 +15,7 @@ import {
 import VerificacionTab from './VerificacionTab'
 import AnalyticsTab from './analytics/AnalyticsTab'
 import PlanesTab from './PlanesTab'
+import PagosTab from './PagosTab'
 import Image from 'next/image'
 
 import { isAdminEmail } from '@/lib/admin-config'
@@ -24,6 +25,7 @@ const TABS = [
   { id: 'publicaciones', label: 'Publicaciones', icon: Package },
   { id: 'usuarios', label: 'Usuarios', icon: Users },
   { id: 'planes', label: 'Planes', icon: Crown },
+  { id: 'pagos', label: 'Pagos', icon: CreditCard },
   { id: 'verificacion', label: 'Verificación', icon: ShieldCheck },
 ]
 
@@ -1174,6 +1176,7 @@ export default function AdminPage() {
       {tab === 'dashboard' && <AnalyticsTab />}
       {tab === 'usuarios' && <UsuariosTab notify={notify} />}
       {tab === 'planes' && <PlanesTab notify={notify} />}
+      {tab === 'pagos' && <PagosTab />}
       {tab === 'publicaciones' && <PublicacionesTab notify={notify} />}
       {tab === 'verificacion' && <VerificacionTab notify={notify} />}
       {tab === 'moderacion' && <ModeracionTab notify={notify} adminEmail={user?.email || ''} />}

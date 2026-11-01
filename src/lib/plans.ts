@@ -11,9 +11,11 @@ export async function checkPlanLimits(userId: string) {
   // Get active subscription and its plan
   const { data: susData, error: susError } = await supabase
     .from('suscripciones')
-    .select('plan, estado, trial_ends_at, fin, creditos_incluidos')
+    .select('plan, estado, trial_ends_at, fin, creditos_incluidos, cambio_gratuita')
     .eq('user_id', userId)
     .in('estado', ['activa', 'trial'])
+    .lte('inicio', new Date().toISOString())
+    .or(`fin.is.null,fin.gt.${new Date().toISOString()}`)
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle()
@@ -34,6 +36,11 @@ export async function checkPlanLimits(userId: string) {
     fin = susData.fin || null
     creditosIncluidos = susData.creditos_incluidos ?? 0
   }
+
+  const { data: scheduled, error: scheduledError } = await supabase.from('suscripciones')
+    .select('plan, inicio').eq('user_id', userId).in('estado', ['activa','trial'])
+    .gt('inicio', new Date().toISOString()).order('inicio').limit(1).maybeSingle()
+  if (scheduledError) throw new Error('No se pudo consultar el cambio programado')
 
   const limits = PLANS[currentPlanName as keyof typeof PLANS] || PLANS.gratuita
 
@@ -59,5 +66,7 @@ export async function checkPlanLimits(userId: string) {
     limits,
     activeCount: activeCount || 0,
     canPublish,
+    scheduledPlan: scheduled,
+    cambioGratuita: susData?.cambio_gratuita || false,
   }
 }

@@ -1,13 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import {
-  CheckCircle, Zap, Star, X, Copy, Upload, Loader2
+  CheckCircle, Zap, Star
 } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
 import { useTranslations } from 'next-intl'
-import Image from 'next/image'
+import LocalLink from '@/components/LocalLink'
 
 const paquetesCredito = [
   { creditos: 2, precio: 1, descripcion: 'Para empezar', popular: false },
@@ -16,208 +14,17 @@ const paquetesCredito = [
   { creditos: 100, precio: 20, descripcion: 'Máximo ahorro', popular: false },
 ]
 
-const metodosPago = [
-  {
-    id: 'pagomovil', nombre: 'Pago Móvil', emoji: '📱',
-    instrucciones: { telefono: '04126443099', cedula: 'V20794917', banco: 'Banco Provincial BBVA' },
-  },
-  { id: 'binance', nombre: 'Binance Pay', emoji: '🟡', instrucciones: { id: '204147542' } },
-]
-
 const FALLBACK_TASA = 487.12
 
-function ModalPago({ paquete, tasa, onClose }: { paquete: any; tasa: number; onClose: () => void }) {
+function ModalPago({ paquete, onClose }: { paquete: any; tasa: number; onClose: () => void }) {
   const t = useTranslations('creditos')
-  const router = useRouter()
-  const [metodo, setMetodo] = useState('')
-  const [copiado, setCopiado] = useState('')
-  const [comprobanteFile, setComprobanteFile] = useState<File | null>(null)
-  const [comprobantePreview, setComprobantePreview] = useState('')
-  const [enviando, setEnviando] = useState(false)
-  const [enviado, setEnviado] = useState(false)
-
-  const precioBs = (paquete.precio * tasa).toFixed(2)
-  const selectedMetodo = metodosPago.find(m => m.id === metodo)
-  const isPagoMovil = metodo === 'pagomovil'
-
-  const copyToClipboard = (text: string, label: string) => {
-    navigator.clipboard.writeText(text)
-    setCopiado(label)
-    setTimeout(() => setCopiado(''), 2000)
-  }
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    if (!file.type.startsWith('image/')) { alert('Solo se permiten imágenes'); return }
-    if (file.size > 5 * 1024 * 1024) { alert('Máximo 5MB'); return }
-    setComprobanteFile(file)
-    setComprobantePreview(URL.createObjectURL(file))
-  }
-
-  const procesarCompra = async () => {
-    if (!metodo) { alert('Selecciona un método de pago'); return }
-    if (!comprobanteFile) { alert('Sube el comprobante'); return }
-
-    setEnviando(true)
-    try {
-      const { data: { session } } = await supabase.auth.getSession()
-      const user = session?.user
-      if (!user || !session) { router.push(`/login?redirect=/creditos`); return }
-
-      const fileExt = comprobanteFile.name.split('.').pop()
-      const fileName = `${user.id}/comprobante_${Date.now()}.${fileExt}`
-
-      const { error: uploadError } = await supabase.storage
-        .from('comprobantes')
-        .upload(fileName, comprobanteFile, { contentType: comprobanteFile.type })
-      if (uploadError) { alert('Error subiendo: ' + uploadError.message); setEnviando(false); return }
-
-      const res = await fetch('/api/comprar-creditos', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
-          userId: user.id,
-          creditos: paquete.creditos,
-          precioUsd: paquete.precio,
-          metodoPago: selectedMetodo?.nombre || metodo,
-          comprobanteUrl: fileName,
-        }),
-      })
-
-      const data = await res.json()
-      if (data.ok) {
-        setEnviado(true)
-      } else {
-        alert('Error: ' + (data.error || 'Error procesando'))
-      }
-    } catch (err: any) {
-      alert('Error: ' + (err.message || 'Error desconocido'))
-    }
-    setEnviando(false)
-  }
-
-  if (enviado) {
-    return (
-      <div className="fixed inset-0 z-50 bg-black/60 flex items-end md:items-center justify-center">
-        <div className="bg-white w-full md:max-w-lg md:rounded-2xl rounded-t-2xl p-6 text-center">
-          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <CheckCircle size={32} className="text-brand-primary" />
-          </div>
-          <h3 className="text-xl font-bold text-brand-primary mb-2">{t('receiptSent')}</h3>
-          <p className="text-sm text-gray-600 mb-4" dangerouslySetInnerHTML={{ __html: t('receiptDesc').replace('{count}', String(paquete.creditos)) }}>
-          </p>
-          <button onClick={onClose} className="w-full bg-brand-primary text-white py-3 rounded-xl font-bold hover:bg-brand-dark transition">{t('closeBtn')}</button>
-        </div>
-      </div>
-    )
-  }
-
-  return (
-    <div className="fixed inset-0 z-50 bg-black/60 flex items-end md:items-center justify-center">
-      <div className="bg-white w-full md:max-w-lg md:rounded-2xl rounded-t-2xl max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between rounded-t-2xl z-10">
-          <div>
-            <h3 className="text-lg font-bold text-gray-900">{paquete.creditos} {t('credits')} — ${paquete.precio} USD</h3>
-            <p className="text-sm text-gray-500">≈ Bs. {precioBs}</p>
-          </div>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full"><X size={20} /></button>
-        </div>
-
-        <div className="p-6 space-y-6">
-          {/* Método de pago */}
-          <div>
-            <h4 className="font-bold text-gray-800 mb-3">{t('choosePayment')}</h4>
-            <div className="grid grid-cols-2 gap-3">
-              {metodosPago.map(m => (
-                <button key={m.id} onClick={() => setMetodo(m.id)}
-                  className={`p-4 rounded-xl border-2 text-center transition ${metodo === m.id ? 'border-brand-accent bg-yellow-50' : 'border-gray-200 hover:border-gray-300'}`}>
-                  <span className="text-3xl block">{m.emoji}</span>
-                  <span className="text-sm font-medium text-gray-700 mt-1 block">{m.nombre}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Monto a pagar en Bs — solo Pago Móvil */}
-          {isPagoMovil && (
-            <div className="bg-brand-primary/5 border-2 border-brand-primary/20 rounded-xl p-4">
-              <p className="text-xs text-gray-500 mb-1 text-center">{t('amountPay')}</p>
-              <div className="flex items-center justify-center gap-3">
-                <p className="text-3xl font-black text-brand-primary">Bs. {precioBs}</p>
-                <button
-                  onClick={() => copyToClipboard(precioBs, 'precioBs')}
-                  className="flex items-center gap-1 bg-white border border-brand-primary/30 rounded-lg px-3 py-2 text-sm text-brand-primary hover:bg-brand-primary/5 transition"
-                >
-                  {copiado === 'precioBs' ? '✓' : t('copy')}
-                </button>
-              </div>
-              <p className="text-xs text-gray-400 mt-1 text-center">{t('rateLabel')} Bs. {tasa.toFixed(2)} / ${paquete.precio}</p>
-            </div>
-          )}
-
-          {/* Datos de pago */}
-          {selectedMetodo && (
-            <div>
-              <h4 className="font-bold text-gray-800 mb-3">{t('paymentData')}</h4>
-              <div className="bg-gray-50 rounded-xl p-4 space-y-3">
-                {Object.entries(selectedMetodo.instrucciones).map(([key, value]) => {
-                  const labelMap: Record<string, string> = { telefono: t('phone'), cedula: t('idCard'), banco: t('bank'), id: 'Binance ID' }
-                  return (
-                    <div key={key} className="flex items-center justify-between">
-                      <div>
-                        <span className="text-xs text-gray-500">{labelMap[key] || key}</span>
-                        <p className="text-sm font-medium text-gray-800">{value as string}</p>
-                      </div>
-                      <button onClick={() => copyToClipboard(value as string, key)} className="text-xs bg-white border rounded-md px-2 py-1 hover:bg-gray-100 transition ml-2">
-                        {copiado === key ? t('copied') : t('copy')}
-                      </button>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Comprobante */}
-          {selectedMetodo && (
-            <div>
-              <h4 className="font-bold text-gray-800 mb-3">{t('uploadReceipt')}</h4>
-              <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-brand-primary transition cursor-pointer"
-                onClick={() => document.getElementById('comprobante-input')?.click()}>
-                <input type="file" accept="image/*" id="comprobante-input" onChange={handleFileChange} className="hidden" />
-                {comprobantePreview ? (
-                  <div>
-                    <Image src={comprobantePreview} alt="Comprobante" className="max-h-48 mx-auto rounded-lg mb-3" width={400} height={300} unoptimized />
-                    <button onClick={(e) => { e.stopPropagation(); setComprobanteFile(null); setComprobantePreview('') }} className="text-sm text-red-500 hover:underline">{t('removeImage')}</button>
-                  </div>
-                ) : (
-                  <>
-                    <Upload size={32} className="mx-auto text-gray-400 mb-2" />
-                    <p className="text-sm text-gray-500">{t('tapUpload')}</p>
-                    <p className="text-xs text-gray-400 mt-1">{t('maxFile')}</p>
-                  </>
-                )}
-              </div>
-              <button onClick={procesarCompra} disabled={enviando || !comprobanteFile}
-                className="w-full mt-4 bg-brand-primary text-white py-3.5 rounded-xl font-bold hover:bg-brand-dark transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                {enviando ? <><Loader2 size={18} className="animate-spin" /> {t('sending')}</> : <><Upload size={18} /> {t('sendReceipt')}</>}
-              </button>
-            </div>
-          )}
-
-          {!metodo && (
-            <div className="text-center py-4 text-sm text-gray-400">
-              {t('selectPayment')}
-            </div>
-          )}
-        </div>
-      </div>
+  return <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Pago">
+    <div className="bg-white rounded-2xl p-6 max-w-lg w-full space-y-4">
+      <h2 className="text-xl font-bold">{paquete.creditos} {t('credits')} · ${paquete.precio}</h2>
+      <LocalLink href={`/pagos?creditos=${paquete.creditos}`} className="block bg-brand-primary text-white p-3 rounded text-center">Pago Móvil / Binance Pay →</LocalLink>
+      <button onClick={onClose} className="w-full p-3 border rounded">{t('closeBtn')}</button>
     </div>
-  )
+  </div>
 }
 
 export default function CreditosPage() {

@@ -7,6 +7,7 @@
 import { createClient } from '@supabase/supabase-js'
 
 const LIMITS: Record<string, { max: number; windowMs: number }> = {
+  'pagos:crear': { max: 10, windowMs: 60 * 60 * 1000 },
   // Publicaciones: 20 por hora (nuevos usuarios subiendo inventario)
   'producto:create': { max: 20, windowMs: 60 * 60 * 1000 },
   // Mensajes: 200 por hora (conversaciones activas entre usuarios)
