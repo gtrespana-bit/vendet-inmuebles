@@ -1,4 +1,6 @@
 export const DEFAULT_GA4_MEASUREMENT_ID = 'G-BSE60G6TX4'
+export const GA4_SCRIPT_PATH = '/api/ga/js'
+export const GA4_TRANSPORT_PATH = '/api/ga'
 
 export const GA4_MEASUREMENT_ID =
   (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_GA_MEASUREMENT_ID?.trim()) ||
@@ -101,7 +103,8 @@ export function buildGa4BootstrapScript(measurementId: string = GA4_MEASUREMENT_
     'var q="";',
     'try{if(window.location.search){var sp=new URLSearchParams(window.location.search);["token","token_hash","code","access_token","refresh_token","email","secret","password"].forEach(function(k){sp.delete(k);});var s=sp.toString();if(s)q="?"+s;}}catch(e){}',
     'var safePath=masked+q;',
-    `gtag('config','${id}',{anonymize_ip:true,allow_google_signals:false,allow_ad_personalization_signals:false,page_path:safePath,page_location:window.location.origin+safePath,send_page_view:!skip});`,
+    'var transportUrl=window.location.origin+"/api/ga";',
+    `gtag('config','${id}',{anonymize_ip:true,allow_google_signals:false,allow_ad_personalization_signals:false,transport_url:transportUrl,first_party_collection:true,page_path:safePath,page_location:window.location.origin+safePath,send_page_view:!skip});`,
     '})();',
   ].join('')
 }

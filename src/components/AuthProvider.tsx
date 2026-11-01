@@ -26,7 +26,20 @@ export function AuthProvider({ children, initialUser }: { children: React.ReactN
     const update = (current: Session | null) => {
       if (cancelled) return
       setSession(current)
-      setUser(current?.user ?? null)
+      setUser((prev) => {
+        const next = current?.user ?? null
+        if (!prev && !next) return null
+        if (
+          prev &&
+          next &&
+          prev.id === next.id &&
+          prev.email === next.email &&
+          prev.updated_at === next.updated_at
+        ) {
+          return prev
+        }
+        return next
+      })
       setLoading(false)
     }
     void import('@/lib/supabase').then(({ supabase, isSupabaseConfigured }) => {

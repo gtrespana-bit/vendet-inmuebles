@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getSupabaseAuthHeaders } from '@/lib/supabase-auth-headers'
 import { useAuth } from '@/components/AuthProvider'
@@ -74,15 +74,16 @@ export function useDashboard() {
   const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState<string | null>(null)
 
+  const userId = user?.id
   const refreshAll = useCallback(() => {
-    if (!user) return
+    if (!userId) return
 
     // Supabase client automatically handles auth tokens via persistSession + autoRefreshToken
     Promise.all([
-      supabase.from('vw_propiedades_publicas').select('id, titulo, slug, precio, estado, ciudad, activo, visitas, creado_en, main_image_url, operacion_nombre, destacado, destacado_hasta, boosteado_en, estado_moderacion, vendido, agencia_id, agente_asignado_id, agente_nombre').or(`usuario_id.eq.${user.id},agente_asignado_id.eq.${user.id}`).order('creado_en', { ascending: false }).then(({ data }: { data: any[] | null }) => setProductos(data || [])),
+      supabase.from('vw_propiedades_publicas').select('id, titulo, slug, precio, estado, ciudad, activo, visitas, creado_en, main_image_url, operacion_nombre, destacado, destacado_hasta, boosteado_en, estado_moderacion, vendido, agencia_id, agente_asignado_id, agente_nombre').or(`usuario_id.eq.${userId},agente_asignado_id.eq.${userId}`).order('creado_en', { ascending: false }).then(({ data }: { data: any[] | null }) => setProductos(data || [])),
 
-      supabase.from('vw_propiedades_publicas').select('visitas').or(`usuario_id.eq.${user.id},agente_asignado_id.eq.${user.id}`).then(({ data }: { data: any[] | null }) => setVisitasTotales(data?.reduce((sum: number, p: { visitas: number | null }) => sum + (p.visitas || 0), 0) || 0)),
-      supabase.from('favoritos').select('producto_id, creado_en').eq('user_id', user.id).order('creado_en', { ascending: false }).then(async ({ data }: { data: any[] | null }) => {
+      supabase.from('vw_propiedades_publicas').select('visitas').or(`usuario_id.eq.${userId},agente_asignado_id.eq.${userId}`).then(({ data }: { data: any[] | null }) => setVisitasTotales(data?.reduce((sum: number, p: { visitas: number | null }) => sum + (p.visitas || 0), 0) || 0)),
+      supabase.from('favoritos').select('producto_id, creado_en').eq('user_id', userId).order('creado_en', { ascending: false }).then(async ({ data }: { data: any[] | null }) => {
         const favoriteRows = data || []
         const propertyIds = favoriteRows.map((favorite: any) => favorite.producto_id)
         const { data: properties } = propertyIds.length
@@ -95,7 +96,7 @@ export function useDashboard() {
         setFavoritos(visibleFavorites)
         setFavoritosCount(visibleFavorites.length)
       }),
-      supabase.from('perfiles').select('credito_balance, nombre, telefono, estado, ciudad, foto_perfil_url, verificado, nivel_confianza, badges_automaticos, ultima_actividad, creado_en').eq('id', user.id).single().then(({ data }: { data: any | null }) => {
+      supabase.from('perfiles').select('credito_balance, nombre, telefono, estado, ciudad, foto_perfil_url, verificado, nivel_confianza, badges_automaticos, ultima_actividad, creado_en').eq('id', userId).single().then(({ data }: { data: any | null }) => {
         setCreditos(data?.credito_balance ?? 0)
         if (data) {
           setNombre(data.nombre || '')
@@ -110,8 +111,8 @@ export function useDashboard() {
           setCreadoEn(data.creado_en || null)
         }
       }),
-      supabase.from('vw_propiedades_publicas').select('*', { count: 'exact' }).or(`user_id.eq.${user.id},agente_asignado_id.eq.${user.id}`).eq('activo', true).then(({ count }: { count: number | null }) => setPubCount(count || 0)),
-      supabase.from('resenas').select('id, puntuacion, comentario, producto_id, producto_titulo, creado_en').eq('vendedor_id', user.id).order('creado_en', { ascending: false }).then(async ({ data }: { data: any[] | null }) => {
+      supabase.from('vw_propiedades_publicas').select('*', { count: 'exact' }).or(`user_id.eq.${userId},agente_asignado_id.eq.${userId}`).eq('activo', true).then(({ count }: { count: number | null }) => setPubCount(count || 0)),
+      supabase.from('resenas').select('id, puntuacion, comentario, producto_id, producto_titulo, creado_en').eq('vendedor_id', userId).order('creado_en', { ascending: false }).then(async ({ data }: { data: any[] | null }) => {
         const reviews = data || []
         const propertyIds = Array.from(new Set(reviews.map((review: any) => review.producto_id).filter(Boolean)))
         const { data: properties } = propertyIds.length
@@ -138,80 +139,26 @@ export function useDashboard() {
         .then((plan: any) => { if (plan && plan.plan) setPlanInfo(plan as PlanInfo) })
         .catch(() => {}),
     ]).finally(() => setLoading(false))
-  }, [user])
-
-  // Realtime level-up notification
-  const prevLevelRef = useRef(nivelConfianza)
-
-  useEffect(() => {
-    prevLevelRef.current = nivelConfianza
-  }, [nivelConfianza])
-
-  useEffect(() => {
-    if (!user) return
-    const sub = supabase
-      .channel('level-notif')
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'perfiles', filter: `id=eq.${user.id}` },
-        (payload: { new: any; old: any }) => {
-          const newLevel = payload.new?.nivel_confianza
-          const oldLevel = payload.old?.nivel_confianza
-          if (typeof newLevel === 'number' && typeof oldLevel === 'number' && newLevel > oldLevel) {
-            const nombresNivel = ['Bronce', 'Plata', 'Oro', 'Platino', 'Diamante', 'Maestro']
-            const nivelAnterior = nombresNivel[oldLevel] || `Nivel ${oldLevel}`
-            const nivelNuevo = nombresNivel[newLevel] || `Nivel ${newLevel}`
-            setNivelConfianza(newLevel)
-            setBadgesAuto(payload.new?.badges_automaticos || [])
-            setToast(`🎉 Subiste de nivel: ${nivelNuevo}!`)
-            setTimeout(() => setToast(null), 6000)
-            // EMAIL: Trigger level-up email
-            try {
-              getSupabaseAuthHeaders().then(authHeaders => fetch('/api/email-verificacion', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', ...authHeaders },
-                body: JSON.stringify({ userId: user.id, nuevoNivel: nivelNuevo, nivelAnterior }),
-              })).catch(() => {})
-            } catch {}
-          } else if (typeof newLevel === 'number') {
-            setNivelConfianza(newLevel)
-          }
-        }
-      )
-      .subscribe()
-    return () => { supabase.removeChannel(sub) }
-  }, [user])
-
+  }, [userId])
 
   useEffect(() => {
     if (authLoading) return
     refreshAll()
-  }, [user, authLoading, refreshAll])
+  }, [userId, authLoading, refreshAll])
 
-  // Realtime credit notification
+  // Resincronizar saldos de créditos y estado al volver a enfocar la pestaña (sin WebSockets sobre `perfiles`)
   useEffect(() => {
-    if (!user) return
-    const sub = supabase
-      .channel('credit-notif')
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'perfiles', filter: `id=eq.${user.id}` },
-        (payload: { new: any; old: any }) => {
-          const newBalance = payload.new?.credito_balance
-          const oldBalance = payload.old?.credito_balance
-          if (typeof newBalance === 'number' && typeof oldBalance === 'number' && newBalance > oldBalance) {
-            const diff = newBalance - oldBalance
-            setCreditos(newBalance)
-            setToast(`✅ +${diff} créditos añadidos a tu cuenta`)
-            setTimeout(() => setToast(null), 6000)
-          } else if (typeof newBalance === 'number') {
-            setCreditos(newBalance)
-          }
-        }
-      )
-      .subscribe()
-    return () => { supabase.removeChannel(sub) }
-  }, [user])
+    if (!userId) return
+    const onFocus = () => {
+      if (document.visibilityState === 'visible') refreshAll()
+    }
+    window.addEventListener('focus', onFocus)
+    document.addEventListener('visibilitychange', onFocus)
+    return () => {
+      window.removeEventListener('focus', onFocus)
+      document.removeEventListener('visibilitychange', onFocus)
+    }
+  }, [userId, refreshAll])
 
   return {
     productos, setProductos, visitasTotales, favoritos, favoritosCount,

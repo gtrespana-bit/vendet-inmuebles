@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { getLocale } from 'next-intl/server'
 import {
   GA4_MEASUREMENT_ID,
+  GA4_SCRIPT_PATH,
   buildGa4BootstrapScript,
   isValidGaMeasurementId,
 } from '@/lib/ga4'
@@ -35,7 +36,7 @@ export default async function RootLayout({
           <>
             <script
               async
-              src={`https://www.googletagmanager.com/gtag/js?id=${GA4_MEASUREMENT_ID}`}
+              src={`${GA4_SCRIPT_PATH}?id=${GA4_MEASUREMENT_ID}`}
             />
             <script
               id="ga4-init"
