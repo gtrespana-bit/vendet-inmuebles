@@ -10,6 +10,9 @@ import { checkPlanLimits } from '@/lib/plans'
 import { isPlanQuotaError, planQuotaResponse } from '@/lib/quota-errors'
 import { emailProductoPublicado, emailPropiedadEnRevision } from '@/lib/server-email'
 import { evaluarModeracionServidor } from '@/lib/moderacion'
+import { getUserAgencyContext } from '@/lib/agency-server'
+import { resolveEffectiveAgencyPublisher } from '@/lib/agency'
+import { isValidUUID } from '@/lib/validation'
 
 export async function POST(req: NextRequest) {
   try {
@@ -110,8 +113,21 @@ export async function POST(req: NextRequest) {
     }
     const moderationState = moderacion.estadoModeracion
 
+    const { agency, activeMemberIds } = await getUserAgencyContext(auth.supabaseAdmin, auth.user.id)
+    const requestedAgentId = typeof body.agente_asignado_id === 'string' && isValidUUID(body.agente_asignado_id)
+      ? body.agente_asignado_id
+      : null
+    const ownership = resolveEffectiveAgencyPublisher({
+      userId: auth.user.id,
+      agency,
+      requestedAgentId,
+      activeMemberIds,
+    })
+
     const insertData = {
-      usuario_id: auth.user.id,
+      usuario_id: ownership.usuario_id,
+      agencia_id: ownership.agencia_id,
+      agente_asignado_id: ownership.agente_asignado_id,
       titulo,
       descripcion,
       categoria_id: categoriaId,

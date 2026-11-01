@@ -178,17 +178,30 @@ export default async function PropertyDetailPage({ params }: PageProps) {
   const propertyType = String(property.tipo_nombre || property.tipo_propiedad || (isEnglish ? 'Property' : 'Inmueble'))
   const propertyId = String(property.id)
   const ownerId = String(property.usuario_id || property.user_id || property.propietario_id || '')
+  const assignedAgentId = property.agente_asignado_id ? String(property.agente_asignado_id) : ''
+  const contactUserId = assignedAgentId || ownerId
+  const hasDistinctAgent = Boolean(property.agencia_id && assignedAgentId && assignedAgentId !== ownerId && property.agente_nombre)
+  const agencyDisplayName = String(
+    property.agencia_nombre || property.propietario_empresa || property.propietario_nombre || ''
+  ).trim()
   const images = getPropertyImages(property)
   const price = getFormattedPrice(property, locale)
   const currencyCode = typeof property.moneda === 'string' && /^[A-Z]{3}$/i.test(property.moneda)
     ? property.moneda.toUpperCase()
     : 'USD'
   const location = [property.zona, property.ciudad, property.estado].filter(Boolean).join(', ')
-  const ownerName = String(property.propietario_nombre || property.propietario_empresa || (isEnglish ? 'Property owner' : 'Propietario'))
-  const ownerType = property.propietario_tipo === 'empresa'
-    ? (isEnglish ? 'Real estate professional' : 'Profesional inmobiliario')
-    : (isEnglish ? 'Private owner' : 'Propietario particular')
-  const isVerified = property.propietario_verificado === true || Number(property.nivel_confianza || 0) > 50
+  const ownerName = hasDistinctAgent
+    ? String(property.agente_nombre)
+    : String(property.agencia_nombre || property.propietario_empresa || property.propietario_nombre || (isEnglish ? 'Property owner' : 'Propietario'))
+  const ownerPhoto = hasDistinctAgent ? property.agente_foto : (property.agencia_logo || property.propietario_foto)
+  const ownerType = hasDistinctAgent
+    ? (isEnglish ? `Advisor at ${agencyDisplayName}` : `Agente en ${agencyDisplayName}`)
+    : property.agencia_id || property.propietario_tipo === 'empresa'
+      ? (isEnglish ? 'Real estate agency' : 'Agencia inmobiliaria')
+      : (isEnglish ? 'Private owner' : 'Propietario particular')
+  const isVerified = hasDistinctAgent
+    ? Boolean(property.agente_verificado || property.propietario_verificado)
+    : (property.propietario_verificado === true || Number(property.nivel_confianza || 0) > 50)
   // Todos los ambientes/servicios guardados, ordenados como el catálogo y con
   // la etiqueta traducida cuando la característica es conocida.
   const tAmenity = await getTranslations({ locale, namespace: 'catalog.extra.amenity' })
@@ -204,7 +217,7 @@ export default async function PropertyDetailPage({ params }: PageProps) {
       }
     })
   const createdAt = formatDate(property.publicado_en || property.creado_en, locale)
-  const chatPath = `/chat?producto_id=${encodeURIComponent(propertyId)}&vendedor_id=${encodeURIComponent(ownerId)}`
+  const chatPath = `/chat?producto_id=${encodeURIComponent(propertyId)}&vendedor_id=${encodeURIComponent(contactUserId)}`
   const chatHref = `${isEnglish ? '/en' : ''}${chatPath}`
   // Contacto elegido en el anuncio (chat siempre activo; teléfono/WhatsApp opcionales).
   // Si la publicación no configuró métodos (null), se usa el teléfono del perfil
@@ -214,7 +227,12 @@ export default async function PropertyDetailPage({ params }: PageProps) {
   const mensajeWa = mensajeWhatsappPredeterminado(title, anuncioUrl, isEnglish)
   const hrefLlamar = contacto.telLlamadas ? telHref(contacto.telLlamadas) : null
   const hrefWhatsapp = contacto.telWhatsapp ? whatsappHref(contacto.telWhatsapp, mensajeWa) : null
-  const sellerHref = ownerId ? `${isEnglish ? '/en' : ''}/vendedor/${ownerId}` : null
+  const advisorHref = hasDistinctAgent
+    ? `${isEnglish ? '/en' : ''}/vendedor/${property.agente_slug || assignedAgentId}`
+    : (ownerId ? `${isEnglish ? '/en' : ''}/vendedor/${property.propietario_slug || ownerId}` : null)
+  const agencyHref = property.agencia_id && ownerId
+    ? `${isEnglish ? '/en' : ''}/vendedor/${property.propietario_slug || ownerId}`
+    : null
   const coordinates = property.latitud && property.longitud
     ? `${property.latitud},${property.longitud}`
     : null
@@ -511,9 +529,9 @@ export default async function PropertyDetailPage({ params }: PageProps) {
 
               <div className="property-contact-card__owner">
                 <div className="property-contact-card__avatar">
-                  {property.propietario_foto ? (
+                  {ownerPhoto ? (
                     <Image
-                      src={String(property.propietario_foto)}
+                      src={String(ownerPhoto)}
                       alt=""
                       width={54}
                       height={54}
@@ -525,9 +543,28 @@ export default async function PropertyDetailPage({ params }: PageProps) {
                   {isVerified && <span className="property-contact-card__verified"><ShieldCheck size={14} /></span>}
                 </div>
                 <div className="property-contact-card__owner-info">
-                  <p className="property-contact-card__owner-label">{isEnglish ? 'Listed by' : 'Publicado por'}</p>
-                  <p className="property-contact-card__owner-name">{ownerName}</p>
+                  <p className="property-contact-card__owner-label">
+                    {hasDistinctAgent
+                      ? (isEnglish ? 'Attended by' : 'Atendido por')
+                      : (isEnglish ? 'Listed by' : 'Publicado por')}
+                  </p>
+                  {advisorHref ? (
+                    <Link href={advisorHref} className="property-contact-card__owner-name hover:underline">
+                      {ownerName}
+                    </Link>
+                  ) : (
+                    <p className="property-contact-card__owner-name">{ownerName}</p>
+                  )}
                   <p className="property-contact-card__owner-type">{ownerType}</p>
+                  {hasDistinctAgent && agencyHref && agencyDisplayName && (
+                    <Link
+                      href={agencyHref}
+                      className="inline-flex items-center gap-1 text-xs font-semibold text-brand-primary hover:underline mt-1"
+                    >
+                      <Building2 size={12} aria-hidden="true" />
+                      {isEnglish ? `View ${agencyDisplayName} portfolio` : `Ver cartera de ${agencyDisplayName}`}
+                    </Link>
+                  )}
                 </div>
               </div>
 

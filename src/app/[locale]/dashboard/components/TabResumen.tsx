@@ -8,7 +8,7 @@ import LocalLink from '@/components/LocalLink'
 import Image from 'next/image'
 import {
   PlusCircle, MessageSquare, Coins, ShieldCheck,
-  AlertCircle, ArrowRight, Eye, Sparkles,
+  AlertCircle, ArrowRight, Eye, Sparkles, Users,
 } from 'lucide-react'
 import type { PlanInfo } from '../hooks/useDashboard'
 
@@ -67,6 +67,9 @@ export default function TabResumen({
 
   const accesos = [
     { href: '/publicar-inmueble', icon: PlusCircle, title: t('quickPublishTitle'), desc: t('quickPublishDesc') },
+    ...(planInfo?.agencia || planInfo?.plan === 'agencia'
+      ? [{ onClick: () => onGoToTab('equipo'), icon: Users, title: t('quickTeamTitle'), desc: t('quickTeamDesc') }]
+      : []),
     { href: '/chat', icon: MessageSquare, title: t('quickMessagesTitle'), desc: t('quickMessagesDesc') },
     { onClick: () => onGoToTab('creditos'), icon: Coins, title: t('quickCreditsTitle'), desc: t('quickCreditsDesc') },
     ...(verificado ? [] : [{ onClick: () => onGoToTab('verificacion'), icon: ShieldCheck, title: t('quickVerifyTitle'), desc: t('quickVerifyDesc') }]),

@@ -153,7 +153,7 @@ export function resolverContactoPublicacion(property: Record<string, any>): {
   const raw = property?.metodos_contacto
   const configurado = tieneMetodosConfigurados(raw)
   const metodos = (configurado ? raw : {}) as Record<string, unknown>
-  const telPerfil = normalizarTelefono(property?.propietario_telefono)
+  const telPerfil = normalizarTelefono(property?.agente_telefono || property?.propietario_telefono)
 
   const telLlamadas = normalizarTelefono(metodos.telefono) ?? (configurado ? null : telPerfil)
   const telWhatsapp = normalizarTelefono(metodos.whatsapp) ?? (configurado ? null : telPerfil)
@@ -161,8 +161,12 @@ export function resolverContactoPublicacion(property: Record<string, any>): {
   let email: string | null = null
   if (typeof metodos.email === 'string' && EMAIL_RE.test(metodos.email.trim())) {
     email = metodos.email.trim()
-  } else if (!configurado && typeof property?.propietario_email === 'string' && property.propietario_email.includes('@')) {
-    email = property.propietario_email
+  } else if (
+    !configurado &&
+    typeof (property?.agente_email || property?.propietario_email) === 'string' &&
+    String(property?.agente_email || property?.propietario_email).includes('@')
+  ) {
+    email = String(property?.agente_email || property?.propietario_email)
   }
 
   let messenger: string | null = null

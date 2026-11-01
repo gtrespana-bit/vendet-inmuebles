@@ -134,6 +134,14 @@ export async function PATCH(req: NextRequest) {
       )
     }
 
+    // Sincronizar con `public.agencias` si el usuario es titular de una agencia
+    if (rawEmpresa !== null || rawDescripcion !== null) {
+      const agencySync: Record<string, unknown> = { actualizado_en: new Date().toISOString() }
+      if (rawEmpresa && rawEmpresa.trim().length >= 2) agencySync.nombre = rawEmpresa.trim()
+      if (rawDescripcion !== null) agencySync.descripcion = rawDescripcion || null
+      await supabase.from('agencias').update(agencySync).eq('owner_id', auth.user.id)
+    }
+
     return NextResponse.json({
       ok: true,
       slug: nextSlug,

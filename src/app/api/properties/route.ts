@@ -7,6 +7,9 @@ import { sanitizarMetodosContacto } from '@/lib/contact-methods'
 import { isPlanQuotaError, planQuotaResponse } from '@/lib/quota-errors'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { evaluarModeracionServidor } from '@/lib/moderacion'
+import { canUserManageProperty, getUserAgencyContext } from '@/lib/agency-server'
+import { resolveEffectiveAgencyPublisher } from '@/lib/agency'
+import { isValidUUID } from '@/lib/validation'
 
 export async function POST(req: NextRequest) {
   try {
@@ -127,9 +130,25 @@ export async function POST(req: NextRequest) {
 
     const areaConstruidaNum = Number(area_construida)
     const condicionLimpia = typeof condicion === 'string' && condicion.trim() ? condicion.trim().slice(0, 60) : null
+    const videoUrlLimpia = typeof body.video_url === 'string' && body.video_url.trim().startsWith('https://') ? body.video_url.trim().slice(0, 500) : null
+    const virtualTourUrlLimpia = typeof body.virtual_tour_url === 'string' && body.virtual_tour_url.trim().startsWith('https://') ? body.virtual_tour_url.trim().slice(0, 500) : null
+    const planoUrlLimpia = typeof body.plano_url === 'string' && body.plano_url.trim().startsWith('https://') ? body.plano_url.trim().slice(0, 500) : null
+
+    const { agency, activeMemberIds } = await getUserAgencyContext(supabase, user.id)
+    const requestedAgentId = typeof body.agente_asignado_id === 'string' && isValidUUID(body.agente_asignado_id)
+      ? body.agente_asignado_id
+      : null
+    const ownership = resolveEffectiveAgencyPublisher({
+      userId: user.id,
+      agency,
+      requestedAgentId,
+      activeMemberIds,
+    })
 
     const propertyData = {
-      usuario_id: user.id,
+      usuario_id: ownership.usuario_id,
+      agencia_id: ownership.agencia_id,
+      agente_asignado_id: ownership.agente_asignado_id,
       titulo: tituloLimpio.slice(0, 160),
       descripcion: descripcionLimpia.slice(0, 10000),
       precio: precioNumerico,
@@ -146,6 +165,9 @@ export async function POST(req: NextRequest) {
       area_construida: Number.isFinite(areaConstruidaNum) && areaConstruidaNum > 0 ? areaConstruidaNum : null,
       puestos_estacionamiento: Math.max(0, Number.parseInt(puestos_estacionamiento, 10) || 0),
       condicion: condicionLimpia,
+      video_url: videoUrlLimpia,
+      virtual_tour_url: virtualTourUrlLimpia,
+      plano_url: planoUrlLimpia,
       latitud: hasCoords ? Number(lat.toFixed(7)) : null,
       longitud: hasCoords ? Number(lng.toFixed(7)) : null,
       imagen_url: imageUrls[0] || null,
@@ -242,14 +264,14 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'Falta el id del inmueble' }, { status: 400 })
     }
 
-    // El inmueble debe existir y ser del usuario autenticado
+    // El inmueble debe existir y pertenecer al usuario o estar bajo su gestión autorizada de agencia
     const { data: existing, error: existingError } = await supabase
       .from('inmuebles')
-      .select('id, usuario_id')
+      .select('id, usuario_id, agencia_id, agente_asignado_id')
       .eq('id', id)
       .maybeSingle()
     if (existingError) throw existingError
-    if (!existing || existing.usuario_id !== user.id) {
+    if (!existing || !(await canUserManageProperty(supabase, user.id, existing))) {
       return NextResponse.json({ error: 'Inmueble no encontrado' }, { status: 404 })
     }
 
@@ -324,6 +346,13 @@ export async function PATCH(req: NextRequest) {
       cambios.metodos_contacto = sanitizarMetodosContacto(body.metodos_contacto)
     }
 
+    if (typeof body.agente_asignado_id === 'string' && isValidUUID(body.agente_asignado_id) && existing.agencia_id) {
+      const { agency, activeMemberIds } = await getUserAgencyContext(supabase, user.id)
+      if (agency && agency.id === existing.agencia_id && agency.isAdmin && activeMemberIds.has(body.agente_asignado_id)) {
+        cambios.agente_asignado_id = body.agente_asignado_id
+      }
+    }
+
     if (estado && ciudad) {
       const { data: state } = await supabase.from('states').select('id').eq('name', estado).maybeSingle()
       const { data: city } = state?.id
@@ -346,7 +375,7 @@ export async function PATCH(req: NextRequest) {
     }
 
     if (Object.keys(cambios).length > 0) {
-      const { error } = await supabase.from('inmuebles').update(cambios).eq('id', id).eq('usuario_id', user.id)
+      const { error } = await supabase.from('inmuebles').update(cambios).eq('id', id)
       if (error) throw error
     }
 
@@ -400,7 +429,7 @@ export async function PATCH(req: NextRequest) {
         }
       }
       const { error: coverError } = await supabase.from('inmuebles')
-        .update({ imagen_url: nuevas[0]?.url || null }).eq('id', id).eq('usuario_id', user.id)
+        .update({ imagen_url: nuevas[0]?.url || null }).eq('id', id)
       if (coverError) throw coverError
     }
 

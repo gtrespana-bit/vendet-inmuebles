@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireAuthenticatedUser } from '@/lib/api-auth'
 import { isValidUUID } from '@/lib/validation'
 import { notificarPropiedadVendida } from '@/lib/email-eventos'
+import { canUserManageProperty } from '@/lib/agency-server'
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,11 +23,11 @@ export async function POST(request: NextRequest) {
 
     const { data: inmueble, error: fetchError } = await auth.supabaseAdmin
       .from('inmuebles')
-      .select('id, usuario_id, vendido, titulo')
+      .select('id, usuario_id, agencia_id, agente_asignado_id, vendido, titulo')
       .eq('id', productoId)
       .maybeSingle()
     if (fetchError) return NextResponse.json({ error: fetchError.message }, { status: 500 })
-    if (!inmueble || inmueble.usuario_id !== auth.user.id) {
+    if (!inmueble || !(await canUserManageProperty(auth.supabaseAdmin, auth.user.id, inmueble))) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 403 })
     }
     if (inmueble.vendido) return NextResponse.json({ error: 'El inmueble ya está marcado como vendido' }, { status: 400 })
@@ -68,11 +69,11 @@ export async function GET(request: NextRequest) {
 
     const { data: inmueble, error: inmuebleError } = await auth.supabaseAdmin
       .from('inmuebles')
-      .select('id, usuario_id')
+      .select('id, usuario_id, agencia_id, agente_asignado_id')
       .eq('id', productoId)
       .maybeSingle()
     if (inmuebleError) return NextResponse.json({ error: inmuebleError.message }, { status: 500 })
-    if (!inmueble || inmueble.usuario_id !== auth.user.id) {
+    if (!inmueble || !(await canUserManageProperty(auth.supabaseAdmin, auth.user.id, inmueble))) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 403 })
     }
 

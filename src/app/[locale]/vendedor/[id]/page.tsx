@@ -11,7 +11,7 @@ import SellerReputation from '@/components/SellerReputation'
 import { isOptimizableImageSrc } from '@/components/PropertyGallery'
 import { isUuidIdentifier } from '@/lib/storefront-slug'
 import { supabase, isSupabaseConfigured } from '@/lib/supabase'
-import { ArrowLeft, ArrowUpRight, Building2, Mail, MapPin, MessageSquare, Phone, Shield, ShieldCheck, Star } from 'lucide-react'
+import { ArrowLeft, ArrowUpRight, Building2, Mail, MapPin, MessageSquare, Phone, Shield, ShieldCheck, Star, Users } from 'lucide-react'
 
 type SellerProfile = {
   id: string
@@ -35,10 +35,24 @@ type SellerProfile = {
   total_vendidas: number | null
   antiguedad_dias: number | null
   ultima_actividad: string | null
+  miembro_agencia_id?: string | null
+  miembro_agencia_nombre?: string | null
+  miembro_agencia_slug?: string | null
+  miembro_agencia_owner_id?: string | null
+}
+
+type TeamAdvisor = {
+  id: string
+  slug: string | null
+  nombre: string | null
+  foto_perfil_url: string | null
+  verificado: boolean | null
+  ciudad: string | null
 }
 
 type SellerListing = {
   id: string
+  slug?: string | null
   titulo: string
   precio: number | null
   moneda: string | null
@@ -48,6 +62,8 @@ type SellerListing = {
   estado: string | null
   operacion_nombre: string | null
   tipo_nombre: string | null
+  agente_asignado_id?: string | null
+  agente_nombre?: string | null
 }
 
 export default function VendedorPage() {
@@ -56,6 +72,8 @@ export default function VendedorPage() {
   const params = useParams()
   const sellerParam = decodeURIComponent(String(params.id || '')).trim()
   const [seller, setSeller] = useState<SellerProfile | null>(null)
+  const [teamMembers, setTeamMembers] = useState<TeamAdvisor[]>([])
+  const [selectedAdvisorId, setSelectedAdvisorId] = useState<string>('todos')
   const [properties, setProperties] = useState<SellerListing[]>([])
   const [reviews, setReviews] = useState<any[]>([])
   const [average, setAverage] = useState(0)
@@ -75,7 +93,7 @@ export default function VendedorPage() {
       try {
         let profileQuery = supabase
           .from('vw_perfiles_publicos')
-          .select('id, slug, nombre, empresa_nombre, descripcion_agente, tipo_cuenta, telefono, estado, ciudad, verificado, nivel_confianza, creado_en, foto_perfil_url, badges_automaticos, whatsapp_disponible, telefono_disponible, email_disponible, email_publico, total_vendidas, antiguedad_dias, ultima_actividad')
+          .select('id, slug, nombre, empresa_nombre, descripcion_agente, tipo_cuenta, telefono, estado, ciudad, verificado, nivel_confianza, creado_en, foto_perfil_url, badges_automaticos, whatsapp_disponible, telefono_disponible, email_disponible, email_publico, total_vendidas, antiguedad_dias, ultima_actividad, miembro_agencia_id, miembro_agencia_nombre, miembro_agencia_slug, miembro_agencia_owner_id')
 
         profileQuery = isUuidIdentifier(sellerParam)
           ? profileQuery.eq('id', sellerParam)
@@ -89,25 +107,47 @@ export default function VendedorPage() {
         }
 
         const resolvedSellerId = profile.id
+        const isAgencyStorefront = Boolean(
+          profile.miembro_agencia_id && profile.miembro_agencia_owner_id === resolvedSellerId
+        )
 
-        const [{ data: reviewRows }, { data: listingRows }] = await Promise.all([
+        const listingsPromise = isAgencyStorefront
+          ? supabase
+              .from('vw_propiedades_publicas')
+              .select('id, slug, titulo, precio, moneda, imagen_url, main_image_url, ciudad, estado, operacion_nombre, tipo_nombre, agente_asignado_id, agente_nombre')
+              .or(`user_id.eq.${resolvedSellerId},agencia_id.eq.${profile.miembro_agencia_id}`)
+              .eq('activo', true)
+              .order('creado_en', { ascending: false })
+              .limit(24)
+          : supabase
+              .from('vw_propiedades_publicas')
+              .select('id, slug, titulo, precio, moneda, imagen_url, main_image_url, ciudad, estado, operacion_nombre, tipo_nombre, agente_asignado_id, agente_nombre')
+              .or(`user_id.eq.${resolvedSellerId},agente_asignado_id.eq.${resolvedSellerId}`)
+              .eq('activo', true)
+              .order('creado_en', { ascending: false })
+              .limit(24)
+
+        const teamPromise = isAgencyStorefront
+          ? supabase
+              .from('vw_perfiles_publicos')
+              .select('id, slug, nombre, foto_perfil_url, verificado, ciudad')
+              .eq('miembro_agencia_id', profile.miembro_agencia_id)
+          : Promise.resolve({ data: [] as TeamAdvisor[] })
+
+        const [{ data: reviewRows }, { data: listingRows }, { data: teamRows }] = await Promise.all([
           supabase
             .from('resenas')
             .select('id, puntuacion, comentario, producto_id, producto_titulo, creado_en')
             .eq('vendedor_id', resolvedSellerId)
             .order('creado_en', { ascending: false }),
-          supabase
-            .from('vw_propiedades_publicas')
-            .select('id, titulo, precio, moneda, imagen_url, main_image_url, ciudad, estado, operacion_nombre, tipo_nombre')
-            .eq('user_id', resolvedSellerId)
-            .eq('activo', true)
-            .order('creado_en', { ascending: false })
-            .limit(12),
+          listingsPromise,
+          teamPromise,
         ])
 
         if (cancelled) return
         const reviewList = reviewRows || []
         setSeller(profile as SellerProfile)
+        setTeamMembers((teamRows || []) as TeamAdvisor[])
         setProperties((listingRows || []) as SellerListing[])
         setReviews(reviewList)
         if (reviewList.length) {
@@ -154,7 +194,18 @@ export default function VendedorPage() {
     )
   }
 
-  const sellerName = seller.nombre || t('seller')
+  const isAgencyOwnerStorefront = Boolean(
+    seller.miembro_agencia_id && seller.miembro_agencia_owner_id === seller.id
+  )
+  const isLinkedAgentStorefront = Boolean(
+    seller.miembro_agencia_id && seller.miembro_agencia_owner_id && seller.miembro_agencia_owner_id !== seller.id
+  )
+  const sellerName = isAgencyOwnerStorefront
+    ? (seller.miembro_agencia_nombre || seller.empresa_nombre || seller.nombre || t('seller'))
+    : (seller.nombre || t('seller'))
+  const visibleProperties = selectedAdvisorId === 'todos'
+    ? properties
+    : properties.filter((p) => (p.agente_asignado_id || seller.id) === selectedAdvisorId)
   const canonicalIdentifier = seller.slug || seller.id
   const location = [seller.ciudad, seller.estado].filter(Boolean).join(', ')
   const phoneDigits = seller.telefono?.replace(/[^0-9]/g, '') || ''
@@ -206,7 +257,25 @@ export default function VendedorPage() {
             <Avatar nombre={sellerName} fotoUrl={seller.foto_perfil_url} size="xl" />
             <div className="seller-profile-card__identity">
               <h1 id="seller-name">{sellerName} {seller.verificado && <BadgeVerificado size="md" />}</h1>
-              {seller.empresa_nombre ? (
+              {isLinkedAgentStorefront && seller.miembro_agencia_nombre ? (
+                <LocalLink
+                  href={`/vendedor/${seller.miembro_agencia_slug || seller.miembro_agencia_owner_id}`}
+                  className="seller-profile-card__role inline-flex items-center gap-1.5 text-brand-primary font-semibold hover:underline"
+                >
+                  <Building2 size={14} aria-hidden="true" />
+                  <span>
+                    {isEnglish
+                      ? `Official advisor at ${seller.miembro_agencia_nombre}`
+                      : `Agente oficial de ${seller.miembro_agencia_nombre}`}
+                  </span>
+                  <ArrowUpRight size={13} aria-hidden="true" />
+                </LocalLink>
+              ) : isAgencyOwnerStorefront ? (
+                <p className="seller-profile-card__role flex items-center gap-1.5">
+                  <Building2 size={14} aria-hidden="true" />
+                  <span>{isEnglish ? 'Official Real Estate Agency' : 'Agencia Inmobiliaria Oficial'}</span>
+                </p>
+              ) : seller.empresa_nombre ? (
                 <p className="seller-profile-card__role flex items-center gap-1.5">
                   <Building2 size={14} aria-hidden="true" />
                   <span>{seller.empresa_nombre}</span>
@@ -249,6 +318,70 @@ export default function VendedorPage() {
           {seller.verificado && <p className="seller-profile-card__trust"><ShieldCheck size={15} />{t('verifiedSummary')}</p>}
         </section>
 
+        {isAgencyOwnerStorefront && teamMembers.length > 1 && (
+          <section className="bg-white border border-[#E5DEC9] rounded-2xl p-6 mb-7" aria-labelledby="agency-team-heading">
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+              <div>
+                <p className="seller-page__eyebrow flex items-center gap-1.5">
+                  <Users size={13} />
+                  {isEnglish ? 'Official Advisory Team' : 'Equipo de Asesores'}
+                </p>
+                <h2 id="agency-team-heading" className="text-xl font-bold text-gray-900">
+                  {isEnglish ? `Advisors at ${sellerName}` : `Asesores de ${sellerName}`}
+                </h2>
+              </div>
+              {selectedAdvisorId !== 'todos' && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedAdvisorId('todos')}
+                  className="text-xs font-bold text-brand-primary hover:underline"
+                >
+                  {isEnglish ? 'Show all agency listings' : 'Ver toda la cartera'}
+                </button>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-3">
+              {teamMembers.map((member) => {
+                const active = selectedAdvisorId === member.id
+                return (
+                  <div
+                    key={member.id}
+                    className={`flex items-center gap-3 rounded-xl border px-3.5 py-2.5 transition ${
+                      active
+                        ? 'bg-[#FAF8F4] border-brand-primary ring-1 ring-brand-primary'
+                        : 'bg-[#FAF8F4]/60 border-[#ECE5D5] hover:border-[#D4C8AE]'
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setSelectedAdvisorId(active ? 'todos' : member.id)}
+                      className="flex items-center gap-2.5 text-left"
+                    >
+                      <Avatar nombre={member.nombre || 'A'} fotoUrl={member.foto_perfil_url} size="sm" />
+                      <div>
+                        <p className="text-xs sm:text-sm font-bold text-gray-900 flex items-center gap-1">
+                          {member.nombre}
+                          {member.verificado && <ShieldCheck size={13} className="text-emerald-600" />}
+                        </p>
+                        {member.ciudad && <p className="text-[11px] text-gray-500">{member.ciudad}</p>}
+                      </div>
+                    </button>
+                    {member.id !== seller.id && (
+                      <LocalLink
+                        href={`/vendedor/${member.slug || member.id}`}
+                        className="text-gray-400 hover:text-brand-primary p-1"
+                        aria-label={member.nombre || 'Advisor'}
+                      >
+                        <ArrowUpRight size={14} />
+                      </LocalLink>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </section>
+        )}
+
         <div className="seller-profile-grid">
           <section className="seller-page__listings" aria-labelledby="seller-properties-title">
             <div className="seller-page__section-heading">
@@ -256,16 +389,16 @@ export default function VendedorPage() {
                 <p className="seller-page__eyebrow">{t('availableNow')}</p>
                 <h2 id="seller-properties-title">{t('propertiesBy', { name: sellerName })}</h2>
               </div>
-              <span>{properties.length}</span>
+              <span>{visibleProperties.length}</span>
             </div>
 
-            {properties.length === 0 ? (
+            {visibleProperties.length === 0 ? (
               <div className="seller-page__empty">
                 <p>{t('noListings')}</p>
               </div>
             ) : (
               <div className="seller-property-grid">
-                {properties.map(property => {
+                {visibleProperties.map(property => {
                   const image = property.main_image_url || property.imagen_url
                   const amount = Number(property.precio || 0)
                   const currency = typeof property.moneda === 'string' && /^[A-Z]{3}$/i.test(property.moneda) ? property.moneda.toUpperCase() : 'USD'
@@ -273,7 +406,7 @@ export default function VendedorPage() {
                     ? new Intl.NumberFormat(isEnglish ? 'en-US' : 'es-VE', { style: 'currency', currency, maximumFractionDigits: 0 }).format(amount)
                     : t('priceOnRequest')
                   return (
-                    <LocalLink key={property.id} href={`/inmueble/${property.id}`} className="seller-property-card">
+                    <LocalLink key={property.id} href={`/inmueble/${property.slug || property.id}`} className="seller-property-card">
                       <div className="seller-property-card__media">
                         {image ? (
                           <Image
@@ -291,6 +424,11 @@ export default function VendedorPage() {
                       <div className="seller-property-card__body">
                         <p>{[property.ciudad, property.estado].filter(Boolean).join(', ')}</p>
                         <h3>{property.titulo}</h3>
+                        {isAgencyOwnerStorefront && property.agente_nombre && property.agente_asignado_id !== seller.id && (
+                          <span className="text-[11px] text-gray-500 block mb-1">
+                            {isEnglish ? `Advisor: ${property.agente_nombre}` : `Atiende: ${property.agente_nombre}`}
+                          </span>
+                        )}
                         <div><strong>{price}</strong><ArrowUpRight size={16} /></div>
                       </div>
                     </LocalLink>

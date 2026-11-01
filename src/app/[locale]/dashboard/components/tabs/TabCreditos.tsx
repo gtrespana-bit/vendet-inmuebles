@@ -39,11 +39,18 @@ export default function TabCreditos({
           <p className="text-sm opacity-80">Total disponible</p>
           <p className="text-4xl font-black">{totalDisponible} créditos</p>
           <p className="text-xs opacity-80 mt-2">
-            Comprados (sin vencimiento): <strong>{creditos}</strong>
+            Comprados / asignados (sin vencimiento): <strong>{creditos}</strong>
             {planIncluidos > 0 && (
               <> · Incluidos en tu plan este ciclo: <strong>{planRestantes} de {planIncluidos}</strong> (se usan primero)</>
             )}
           </p>
+          {planInfo?.agencia && (
+            <p className="text-xs opacity-90 mt-1.5 bg-white/10 rounded-lg px-2.5 py-1 inline-block">
+              {planInfo.agencia.esDueno
+                ? `Agencia ${planInfo.agencia.nombre}: puedes repartir créditos a tus agentes desde la pestaña «Equipo».`
+                : `Agente de ${planInfo.agencia.nombre}: aquí ves los créditos que te asigne tu agencia o los que adquieras por tu cuenta.`}
+            </p>
+          )}
         </div>
         <CreditCard size={40} className="opacity-50 flex-shrink-0" />
       </div>

@@ -1,5 +1,6 @@
 import { createServerClient } from './supabase-server'
 import { PLAN_LIMITS, TRIAL_DAYS } from './plan-catalog'
+import { getUserAgencyContext } from './agency-server'
 
 // Límites por plan (fuente única en `plan-catalog.ts`).
 export const PLANS = PLAN_LIMITS
@@ -7,7 +8,7 @@ export { TRIAL_DAYS }
 
 export async function checkPlanLimits(userId: string) {
   const supabase = createServerClient()
-  
+
   // Get active subscription and its plan
   const { data: susData, error: susError } = await supabase
     .from('suscripciones')
@@ -32,7 +33,7 @@ export async function checkPlanLimits(userId: string) {
   let fin: string | null = null
   let creditosIncluidos = 0
   let creditosUsadosMes = 0
-  
+
   if (susData && (susData.estado === 'activa' || (susData.estado === 'trial' && new Date(susData.trial_ends_at) > new Date()))) {
     currentPlanName = susData.plan
     estado = susData.estado
@@ -44,20 +45,35 @@ export async function checkPlanLimits(userId: string) {
   }
   const creditosRestantesPlan = Math.max(0, creditosIncluidos - creditosUsadosMes)
 
-  const { data: scheduled, error: scheduledError } = await supabase.from('suscripciones')
-    .select('plan, inicio').eq('user_id', userId).in('estado', ['activa','trial'])
-    .gt('inicio', new Date().toISOString()).order('inicio').limit(1).maybeSingle()
+  const [{ data: scheduled, error: scheduledError }, { agency, activeMemberIds }] = await Promise.all([
+    supabase
+      .from('suscripciones')
+      .select('plan, inicio')
+      .eq('user_id', userId)
+      .in('estado', ['activa', 'trial'])
+      .gt('inicio', new Date().toISOString())
+      .order('inicio')
+      .limit(1)
+      .maybeSingle(),
+    getUserAgencyContext(supabase, userId),
+  ])
   if (scheduledError) throw new Error('No se pudo consultar el cambio programado')
 
-  const limits = PLANS[currentPlanName as keyof typeof PLANS] || PLANS.gratuita
+  // Si pertenece a una agencia con plan Agencia vigente, hereda límites de publicación y fotos
+  // bajo la cartera de la agencia, pero los créditos mensuales del plan permanecen bajo control del dueño.
+  const effectivePublishingPlan =
+    agency && agency.agenciaPlanActivo ? 'agencia' : currentPlanName
+  const limits = PLANS[effectivePublishingPlan as keyof typeof PLANS] || PLANS.gratuita
 
-  // Check current active properties
+  const countFilterColumn =
+    agency && agency.agenciaPlanActivo && !agency.isOwner ? 'agente_asignado_id' : 'usuario_id'
+
   const { count: activeCount, error: countError } = await supabase
     .from('inmuebles')
     .select('id', { count: 'exact', head: true })
-    .eq('usuario_id', userId)
+    .eq(countFilterColumn, userId)
     .eq('activo', true)
-    
+
   if (countError) {
     throw new Error('No se pudo verificar el límite de publicaciones')
   }
@@ -66,6 +82,7 @@ export async function checkPlanLimits(userId: string) {
 
   return {
     plan: currentPlanName,
+    effectivePublishingPlan,
     estado,
     trialEndsAt,
     fin,
@@ -77,5 +94,18 @@ export async function checkPlanLimits(userId: string) {
     canPublish,
     scheduledPlan: scheduled,
     cambioGratuita: susData?.cambio_gratuita || false,
+    agencia: agency
+      ? {
+          id: agency.id,
+          nombre: agency.nombre,
+          logo_url: agency.logo_url,
+          owner_id: agency.owner_id,
+          rol: agency.rol,
+          esDueno: agency.isOwner,
+          esAdmin: agency.isAdmin,
+          planAgenciaActivo: agency.agenciaPlanActivo,
+          totalMiembros: activeMemberIds.size,
+        }
+      : null,
   }
 }

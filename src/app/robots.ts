@@ -19,6 +19,7 @@ const PRIVATE_PATHS = [
   '/offline',
   '/publicar',
   '/inmueble/editar',
+  '/invitacion',
 ]
 
 export default function robots(): MetadataRoute.Robots {
