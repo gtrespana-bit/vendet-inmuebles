@@ -297,56 +297,89 @@ export default function ChatPageClient() {
     if (isChatVisible()) markRead(convId)
   }, [convId, user, loadMensajes, markRead])
 
+  const userId = user?.id
+  const chatHandlersRef = useRef({ loadConversaciones, loadMensajes, markRead })
+  chatHandlersRef.current = { loadConversaciones, loadMensajes, markRead }
+
   useEffect(() => {
-    if (!user) return
-    const uid = user.id
+    if (!userId) return
+    const uid = userId
+    let disposed = false
     let timer: ReturnType<typeof setTimeout> | undefined
+    let fallback: number | undefined
+    let activeChannel: ReturnType<typeof supabase.channel> | null = null
+
     const refreshList = () => {
       clearTimeout(timer)
-      timer = setTimeout(() => { loadConversaciones() }, 200)
+      timer = setTimeout(() => { chatHandlersRef.current.loadConversaciones() }, 200)
     }
     const onMessage = (payload: any) => {
       const incoming = payload.new as Mensaje
       if (incoming.conversacion_id === convIdRef.current) {
         setMensajes(previous => previous.some(message => message.id === incoming.id) ? previous : [...previous.filter(message => message.conversacion_id === incoming.conversacion_id), incoming])
-        if (incoming.destinatario_id === uid && isChatVisible()) markRead(incoming.conversacion_id)
+        if (incoming.destinatario_id === uid && isChatVisible()) chatHandlersRef.current.markRead(incoming.conversacion_id)
       }
       refreshList()
     }
-    const subscription = supabase.channel(`chat-messages-${uid}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensajes', filter: `destinatario_id=eq.${uid}` }, onMessage)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensajes', filter: `remitente_id=eq.${uid}` }, onMessage)
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'mensajes', filter: `destinatario_id=eq.${uid}` }, refreshList)
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          refreshList()
-          if (convIdRef.current) loadMensajes(convIdRef.current)
-        }
-      })
-    const conversations = supabase.channel(`chat-conversations-${uid}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'conversaciones', filter: `user1_id=eq.${uid}` }, refreshList)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'conversaciones', filter: `user2_id=eq.${uid}` }, refreshList)
-      .subscribe()
     const resync = () => {
       if (document.visibilityState !== 'visible') return
       refreshList()
       if (convIdRef.current) {
-        loadMensajes(convIdRef.current)
-        if (isChatVisible()) markRead(convIdRef.current)
+        chatHandlersRef.current.loadMensajes(convIdRef.current)
+        if (isChatVisible()) chatHandlersRef.current.markRead(convIdRef.current)
       }
     }
+
+    const startPolling = (intervalMs: number) => {
+      if (fallback) window.clearInterval(fallback)
+      fallback = window.setInterval(resync, intervalMs)
+    }
+
+    // Retrasar 250ms la apertura del WebSocket para evitar abortar un handshake CONNECTING
+    // durante doble montaje de React Strict Mode o redirecciones inmediatas.
+    const connectTimer = window.setTimeout(() => {
+      if (disposed) return
+      const channel = supabase.channel(`chat-sync-${uid}`)
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensajes', filter: `destinatario_id=eq.${uid}` }, onMessage)
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensajes', filter: `remitente_id=eq.${uid}` }, onMessage)
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'mensajes', filter: `destinatario_id=eq.${uid}` }, refreshList)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'conversaciones', filter: `user1_id=eq.${uid}` }, refreshList)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'conversaciones', filter: `user2_id=eq.${uid}` }, refreshList)
+        .subscribe((status: string) => {
+          if (disposed) return
+          if (status === 'SUBSCRIBED') {
+            startPolling(15000)
+            refreshList()
+            if (convIdRef.current) chatHandlersRef.current.loadMensajes(convIdRef.current)
+          } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+            // Si la red/ISP bloquea wss://, cerramos el canal para no inundar F12 con reintentos
+            // y pasamos automáticamente a sincronización HTTPS cada 4s.
+            activeChannel = null
+            void supabase.removeChannel(channel)
+            startPolling(4000)
+          }
+        })
+      activeChannel = channel
+    }, 250)
+
     document.addEventListener('visibilitychange', resync)
     window.addEventListener('focus', resync)
-    const fallback = window.setInterval(resync, 15000)
+    startPolling(12000)
+
     return () => {
+      disposed = true
+      window.clearTimeout(connectTimer)
       clearTimeout(timer)
-      window.clearInterval(fallback)
+      if (fallback) window.clearInterval(fallback)
       document.removeEventListener('visibilitychange', resync)
       window.removeEventListener('focus', resync)
-      supabase.removeChannel(subscription)
-      supabase.removeChannel(conversations)
+      if (activeChannel) {
+        const ch = activeChannel
+        activeChannel = null
+        void supabase.removeChannel(ch)
+      }
     }
-  }, [user, loadConversaciones, loadMensajes, markRead])
+  }, [userId])
 
   const seleccionarConv = (id: string) => {
     convIdRef.current = id

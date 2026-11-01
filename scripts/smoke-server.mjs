@@ -78,10 +78,24 @@ try {
     assert.match(html, /<html[^>]*\blang="es"/, '/planes debe emitir <html lang="es">')
     assert.match(
       html,
-      /https:\/\/www\.googletagmanager\.com\/gtag\/js\?id=G-BSE60G6TX4/,
-      'El HTML SSR debe incluir la etiqueta oficial de GA4 (G-BSE60G6TX4)'
+      /\/api\/ga\/js\?id=G-BSE60G6TX4/,
+      'El HTML SSR debe cargar GA4 first-party (/api/ga/js?id=G-BSE60G6TX4) para evitar timeouts de ISP'
     )
     assert.match(html, /gtag\('consent','default'/, 'El HTML SSR debe inicializar Google Consent Mode v2')
+
+    // Verificar endpoints first-party de GA4 en el servidor compilado
+    const gaScriptOk = await fetch(`${BASE}/api/ga/js?id=G-BSE60G6TX4`)
+    assert.equal(gaScriptOk.status, 200, 'GET /api/ga/js?id=G-BSE60G6TX4 debe devolver 200')
+    assert.match(gaScriptOk.headers.get('content-type') || '', /javascript/)
+
+    const gaScriptForeign = await fetch(`${BASE}/api/ga/js?id=G-OTHER99999`)
+    assert.equal(gaScriptForeign.status, 400, 'GET /api/ga/js con otro ID debe rechazarse (evita open-proxy)')
+
+    const gaCollectRes = await fetch(`${BASE}/api/ga/g/collect?v=2&tid=G-BSE60G6TX4&en=page_view`, {
+      method: 'POST',
+      body: 'en=page_view',
+    })
+    assert.equal(gaCollectRes.status, 204, 'POST /api/ga/g/collect debe responder 204')
     assert.match(html, /href="https:\/\/venezuela-inmuebles\.online\/planes"/, '/planes debe tener canonical propio')
     assert.match(html, /Escaparate con URL personalizada/)
     const mainMatches = html.match(/<main\b/g) || []

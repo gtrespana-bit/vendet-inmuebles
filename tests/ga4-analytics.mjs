@@ -6,15 +6,19 @@ import vm from 'node:vm'
 import {
   DEFAULT_GA4_MEASUREMENT_ID,
   GA4_MEASUREMENT_ID,
+  GA4_SCRIPT_PATH,
+  GA4_TRANSPORT_PATH,
   isValidGaMeasurementId,
   shouldTrackGaPath,
   sanitizeGaPagePath,
   buildGa4BootstrapScript,
 } from '../src/lib/ga4.ts'
 
-test('GA4: Measurement ID por defecto G-BSE60G6TX4 y validación de formato', () => {
+test('GA4: Measurement ID por defecto G-BSE60G6TX4, rutas first-party y validación de formato', () => {
   assert.equal(DEFAULT_GA4_MEASUREMENT_ID, 'G-BSE60G6TX4')
   assert.equal(GA4_MEASUREMENT_ID, 'G-BSE60G6TX4')
+  assert.equal(GA4_SCRIPT_PATH, '/api/ga/js')
+  assert.equal(GA4_TRANSPORT_PATH, '/api/ga')
   assert.equal(isValidGaMeasurementId('G-BSE60G6TX4'), true)
   assert.equal(isValidGaMeasurementId(''), false)
   assert.equal(isValidGaMeasurementId('UA-123456-1'), false)
@@ -31,7 +35,6 @@ test('GA4: exclusión de rutas internas (/admin, /api, /diagnostico) y redacció
   assert.equal(shouldTrackGaPath('/diagnostico'), false)
   assert.equal(shouldTrackGaPath('/test-sentry'), false)
 
-  // Redacción de token en /invitacion/[token] y eliminación de parámetros sensibles
   assert.equal(
     sanitizeGaPagePath(
       '/invitacion/a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6',
@@ -49,12 +52,11 @@ test('GA4: exclusión de rutas internas (/admin, /api, /diagnostico) y redacció
   )
 })
 
-test('GA4: script bootstrap implementa Google Consent Mode v2 y protege URLs en arranque', () => {
+test('GA4: script bootstrap implementa Google Consent Mode v2, transport_url first-party y protege URLs', () => {
   const script = buildGa4BootstrapScript('G-BSE60G6TX4')
   assert.match(script, /gtag\('consent','default'/)
   assert.match(script, /G-BSE60G6TX4/)
 
-  // Caso 1: Visitante nuevo sin consentimiento en una URL con token de invitación
   const callsDenied = []
   const ctxDenied = {
     URLSearchParams,
@@ -82,6 +84,8 @@ test('GA4: script bootstrap implementa Google Consent Mode v2 y protege URLs en 
   const configCall = callsDenied.find((c) => c[0] === 'config')
   assert.ok(configCall, 'Debe ejecutar gtag("config", "G-BSE60G6TX4", ...)')
   assert.equal(configCall[1], 'G-BSE60G6TX4')
+  assert.equal(configCall[2].transport_url, 'https://venezuela-inmuebles.online/api/ga')
+  assert.equal(configCall[2].first_party_collection, true)
   assert.equal(configCall[2].page_path, '/invitacion/[token]?utm_source=email')
   assert.equal(
     configCall[2].page_location,
@@ -89,7 +93,6 @@ test('GA4: script bootstrap implementa Google Consent Mode v2 y protege URLs en 
   )
   assert.equal(configCall[2].send_page_view, true)
 
-  // Caso 2: Visitante con consentimiento previo visitando /admin (no envía page_view)
   const ctxAdmin = {
     URLSearchParams,
     window: {
@@ -110,17 +113,26 @@ test('GA4: script bootstrap implementa Google Consent Mode v2 y protege URLs en 
   assert.equal(adminConfig[2].send_page_view, false)
 })
 
-test('GA4: CSP en next.config.js permite googletagmanager.com y google-analytics.com', () => {
+test('GA4 first-party proxy + higiene Realtime sin WebSockets globales innecesarios', () => {
   const nextConfig = readFileSync('next.config.js', 'utf8')
   assert.match(nextConfig, /script-src[^\n]*https:\/\/www\.googletagmanager\.com/)
   assert.match(nextConfig, /connect-src[^\n]*https:\/\/www\.google-analytics\.com/)
-  assert.match(nextConfig, /connect-src[^\n]*https:\/\/\*\.google-analytics\.com/)
-  assert.match(nextConfig, /connect-src[^\n]*https:\/\/\*\.analytics\.google\.com/)
-  assert.match(nextConfig, /img-src[^\n]*https:\/\/www\.google-analytics\.com/)
 
   const rootLayout = readFileSync('src/app/layout.tsx', 'utf8')
-  assert.match(rootLayout, /googletagmanager\.com\/gtag\/js\?id=\$\{GA4_MEASUREMENT_ID\}/)
+  assert.match(rootLayout, /\$\{GA4_SCRIPT_PATH\}\?id=\$\{GA4_MEASUREMENT_ID\}/)
 
   const localeLayout = readFileSync('src/app/[locale]/layout.tsx', 'utf8')
   assert.match(localeLayout, /<GoogleAnalyticsTracker\s*\/>/)
+
+  // Higiene Realtime: ni Header/useUnreadMessages ni useDashboard abren WebSockets globales
+  const unreadSrc = readFileSync('src/hooks/useUnreadMessages.ts', 'utf8')
+  assert.doesNotMatch(unreadSrc, /\.channel\(/)
+
+  const dashboardSrc = readFileSync('src/app/[locale]/dashboard/hooks/useDashboard.ts', 'utf8')
+  assert.doesNotMatch(dashboardSrc, /\.channel\(/)
+
+  const chatSrc = readFileSync('src/app/[locale]/chat/ChatPage.tsx', 'utf8')
+  assert.match(chatSrc, /chat-sync-\$\{uid\}/)
+  assert.match(chatSrc, /CHANNEL_ERROR/)
+  assert.match(chatSrc, /TIMED_OUT/)
 })
