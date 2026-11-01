@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuthenticatedUser } from '@/lib/api-auth'
+import { esEndpointPushPermitido } from '@/lib/push-endpoint'
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,7 +14,7 @@ export async function POST(req: NextRequest) {
     const authKey = subscription?.keys?.auth
 
     if (
-      typeof endpoint !== 'string' || !endpoint.startsWith('https://') || endpoint.length > 2048 ||
+      !esEndpointPushPermitido(endpoint) ||
       typeof p256dh !== 'string' || p256dh.length > 500 ||
       typeof authKey !== 'string' || authKey.length > 500
     ) {

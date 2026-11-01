@@ -7,8 +7,8 @@ import type { CatalogPropertyRecord } from '@/types/property'
 
 const SITE_URL = 'https://venezuela-inmuebles.online'
 
-export async function generateMetadata({ params }: { params: { locale: string } }): Promise<Metadata> {
-  const locale = params.locale
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale } = await params
   const t = await getTranslations({ locale, namespace: 'catalog' })
   const english = locale === 'en'
 

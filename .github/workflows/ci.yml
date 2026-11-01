@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main, 'arena/**']
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify:
+    name: Tests, TypeScript, Lint & Build
+    runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-anon-key-placeholder
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit & PGlite tests
+        run: npm test
+
+      - name: TypeScript typecheck
+        run: npx tsc --noEmit
+
+      - name: Next.js lint
+        run: npm run lint
+
+      - name: Production build
+        run: npm run build

@@ -1,6 +1,7 @@
 'use client'
 
-import { createContext, useContext, useState, useEffect, useRef } from 'react'
+import { createContext, useContext, useState, useEffect } from 'react'
+import { observeAuth } from '@/lib/auth-observer'
 import type { Session, User } from '@supabase/supabase-js'
 
 type AuthContextType = {
@@ -19,73 +20,26 @@ export function AuthProvider({ children, initialUser }: { children: React.ReactN
   const [session, setSession] = useState<Session | null>(null)
   const [user, setUser] = useState<User | null>(initialUser ?? null)
   const [loading, setLoading] = useState(true)
-  const initialized = useRef(false)
-  const initPromiseRef = useRef<Promise<void> | null>(null)
-
   useEffect(() => {
-    if (initialized.current) return
-    initialized.current = true
-
-    let unsub: (() => void) | null = null
     let cancelled = false
-
-    const initAuth = async () => {
-      try {
-        const { isSupabaseConfigured } = await import('@/lib/supabase')
-        if (!isSupabaseConfigured()) {
-          if (!cancelled) {
-            setSession(null)
-            setUser(null)
-            setLoading(false)
-          }
-          return
-        }
-
-        const { supabase } = await import('@/lib/supabase')
-
-        // Then check current session FIRST (before listening for changes)
-        try {
-          const { data: sessionData, error } = await supabase.auth.getSession()
-          if (cancelled) return
-          if (!error && sessionData.session) {
-            setSession(sessionData.session)
-            setUser(sessionData.session.user)
-          }
-        } catch {
-          // Ignore errors
-        }
-
-        // Listen for auth changes AFTER getting initial session
-        const { data } = supabase.auth.onAuthStateChange((_event, s) => {
-          if (cancelled) return
-          setSession(s)
-          setUser(s?.user ?? null)
-          setLoading(false)
-        })
-        unsub = data.subscription.unsubscribe
-
-        // Also check if server passed a user (hydration consistency)
-        if (initialUser && !session) {
-          setUser(initialUser)
-        }
-
-        if (!cancelled) {
-          setLoading(false)
-        }
-      } catch {
-        if (!cancelled) {
-          setLoading(false)
-        }
-      }
+    let unsubscribe: (() => void) | undefined
+    const update = (current: Session | null) => {
+      if (cancelled) return
+      setSession(current)
+      setUser(current?.user ?? null)
+      setLoading(false)
     }
-
-    initAuth()
-
+    void import('@/lib/supabase').then(({ supabase, isSupabaseConfigured }) => {
+      // A Strict Mode cleanup may happen while the module is loading.
+      if (cancelled) return
+      if (!isSupabaseConfigured()) return update(null)
+      unsubscribe = observeAuth(supabase.auth, update)
+    }).catch(() => update(null))
     return () => {
       cancelled = true
-      unsub?.()
+      unsubscribe?.()
     }
-  }, [initialUser, session])
+  }, [])
 
   return (
     <AuthContext.Provider value={{ session, user, loading }}>

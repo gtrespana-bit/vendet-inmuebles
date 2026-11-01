@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { getLocale } from 'next-intl/server'
 
 export const metadata: Metadata = {
   robots: {
@@ -7,13 +8,21 @@ export const metadata: Metadata = {
   },
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  let lang = 'es'
+  try {
+    const detected = await getLocale()
+    if (detected === 'en' || detected === 'es') lang = detected
+  } catch {
+    lang = 'es'
+  }
+
   return (
-    <html lang="es">
+    <html lang={lang}>
       <body>{children}</body>
     </html>
   )

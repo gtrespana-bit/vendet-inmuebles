@@ -2,10 +2,18 @@ import type { Metadata } from 'next'
 import LocalLink from '@/components/LocalLink'
 import { ArrowLeft, Smartphone, Share, Download, PlusCircle, ArrowDownToLine, CheckCircle2, Apple, MonitorDown } from 'lucide-react'
 import { getTranslations } from 'next-intl/server'
+import { buildPageAlternates } from '@/lib/seo-metadata'
 
-export const metadata: Metadata = {
-  title: 'Instala la app — Venezuela Inmuebles',
-  description: 'Aprende cómo instalar Venezuela Inmuebles como app en tu teléfono. Guía paso a paso para Android e iPhone.',
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale } = await params
+  const en = locale === 'en'
+  return {
+    title: en ? 'Install the App' : 'Instala la app',
+    description: en
+      ? 'Learn how to install Venezuela Inmuebles as an app on your Android or iPhone.'
+      : 'Aprende cómo instalar Venezuela Inmuebles como app en tu teléfono. Guía paso a paso para Android e iPhone.',
+    alternates: buildPageAlternates(locale, '/como-instalar-app'),
+  }
 }
 
 export default async function ComoInstalarAppPage() {

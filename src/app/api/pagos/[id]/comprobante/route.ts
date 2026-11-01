@@ -7,7 +7,8 @@ import { assessReceipt } from '@/lib/receipt-validation'
 import { readReceipt } from '@/lib/receipt-ocr'
 export const runtime = 'nodejs'
 export const maxDuration = 60
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params: paramsPromise }: { params: Promise<{ id: string }> }) {
+  const params = await paramsPromise
   const auth = await requireAuthenticatedUser(req)
   if (!auth.ok) return auth.response
   if (!isValidUUID(params.id)) return NextResponse.json({ error: 'Orden inválida' }, { status: 400 })

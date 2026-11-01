@@ -61,22 +61,33 @@ function generateStaticParams(): { slug: string }[] {
   return getAllSlugs().map(slug => ({ slug }))
 }
 
-async function generateMetadata(props: { params: Promise<{ slug: string }> }): Promise<Metadata> {
-  const { slug } = await props.params
+async function generateMetadata(props: { params: Promise<{ slug: string; locale: string }> }): Promise<Metadata> {
+  const { slug, locale } = await props.params
   const post = getPostBySlug(slug)
-  if (!post) return { title: 'Post not found — Venezuela Inmuebles', robots: { index: false, follow: false } }
+  if (!post) return { title: locale === 'en' ? 'Post not found' : 'Artículo no encontrado', robots: { index: false, follow: false } }
+
+  const esUrl = `https://venezuela-inmuebles.online/blog/${post.slug}`
+  const enUrl = `https://venezuela-inmuebles.online/en/blog/${post.slug}`
+  const canonical = locale === 'en' ? enUrl : esUrl
 
   return {
-    title: `${post.title} — Blog Venezuela Inmuebles`,
+    title: post.title,
     description: post.excerpt,
-    alternates: { canonical: `https://venezuela-inmuebles.online/blog/${post.slug}` },
+    alternates: {
+      canonical,
+      languages: {
+        'es-VE': esUrl,
+        'en-US': enUrl,
+        'x-default': esUrl,
+      },
+    },
     openGraph: {
       title: post.title,
       description: post.excerpt,
-      url: `https://venezuela-inmuebles.online/blog/${post.slug}`,
+      url: canonical,
       siteName: 'Venezuela Inmuebles',
       type: 'article',
-      locale: 'es_VE',
+      locale: locale === 'en' ? 'en_US' : 'es_VE',
     },
   }
 }

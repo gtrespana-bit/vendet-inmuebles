@@ -71,8 +71,8 @@ export default function TabProductos({
   const reactivarVendido = async (productoId: string) => {
     cerrarMenus()
     if (!confirm(t('reactivationConfirm'))) return
-    const { error } = await supabase.from('inmuebles').update({ activo: true }).eq('id', productoId)
-    if (error) { window.alert(t('propertyUpdateError')); return }
+    const { error } = await supabase.from('inmuebles').update({ activo: true, vendido: false }).eq('id', productoId)
+    if (error) { window.alert(error.code === '23514' ? error.message : t('propertyUpdateError')); return }
     window.location.reload()
   }
 
@@ -217,7 +217,8 @@ export default function TabProductos({
 
   const pausarActivar = async (id: string, activoActual: boolean) => {
     cerrarMenus()
-    await supabase.from('inmuebles').update({ activo: !activoActual }).eq('id', id)
+    const { error } = await supabase.from('inmuebles').update({ activo: !activoActual }).eq('id', id)
+    if (error) { window.alert(error.code === '23514' ? error.message : t('propertyUpdateError')); return }
     window.location.reload()
   }
 

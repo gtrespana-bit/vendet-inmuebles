@@ -1,0 +1,642 @@
+{
+  "scope": "Read-only audit of commit 17b65fec1aaf67cb0819533a2db806aa363bf838; local production build with placeholder Supabase configuration. No authenticated real transactions performed.",
+  "validation": {
+    "tsc": true,
+    "lint": true,
+    "tests_passed": 84,
+    "tests_total": 84,
+    "translation_tests": true,
+    "next_build": true,
+    "build_generated_pages": 660
+  },
+  "dependencies": {
+    "all": {
+      "info": 0,
+      "low": 2,
+      "moderate": 18,
+      "high": 8,
+      "critical": 1,
+      "total": 29
+    },
+    "production": {
+      "info": 0,
+      "low": 2,
+      "moderate": 4,
+      "high": 5,
+      "critical": 1,
+      "total": 12
+    },
+    "versions": {
+      "next": "14.2.35",
+      "react": "18.3.1",
+      "next-intl": "3.26.5",
+      "sharp": "0.33.5",
+      "nodemailer": "6.10.1",
+      "@sentry/nextjs": "7.120.4"
+    },
+    "warning": "Advisory severity is a dependency finding; application exploitability has not been proven."
+  },
+  "http_local_production": [
+    {
+      "path": "/",
+      "method": "GET",
+      "status": 200,
+      "final_url": "/",
+      "title": "Inmuebles en Venezuela: casas y apartamentos en venta y alquiler | Venezuela Inmuebles",
+      "lang": "es",
+      "canonical": "https://venezuela-inmuebles.online",
+      "robots": [
+        "index, follow"
+      ],
+      "h1": 1,
+      "main": 1,
+      "raw_translation_keys": []
+    },
+    {
+      "path": "/en",
+      "method": "GET",
+      "status": 200,
+      "final_url": "/en",
+      "title": "Property in Venezuela: houses and apartments for sale and rent | Venezuela Inmuebles",
+      "lang": "es",
+      "canonical": "https://venezuela-inmuebles.online/en",
+      "robots": [
+        "index, follow"
+      ],
+      "h1": 1,
+      "main": 1,
+      "raw_translation_keys": []
+    },
+    {
+      "path": "/catalogo",
+      "method": "GET",
+      "status": 200,
+      "final_url": "/catalogo",
+      "title": "Buscar inmuebles | Venezuela Inmuebles | Venezuela Inmuebles",
+      "lang": "es",
+      "canonical": "https://venezuela-inmuebles.online/catalogo",
+      "robots": [
+        "index, follow"
+      ],
+      "h1": 1,
+      "main": 1,
+      "raw_translation_keys": []
+    },
+    {
+      "path": "/mapa",
+      "method": "GET",
+      "status": 200,
+      "final_url": "/mapa",
+      "title": "Encuentra tu próximo inmueble en el mapa | Venezuela Inmuebles | Venezuela Inmuebles",
+      "lang": "es",
+      "canonical": "https://venezuela-inmuebles.online/mapa",
+      "robots": [
+        "index, follow"
+      ],
+      "h1": 1,
+      "main": 1,
+      "raw_translation_keys": []
+    },
+    {
+      "path": "/planes",
+      "method": "GET",
+      "status": 200,
+      "final_url": "/planes",
+      "title": "Planes y Precios | Venezuela Inmuebles | Venezuela Inmuebles",
+      "lang": "es",
+      "canonical": "https://venezuela-inmuebles.online",
+      "robots": [
+        "index, follow"
+      ],
+      "h1": 1,
+      "main": 1,
+      "raw_translation_keys": []
+    },
+    {
+      "path": "/en/planes",
+      "method": "GET",
+      "status": 200,
+      "final_url": "/en/planes",
+      "title": "Planes y Precios | Venezuela Inmuebles | Venezuela Inmuebles",
+      "lang": "es",
+      "canonical": "https://venezuela-inmuebles.online/en",
+      "robots": [
+        "index, follow"
+      ],
+      "h1": 1,
+      "main": 1,
+      "raw_translation_keys": []
+    },
+    {
+      "path": "/creditos",
+      "method": "GET",
+      "status": 200,
+      "final_url": "/creditos",
+      "title": "Venezuela Inmuebles | Casas, apartamentos y terrenos en venta y alquiler",
+      "lang": "es",
+      "canonical": "https://venezuela-inmuebles.online",
+      "robots": [
+        "index, follow"
+      ],
+      "h1": 1,
+      "main": 1,
+      "raw_translation_keys": [
+        "creditos.subtitle",
+        "creditos.boostDesc",
+        "creditos.featureDesc",
+        "creditos.orFeatured",
+        "creditos.orFeatured",
+        "creditos.orFeatured"
+      ]
+    },
+    {
+      "path": "/en/creditos",
+      "method": "GET",
+      "status": 200,
+      "final_url": "/en/creditos",
+      "title": "Venezuela Inmuebles | Homes, apartments and land for sale and rent",
+      "lang": "es",
+      "canonical": "https://venezuela-inmuebles.online/en",
+      "robots": [
+        "index, follow"
+      ],
+      "h1": 1,
+      "main": 1,
+      "raw_translation_keys": [
+        "creditos.subtitle",
+        "creditos.boostDesc",
+        "creditos.featureDesc",
+        "creditos.orFeatured",
+        "creditos.orFeatured",
+        "creditos.orFeatured"
+      ]
+    },
+    {
+      "path": "/pagos?plan=profesional",
+      "method": "GET",
+      "status": 200,
+      "final_url": "/pagos?plan=profesional",
+      "title": "Venezuela Inmuebles | Casas, apartamentos y terrenos en venta y alquiler",
+      "lang": "es",
+      "canonical": "https://venezuela-inmuebles.online",
+      "robots": [
+        "index, follow"
+      ],
+      "h1": 0,
+      "main": 2,
+      "raw_translation_keys": []
+    },
+    {
+      "path": "/login",
+      "method": "GET",
+      "status": 200,
+      "final_url": "/login",
+      "title": "Venezuela Inmuebles | Casas, apartamentos y terrenos en venta y alquiler",
+      "lang": "es",
+      "canonical": "https://venezuela-inmuebles.online",
+      "robots": [
+        "index, follow"
+      ],
+      "h1": 1,
+      "main": 1,
+      "raw_translation_keys": []
+    },
+    {
+      "path": "/register",
+      "method": "GET",
+      "status": 200,
+      "final_url": "/register",
+      "title": "Venezuela Inmuebles | Casas, apartamentos y terrenos en venta y alquiler",
+      "lang": "es",
+      "canonical": "https://venezuela-inmuebles.online",
+      "robots": [
+        "index, follow"
+      ],
+      "h1": 1,
+      "main": 1,
+      "raw_translation_keys": []
+    },
+    {
+      "path": "/confirmacion",
+      "method": "GET",
+      "status": 200,
+      "final_url": "/confirmacion",
+      "title": "Venezuela Inmuebles | Casas, apartamentos y terrenos en venta y alquiler",
+      "lang": "es",
+      "canonical": "https://venezuela-inmuebles.online",
+      "robots": [
+        "index, follow"
+      ],
+      "h1": 1,
+      "main": 1,
+      "raw_translation_keys": []
+    },
+    {
+      "path": "/contacto",
+      "method": "GET",
+      "status": 200,
+      "final_url": "/contacto",
+      "title": "Contacto | Venezuela Inmuebles | Venezuela Inmuebles",
+      "lang": "es",
+      "canonical": "https://venezuela-inmuebles.online",
+      "robots": [
+        "index, follow"
+      ],
+      "h1": 1,
+      "main": 2,
+      "raw_translation_keys": []
+    },
+    {
+      "path": "/como-funciona",
+      "method": "GET",
+      "status": 200,
+      "final_url": "/como-funciona",
+      "title": "Cómo funciona | Venezuela Inmuebles",
+      "lang": "es",
+      "canonical": "https://venezuela-inmuebles.online",
+      "robots": [
+        "index, follow"
+      ],
+      "h1": 1,
+      "main": 1,
+      "raw_translation_keys": []
+    },
+    {
+      "path": "/faq",
+      "method": "GET",
+      "status": 200,
+      "final_url": "/faq",
+      "title": "Preguntas frecuentes | Venezuela Inmuebles",
+      "lang": "es",
+      "canonical": "https://venezuela-inmuebles.online",
+      "robots": [
+        "index, follow"
+      ],
+      "h1": 1,
+      "main": 1,
+      "raw_translation_keys": []
+    },
+    {
+      "path": "/sobre-nosotros",
+      "method": "GET",
+      "status": 200,
+      "final_url": "/sobre-nosotros",
+      "title": "Sobre el portal | Venezuela Inmuebles",
+      "lang": "es",
+      "canonical": "https://venezuela-inmuebles.online",
+      "robots": [
+        "index, follow"
+      ],
+      "h1": 1,
+      "main": 1,
+      "raw_translation_keys": []
+    },
+    {
+      "path": "/politica-de-privacidad",
+      "method": "GET",
+      "status": 200,
+      "final_url": "/politica-de-privacidad",
+      "title": "Política de Privacidad — Venezuela Inmuebles | Venezuela Inmuebles",
+      "lang": "es",
+      "canonical": "https://venezuela-inmuebles.online",
+      "robots": [
+        "index, follow"
+      ],
+      "h1": 1,
+      "main": 1,
+      "raw_translation_keys": []
+    },
+    {
+      "path": "/terminos-y-condiciones",
+      "method": "GET",
+      "status": 200,
+      "final_url": "/terminos-y-condiciones",
+      "title": "Términos y Condiciones | Venezuela Inmuebles",
+      "lang": "es",
+      "canonical": "https://venezuela-inmuebles.online",
+      "robots": [
+        "index, follow"
+      ],
+      "h1": 1,
+      "main": 1,
+      "raw_translation_keys": []
+    },
+    {
+      "path": "/eliminar-cuenta",
+      "method": "GET",
+      "status": 200,
+      "final_url": "/eliminar-cuenta",
+      "title": "Eliminar tu cuenta — Venezuela Inmuebles | Venezuela Inmuebles",
+      "lang": "es",
+      "canonical": "https://venezuela-inmuebles.online",
+      "robots": [
+        "index, follow"
+      ],
+      "h1": 1,
+      "main": 1,
+      "raw_translation_keys": []
+    },
+    {
+      "path": "/blog",
+      "method": "GET",
+      "status": 200,
+      "final_url": "/blog",
+      "title": "Blog — Venezuela Inmuebles | Consejos de compra, venta y emprendimiento | Venezuela Inmuebles",
+      "lang": "es",
+      "canonical": "https://venezuela-inmuebles.online/blog",
+      "robots": [
+        "index, follow"
+      ],
+      "h1": 1,
+      "main": 1,
+      "raw_translation_keys": []
+    },
+    {
+      "path": "/caracas",
+      "method": "GET",
+      "status": 200,
+      "final_url": "/caracas",
+      "title": "Inmuebles en Caracas, Distrito Capital | Venezuela Inmuebles",
+      "lang": "es",
+      "canonical": "https://venezuela-inmuebles.online/caracas",
+      "robots": [
+        "index, follow"
+      ],
+      "h1": 1,
+      "main": 1,
+      "raw_translation_keys": []
+    },
+    {
+      "path": "/propiedades/venta",
+      "method": "GET",
+      "status": 200,
+      "final_url": "/propiedades/venta",
+      "title": "Propiedades en Venta - Venezuela Inmuebles | Venezuela Inmuebles",
+      "lang": "es",
+      "canonical": "https://venezuela-inmuebles.online",
+      "robots": [
+        "index, follow"
+      ],
+      "h1": 0,
+      "main": 1,
+      "raw_translation_keys": []
+    },
+    {
+      "path": "/ruta-desconocida",
+      "method": "GET",
+      "status": 404,
+      "final_url": "/ruta-desconocida"
+    },
+    {
+      "path": "/ruta/desconocida",
+      "method": "GET",
+      "status": 404,
+      "final_url": "/ruta/desconocida",
+      "title": "404: This page could not be found.",
+      "lang": "es",
+      "canonical": null,
+      "robots": [
+        "noindex",
+        "noindex, nofollow"
+      ],
+      "h1": 1,
+      "main": 0,
+      "raw_translation_keys": []
+    },
+    {
+      "path": "/diagnostico",
+      "method": "GET",
+      "status": 404,
+      "final_url": "/diagnostico"
+    },
+    {
+      "path": "/test-db",
+      "method": "GET",
+      "status": 404,
+      "final_url": "/test-db"
+    },
+    {
+      "path": "/admin",
+      "method": "GET",
+      "status": 200,
+      "final_url": "/admin",
+      "title": "Venezuela Inmuebles | Casas, apartamentos y terrenos en venta y alquiler",
+      "lang": "es",
+      "canonical": "https://venezuela-inmuebles.online",
+      "robots": [
+        "index, follow"
+      ],
+      "h1": 0,
+      "main": 1,
+      "raw_translation_keys": []
+    },
+    {
+      "path": "/dashboard",
+      "method": "GET",
+      "status": 200,
+      "final_url": "/dashboard",
+      "title": "Venezuela Inmuebles | Casas, apartamentos y terrenos en venta y alquiler",
+      "lang": "es",
+      "canonical": "https://venezuela-inmuebles.online",
+      "robots": [
+        "index, follow"
+      ],
+      "h1": 0,
+      "main": 1,
+      "raw_translation_keys": []
+    },
+    {
+      "path": "/robots.txt",
+      "method": "GET",
+      "status": 200,
+      "final_url": "/robots.txt"
+    },
+    {
+      "path": "/sitemap.xml",
+      "method": "GET",
+      "status": 200,
+      "final_url": "/sitemap.xml",
+      "urls": 816,
+      "contains_search": true,
+      "contains_publish": true
+    },
+    {
+      "path": "/api/admin/pagos",
+      "method": "GET",
+      "status": 401,
+      "final_url": "/api/admin/pagos",
+      "body": "{\"error\":\"No autenticado\"}"
+    },
+    {
+      "path": "/api/admin/analytics/resumen",
+      "method": "GET",
+      "status": 401,
+      "final_url": "/api/admin/analytics/resumen",
+      "body": "{\"error\":\"No autenticado\"}"
+    },
+    {
+      "path": "/api/admin/auditoria",
+      "method": "GET",
+      "status": 401,
+      "final_url": "/api/admin/auditoria",
+      "body": "{\"error\":\"No autenticado\"}"
+    },
+    {
+      "path": "/api/debug-profiles-diag",
+      "method": "GET",
+      "status": 401,
+      "final_url": "/api/debug-profiles-diag",
+      "body": "{\"error\":\"No autenticado\"}"
+    },
+    {
+      "path": "/api/pagos",
+      "method": "GET",
+      "status": 401,
+      "final_url": "/api/pagos",
+      "body": "{\"error\":\"No autenticado\"}"
+    },
+    {
+      "path": "/api/user/plan",
+      "method": "GET",
+      "status": 401,
+      "final_url": "/api/user/plan",
+      "body": "{\"error\":\"No autenticado\"}"
+    },
+    {
+      "path": "/api/cron/notificaciones-email",
+      "method": "GET",
+      "status": 503,
+      "final_url": "/api/cron/notificaciones-email",
+      "body": "{\"ok\":false,\"error\":\"CRON_SECRET no configurado\"}"
+    },
+    {
+      "path": "/api/admin/planes",
+      "method": "POST",
+      "status": 401,
+      "final_url": "/api/admin/planes",
+      "body": "{\"error\":\"No autenticado\"}"
+    },
+    {
+      "path": "/api/admin/add-creditos",
+      "method": "POST",
+      "status": 401,
+      "final_url": "/api/admin/add-creditos",
+      "body": "{\"error\":\"No autenticado\"}"
+    },
+    {
+      "path": "/api/admin/eliminar-producto",
+      "method": "POST",
+      "status": 401,
+      "final_url": "/api/admin/eliminar-producto",
+      "body": "{\"error\":\"No autenticado\"}"
+    },
+    {
+      "path": "/api/pagos",
+      "method": "POST",
+      "status": 401,
+      "final_url": "/api/pagos",
+      "body": "{\"error\":\"No autenticado\"}"
+    },
+    {
+      "path": "/api/user/plan/cambio",
+      "method": "POST",
+      "status": 401,
+      "final_url": "/api/user/plan/cambio",
+      "body": "{\"error\":\"No autenticado\"}"
+    },
+    {
+      "path": "/api/r2-upload",
+      "method": "POST",
+      "status": 401,
+      "final_url": "/api/r2-upload",
+      "body": "{\"error\":\"No autenticado\"}"
+    },
+    {
+      "path": "/api/comprar-creditos",
+      "method": "POST",
+      "status": 401,
+      "final_url": "/api/comprar-creditos",
+      "body": "{\"ok\":false,\"error\":\"No autenticado\"}"
+    },
+    {
+      "path": "/api/enviar-mensaje",
+      "method": "POST",
+      "status": 401,
+      "final_url": "/api/enviar-mensaje",
+      "body": "{\"error\":\"No autenticado\"}"
+    },
+    {
+      "path": "/api/crear-conversacion",
+      "method": "POST",
+      "status": 401,
+      "final_url": "/api/crear-conversacion",
+      "body": "{\"error\":\"No autenticado\"}"
+    },
+    {
+      "path": "/api/favorito/toggle",
+      "method": "POST",
+      "status": 401,
+      "final_url": "/api/favorito/toggle",
+      "body": "{\"error\":\"No autenticado\"}"
+    },
+    {
+      "path": "/api/push-subscribe",
+      "method": "POST",
+      "status": 401,
+      "final_url": "/api/push-subscribe",
+      "body": "{\"error\":\"No autenticado\"}"
+    },
+    {
+      "path": "/api/push/send",
+      "method": "POST",
+      "status": 401,
+      "final_url": "/api/push/send",
+      "body": "{\"error\":\"No autenticado\"}"
+    },
+    {
+      "path": "/api/telegram/webhook",
+      "method": "POST",
+      "status": 503,
+      "final_url": "/api/telegram/webhook",
+      "body": "{\"ok\":false,\"error\":\"Webhook no configurado\"}"
+    }
+  ],
+  "live_readonly_observations": {
+    "urls": [
+      "https://venezuela-inmuebles.online/",
+      "https://venezuela-inmuebles.online/creditos",
+      "https://venezuela-inmuebles.online/en/planes",
+      "https://venezuela-inmuebles.online/propiedades/venta/carabobo",
+      "https://venezuela-inmuebles.online/pagos?plan=profesional",
+      "https://venezuela-inmuebles.online/inmueble/casa-quinta-en-san-diego-63d4a689"
+    ],
+    "carabobo_page_says_no_listings": true,
+    "carabobo_public_sale_rows_in_db": 19,
+    "legacy_property_images_table_exists": false,
+    "credits_page_exposes_translation_keys": true,
+    "english_plans_page_contains_spanish_sections": true,
+    "payments_route_no_longer_404": true
+  },
+  "live_db_metadata": {
+    "public_tables_rls_enabled": 32,
+    "private_buckets": [
+      "cedulas",
+      "comprobantes",
+      "justificantes-pagos"
+    ],
+    "public_buckets": [
+      "foto_perfil"
+    ],
+    "payment_functions_access": "service_role only",
+    "legacy_financial_functions": "internal auth/owner checks verified by reading function definitions; no unauthorised invocation performed",
+    "inmuebles_default_moderation": "aprobado",
+    "inmuebles_owner_insert_update": true,
+    "plan_quota_trigger_found": false,
+    "health": {
+      "auth": true,
+      "db": true,
+      "rest": true,
+      "storage": true
+    }
+  }
+}

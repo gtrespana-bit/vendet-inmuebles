@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import Image from 'next/image'
-import { useRouter } from 'next/navigation'
+import { useRouter, useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { getSupabaseAuthHeaders } from '@/lib/supabase-auth-headers'
 import { useAuth } from '@/components/AuthProvider'
@@ -48,8 +48,8 @@ interface ImagenEdit {
 
 interface TipoRow { id: number; slug: string; nombre: string }
 
-export default function EditarInmueblePage({ params }: { params: { locale: string; id: string } }) {
-  const { locale, id: propertyId } = params as { locale: string; id: string }
+export default function EditarInmueblePage() {
+  const { locale, id: propertyId } = useParams<{ locale: string; id: string }>()
   const router = useRouter()
   const t = useTranslations('editListing')
   const tp = useTranslations('publishProperty')
@@ -85,6 +85,7 @@ export default function EditarInmueblePage({ params }: { params: { locale: strin
 
   const [tipos, setTipos] = useState<TipoRow[]>([])
   const [imagenes, setImagenes] = useState<ImagenEdit[]>([])
+  const [maxFotos, setMaxFotos] = useState<number | null>(null)
   const [aiLoading, setAiLoading] = useState(false)
   const [aiError, setAiError] = useState('')
 
@@ -97,6 +98,23 @@ export default function EditarInmueblePage({ params }: { params: { locale: strin
   }, [])
 
   useEffect(() => { cargarTipos() }, [cargarTipos])
+
+  useEffect(() => {
+    if (!user) { setMaxFotos(null); return }
+    let cancelled = false
+    void (async () => {
+      try {
+        const res = await fetch('/api/user/plan', { headers: await getSupabaseAuthHeaders() })
+        if (!res.ok) throw new Error('plan unavailable')
+        const data = await res.json()
+        if (!Number.isInteger(data.limits?.maxFotos) || data.limits.maxFotos < 1) throw new Error('invalid limit')
+        if (!cancelled) setMaxFotos(data.limits.maxFotos)
+      } catch {
+        if (!cancelled) { setMaxFotos(null); setError(t('loadError')) }
+      }
+    })()
+    return () => { cancelled = true }
+  }, [user, t])
 
   // Cargar el inmueble
   useEffect(() => {
@@ -252,6 +270,11 @@ export default function EditarInmueblePage({ params }: { params: { locale: strin
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
+        // El cupo del plan se explica con el mensaje del servidor, no como fallo genérico.
+        if (data.code === 'cupo_excedido' && typeof data.error === 'string' && data.error) {
+          setError(data.error)
+          return
+        }
         throw new Error(data.error || 'Error')
       }
 
@@ -271,17 +294,19 @@ export default function EditarInmueblePage({ params }: { params: { locale: strin
     e.target.value = ''
     if (files.length === 0) return
 
+    let slots = maxFotos === null ? 0 : Math.max(0, maxFotos - imagenes.length)
     for (const file of files) {
-      if (imagenes.length >= 20) break
+      if (slots <= 0) break
       if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
         setError(tp('fileTypeError'))
         continue
       }
-      if (file.size > 8 * 1024 * 1024) {
+      if (file.size > 4 * 1024 * 1024) {
         setError(tp('fileTypeError'))
         continue
       }
 
+      slots--
       const preview = URL.createObjectURL(file)
       setImagenes((prev) => [...prev, { url: preview, uploading: true }])
 
@@ -510,10 +535,12 @@ export default function EditarInmueblePage({ params }: { params: { locale: strin
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
+            disabled={maxFotos === null || imagenes.length >= maxFotos || imagenes.some(img => img.uploading)}
             className="w-full listing-upload p-6 rounded-xl border-2 border-dashed text-sm font-medium flex flex-col items-center gap-2"
           >
             <Camera size={24} />
             {tp('uploadPrompt')}
+            <span>{imagenes.length} / {maxFotos ?? '…'}</span>
           </button>
           <input
             ref={fileInputRef}

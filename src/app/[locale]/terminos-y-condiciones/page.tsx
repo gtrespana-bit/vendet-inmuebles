@@ -1,10 +1,12 @@
 import type { Metadata } from 'next'
 import { getTranslations } from 'next-intl/server'
+import { buildPageAlternates } from '@/lib/seo-metadata'
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params
   return {
     title: locale === 'en' ? 'Terms and Conditions' : 'Términos y Condiciones',
+    alternates: buildPageAlternates(locale, '/terminos-y-condiciones'),
   }
 }
 

@@ -1,5 +1,11 @@
+import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { getVerifiedUserFromCookies } from '@/lib/supabase-server'
+import { NOINDEX_ROBOTS } from '@/lib/seo-metadata'
+
+export const metadata: Metadata = {
+  robots: NOINDEX_ROBOTS,
+}
 
 /**
  * Guardia de servidor para TODAS las rutas /dashboard/*:

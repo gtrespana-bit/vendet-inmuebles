@@ -4,6 +4,7 @@ import { requireAdmin } from '@/lib/api-auth'
 import { requireUUIDs } from '@/lib/validation'
 import { notifyUser } from '@/lib/push-notify'
 import { notificarPropiedadModerada } from '@/lib/email-eventos'
+import { isPlanQuotaError, planQuotaResponse } from '@/lib/quota-errors'
 
 export async function POST(req: NextRequest) {
   try {
@@ -35,7 +36,15 @@ export async function POST(req: NextRequest) {
       .from('inmuebles')
       .update(updateData)
       .eq('id', productId)
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) {
+      // Aprobar reactiva la publicación: la cuenta puede estar por encima del cupo
+      // de su plan actual y el trigger 012 impide volver a publicarla.
+      if (isPlanQuotaError(error)) {
+        const quota = planQuotaResponse(error.message)
+        return NextResponse.json(quota.body, { status: quota.status })
+      }
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
 
     // La decisión de moderación se comunica por push y por correo.
     await notifyUser(auth.supabaseAdmin, product.usuario_id, {

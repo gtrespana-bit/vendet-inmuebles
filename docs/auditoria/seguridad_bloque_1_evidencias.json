@@ -1,0 +1,95 @@
+{
+  "status": "implemented on branch; not deployed; migration 012 NOT applied to production",
+  "production_audit": {
+    "info": 0,
+    "low": 0,
+    "moderate": 5,
+    "high": 0,
+    "critical": 0,
+    "total": 5
+  },
+  "full_audit": {
+    "info": 0,
+    "low": 0,
+    "moderate": 21,
+    "high": 0,
+    "critical": 0,
+    "total": 21
+  },
+  "remaining_production_packages": [
+    "@sentry/bundler-plugins",
+    "@sentry/nextjs",
+    "@sentry/webpack-plugin",
+    "glob",
+    "minimatch"
+  ],
+  "versions": {
+    "next": "15.5.28",
+    "next-intl": "4.14.9",
+    "sharp": "0.35.5",
+    "nodemailer": "10.3.1",
+    "@sentry/nextjs": "10.78.0",
+    "postcss": "8.5.32",
+    "cookie": "0.7.2"
+  },
+  "tests": {
+    "node_passed": 97,
+    "node_failed": 0,
+    "edit_translations": true,
+    "tsc": true,
+    "lint": true,
+    "production_build": true,
+    "real_postgres_two_connections_last_listing_slot": true,
+    "real_postgres_two_connections_last_photo_slot": true
+  },
+  "http_local": [
+    {
+      "path": "/login",
+      "status": 200,
+      "final_path": "/login",
+      "redirect_to_login": true
+    },
+    {
+      "path": "/en/login",
+      "status": 200,
+      "final_path": "/en/login",
+      "redirect_to_login": true
+    },
+    {
+      "path": "/pagos",
+      "status": 200,
+      "final_path": "/pagos",
+      "redirect_to_login": false
+    },
+    {
+      "path": "/api/pagos",
+      "status": 401,
+      "final_path": "/api/pagos",
+      "redirect_to_login": false
+    },
+    {
+      "path": "/api/properties",
+      "status": 401,
+      "final_path": "/api/properties",
+      "redirect_to_login": false
+    },
+    {
+      "path": "/admin",
+      "status": 200,
+      "final_path": "/admin",
+      "redirect_to_login": true
+    },
+    {
+      "path": "/dashboard",
+      "status": 200,
+      "final_path": "/dashboard",
+      "redirect_to_login": true
+    }
+  ],
+  "limitations": [
+    "Supabase placeholder configuration for build/HTTP",
+    "no production writes",
+    "no authenticated browser E2E",
+    "no production payment tests"
+  ]
+}

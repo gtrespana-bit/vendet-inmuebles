@@ -1,96 +1,92 @@
 import { Metadata } from 'next'
-import Link from 'next/link'
-import { getProperties } from '@/lib/properties'
+import LocalLink from '@/components/LocalLink'
+import { createServerClient } from '@/lib/supabase-server'
+import { fetchListingsByLocation } from '@/lib/location-listings'
 import PropertyCard from '@/components/PropertyCard'
-import { getTranslations } from 'next-intl/server'
-import { supabase } from '@/lib/supabase'
+import Breadcrumbs from '@/components/Breadcrumbs'
 
 interface PageProps {
   params: Promise<{ locale: string }>
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { locale } = await params
-  const t = await getTranslations({ locale, namespace: 'properties' })
-  
+  const isEn = locale === 'en'
+  const title = isEn ? 'Properties for Sale in Venezuela' : 'Propiedades en Venta en Venezuela'
+  const description = isEn
+    ? 'Find houses, apartments, land and commercial spaces for sale across Venezuela.'
+    : 'Encuentra casas, apartamentos, terrenos y locales comerciales en venta en toda Venezuela.'
+
   return {
-    title: `Propiedades en Venta - Venezuela Inmuebles`,
-    description: `Encuentra propiedades en venta. Casas, apartamentos, terrenos y más.`
+    title,
+    description,
+    alternates: {
+      canonical: `https://venezuela-inmuebles.online${isEn ? '/en' : ''}/propiedades/venta`,
+      languages: {
+        'es-VE': 'https://venezuela-inmuebles.online/propiedades/venta',
+        'en-US': 'https://venezuela-inmuebles.online/en/propiedades/venta',
+      },
+    },
   }
 }
 
-export default async function VentasPage({ params, searchParams }: PageProps) {
+export default async function VentasPage({ params }: PageProps) {
   const { locale } = await params
-  const filters = await searchParams
-  
-  const t = await getTranslations({ locale, namespace: 'properties' })
-  
-  // Obtener estados disponibles
-  const { data: estados } = await supabase
-    .from('states')
-    .select('id, name')
-    .order('name')
-  
-  // Obtener propiedades recientes de venta usando el nuevo sistema
-  const { data: propiedadesData } = await getProperties({
-    operation_type: 'venta',
-    limit: 50,
-    sort_by: 'newest'
-  })
-  
-  // Transformar datos para PropertyCard
-  const propiedades = (propiedadesData ?? []).map(p => ({
-    id: p.id,
-    title: p.title || 'Sin título',
-    slug: p.slug || '',
-    price: p.price ?? 0,
-    operation_type: (p.operation_type ?? 'venta') as ('venta' | 'alquiler'),
-    city: p.city_name ?? 'Ciudad no especificada',
-    state: p.state_name ?? 'Estado no especificado',
-    main_image_url: p.main_image_url ?? null,
-    bedrooms: p.bedrooms ?? 0,
-    bathrooms: p.bathrooms ?? 0,
-    area_size: p.area_size ?? 0
-  }))
-  
+  const isEn = locale === 'en'
+  const supabase = createServerClient()
+
+  const [{ data: estados }, { properties, serviceError }] = await Promise.all([
+    supabase.from('states').select('id, name, slug').order('name'),
+    fetchListingsByLocation(supabase, { operacion: 'venta', limit: 50 }),
+  ])
+
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6">
-        Propiedades en Venta
+      <Breadcrumbs items={[{ label: isEn ? 'For Sale' : 'Venta' }]} />
+
+      <h1 className="text-3xl font-bold mt-4 mb-6">
+        {isEn ? 'Properties for Sale' : 'Propiedades en Venta'}
       </h1>
-      
-      {/* Filtro por estados */}
-      <div className="mb-8">
-        <h2 className="text-xl font-semibold mb-4">Buscar por Estado</h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {estados?.map((estado: any) => (
-            <Link
-              key={estado.id}
-              href={`/${locale}/propiedades/venta/${estado.id}`}
-              className="p-4 bg-gray-100 hover:bg-gray-200 rounded-lg text-center transition-colors"
-            >
-              {estado.name}
-            </Link>
-          ))}
+
+      {estados && estados.length > 0 && (
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold mb-4">
+            {isEn ? 'Browse by State' : 'Buscar por Estado'}
+          </h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {estados.map((estado: any) => (
+              <LocalLink
+                key={estado.id}
+                href={`/propiedades/venta/${estado.slug || estado.id}`}
+                className="p-4 bg-gray-100 hover:bg-gray-200 rounded-lg text-center transition-colors"
+              >
+                {estado.name}
+              </LocalLink>
+            ))}
+          </div>
         </div>
-      </div>
-      
-      {/* Propiedades destacadas */}
+      )}
+
       <div className="mt-8">
-        <h2 className="text-xl font-semibold mb-4">Propiedades Destacadas</h2>
-        {propiedades && propiedades.length > 0 ? (
+        <h2 className="text-xl font-semibold mb-4">
+          {isEn ? 'Available Properties' : 'Propiedades Disponibles'}
+        </h2>
+        {serviceError ? (
+          <p role="alert" className="text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-4">
+            {isEn
+              ? 'We could not load properties right now. Please try again in a moment.'
+              : 'No pudimos cargar las propiedades en este momento. Intenta nuevamente en unos instantes.'}
+          </p>
+        ) : properties.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {propiedades.map((propiedad) => (
-              <PropertyCard 
-                key={propiedad.id} 
-                property={propiedad} 
-                locale={locale} 
-              />
+            {properties.map((propiedad) => (
+              <PropertyCard key={propiedad.id} property={propiedad} locale={locale} />
             ))}
           </div>
         ) : (
-          <p className="text-gray-500">No hay propiedades disponibles en este momento.</p>
+          <p className="text-gray-500">
+            {isEn ? 'No properties available right now.' : 'No hay propiedades disponibles en este momento.'}
+          </p>
         )}
       </div>
     </div>

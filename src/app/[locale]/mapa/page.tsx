@@ -6,8 +6,8 @@ import MapaClient from './MapaClient'
 
 const SITE_URL = 'https://venezuela-inmuebles.online'
 
-export async function generateMetadata({ params }: { params: { locale: string } }): Promise<Metadata> {
-  const { locale } = params
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale } = await params
   const t = await getTranslations({ locale, namespace: 'map' })
   const english = locale === 'en'
 
@@ -91,8 +91,8 @@ async function getMapProducts(): Promise<MapPageRecord[]> {
   }
 }
 
-export default async function MapaPage({ params }: { params: { locale: string } }) {
-  const { locale } = params
+export default async function MapaPage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params
   const products = await getMapProducts()
 
   return (

@@ -2,8 +2,9 @@ import type { Metadata } from 'next'
 import { getTranslations } from 'next-intl/server'
 
 export const metadata: Metadata = {
-  title: 'Eliminar tu cuenta — Venezuela Inmuebles',
+  title: 'Eliminar tu cuenta',
   description: 'Solicita la eliminación de tu cuenta y datos asociados en Venezuela Inmuebles.',
+  robots: { index: false, follow: false, googleBot: { index: false, follow: false } },
 }
 
 export default async function EliminarCuentaPage() {

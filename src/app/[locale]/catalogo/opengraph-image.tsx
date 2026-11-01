@@ -5,8 +5,9 @@ export const alt = 'Venezuela Inmuebles - Catálogo'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
-export default async function Image({ params }: { params: { locale: string } }, { searchParams }: { searchParams?: { [key: string]: string | string[] | undefined } }) {
-  const categoria = (searchParams?.categoria as string) || 'todos'
+export default async function Image({ params }: { params: Promise<{ locale: string }> }) {
+  await params
+  const categoria = 'todos'
   
   const categorias: Record<string, { name: string; icon: string; color: string }> = {
     vehiculos: { name: 'Vehículos', icon: '🚗', color: '#FF6B35' },

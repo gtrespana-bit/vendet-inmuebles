@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getUploadPresignedUrl, getR2PublicUrl, isR2Configured, uploadObjectServer } from '@/lib/r2-client'
-import { requireAuthenticatedUser } from '@/lib/api-auth'
+import sharp from 'sharp'
+import type { Metadata, Sharp } from 'sharp'
+import {
+  getUploadPresignedUrl, getR2PublicUrl, isR2Configured, uploadObjectServer, getDeletePresignedUrl,
+} from '@/lib/r2-client'
+import { requireAdmin, requireAuthenticatedUser } from '@/lib/api-auth'
 import { checkRateLimit } from '@/lib/rate-limit'
+import {
+  MAX_UPLOAD_BYTES, MAX_STORED_DIMENSION, claveNormalizada, motivoRechazo,
+} from '@/lib/image-upload'
 
 const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp'])
-const MAX_IMAGE_BYTES = 8 * 1024 * 1024
 
 // Runtime Node explícito: `req.formData()` entrega File de undici, y el
 // chequeo con duck-typing evita fallos de `instanceof File` entre realms.
@@ -28,13 +34,13 @@ function isUploadedFile(value: unknown): value is File {
 //    el navegador (legado; requiere CORS configurado en el bucket R2).
 
 /**
- * GET /api/r2-upload — diagnóstico de la configuración R2.
- * Sube un objeto de prueba real para verificar credenciales,
- * bucket y permisos de escritura. Requiere sesión.
+ * GET /api/r2-upload — diagnóstico de la configuración R2 (solo administración).
+ * Escribe un objeto mínimo para comprobar permisos y lo borra a continuación:
+ * cada llamada no debe dejar residuos en el bucket.
  */
 export async function GET(req: NextRequest) {
   try {
-    const auth = await requireAuthenticatedUser(req)
+    const auth = await requireAdmin(req)
     if (!auth.ok) return auth.response
 
     const report: Record<string, unknown> = {
@@ -50,15 +56,21 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ ...report, ok: false }, { status: 503 })
     }
 
-    // Prueba de escritura real: subir un objeto mínimo
-    const probeKey = `${auth.user.id}/_diag/r2-probe-${Date.now()}.txt`
+    // Prueba de escritura real y borrado inmediato: sin residuos en el bucket.
+    const probeKey = `_diag/r2-probe-${auth.user.id}-${Date.now()}.txt`
     try {
-      const url = await uploadObjectServer(probeKey, Buffer.from('ok'), 'text/plain')
+      await uploadObjectServer(probeKey, Buffer.from('ok'), 'text/plain')
       report.writeTest = 'ok'
-      report.probeUrl = url
     } catch (err: any) {
       report.writeTest = `fail: ${err?.name || 'unknown'}: ${String(err?.message || '').slice(0, 200)}`
       return NextResponse.json({ ...report, ok: false }, { status: 500 })
+    } finally {
+      try {
+        const deleteUrl = await getDeletePresignedUrl(probeKey, 60)
+        await fetch(deleteUrl, { method: 'DELETE' })
+      } catch {
+        report.cleanup = 'no se pudo borrar el objeto de prueba'
+      }
     }
 
     return NextResponse.json({ ...report, ok: true })
@@ -97,17 +109,52 @@ export async function POST(req: NextRequest) {
       if (!key || key.startsWith('/') || key.includes('..') || key.includes('\\') || !key.startsWith(`${auth.user.id}/`)) {
         return NextResponse.json({ error: 'Ruta de archivo inválida' }, { status: 400 })
       }
-      const fileType = file.type || 'image/jpeg'
-      if (!ALLOWED_IMAGE_TYPES.has(fileType)) {
+      if (!file.type || !ALLOWED_IMAGE_TYPES.has(file.type)) {
         return NextResponse.json({ error: 'Tipo de imagen no permitido' }, { status: 400 })
       }
-      if (file.size > MAX_IMAGE_BYTES) {
-        return NextResponse.json({ error: 'La imagen supera el máximo de 8MB' }, { status: 400 })
+      if (file.size > MAX_UPLOAD_BYTES) {
+        return NextResponse.json({ error: 'La imagen supera el máximo de 4 MB' }, { status: 400 })
       }
 
-      const buffer = Buffer.from(await file.arrayBuffer())
-      const publicUrl = await uploadObjectServer(key, buffer, fileType)
-      return NextResponse.json({ publicUrl })
+      const original = Buffer.from(await file.arrayBuffer())
+      // El tipo real se decide decodificando el archivo, no por el MIME declarado.
+      let imagen: Sharp
+      try {
+        imagen = sharp(original, { failOn: 'error', limitInputPixels: 40_000_000 })
+      } catch {
+        return NextResponse.json({ error: 'El archivo no es una imagen válida' }, { status: 400 })
+      }
+
+      let metadatos: Metadata
+      try {
+        metadatos = await imagen.metadata()
+      } catch {
+        return NextResponse.json({ error: 'El archivo no es una imagen válida' }, { status: 400 })
+      }
+      const rechazo = motivoRechazo({
+        bytes: original.byteLength,
+        formato: metadatos.format,
+        ancho: metadatos.width,
+        alto: metadatos.height,
+      })
+      if (rechazo) return NextResponse.json({ error: rechazo }, { status: 400 })
+
+      // Se reescribe como WebP sin metadatos: el objeto guardado no puede
+      // contener contenido distinto del que se ha validado.
+      let normalizada: Buffer
+      try {
+        normalizada = await sharp(original, { failOn: 'error', limitInputPixels: 40_000_000 })
+          .rotate()
+          .resize({ width: MAX_STORED_DIMENSION, height: MAX_STORED_DIMENSION, fit: 'inside', withoutEnlargement: true })
+          .webp({ quality: 82 })
+          .toBuffer()
+      } catch {
+        return NextResponse.json({ error: 'No se pudo procesar la imagen' }, { status: 400 })
+      }
+
+      const finalKey = claveNormalizada(key, 'webp')
+      const publicUrl = await uploadObjectServer(finalKey, normalizada, 'image/webp')
+      return NextResponse.json({ publicUrl, key: finalKey })
     }
 
     // ---- Modo 2: presigned URL (legado) ----
@@ -121,8 +168,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Tipo de imagen no permitido' }, { status: 400 })
     }
 
-    const uploadUrl = await getUploadPresignedUrl(key, contentType, 300)
-    return NextResponse.json({ url: uploadUrl, publicUrl: getR2PublicUrl(key) })
+    // La firma fija tipo y tamaño: la URL no permite subir más de 4 MB ni otro tipo.
+    const uploadUrl = await getUploadPresignedUrl(key, contentType, MAX_UPLOAD_BYTES, 300)
+    return NextResponse.json({ url: uploadUrl, publicUrl: getR2PublicUrl(key), maxBytes: MAX_UPLOAD_BYTES })
   } catch (error: any) {
     // Detalle real para diagnóstico (no se filtran credenciales: solo nombre/mensaje del SDK)
     const r2Code = error?.name || error?.Code || 'unknown'

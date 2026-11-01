@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import LocalLink from '@/components/LocalLink'
 import { getLocale, getTranslations } from 'next-intl/server'
+import { buildPageAlternates } from '@/lib/seo-metadata'
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params
@@ -10,6 +11,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
     description: isEnglish
       ? 'Learn about Venezuela Inmuebles, a portal for exploring and listing properties for sale or rent.'
       : 'Conoce Venezuela Inmuebles, un portal para explorar y anunciar propiedades en venta o alquiler.',
+    alternates: buildPageAlternates(locale, '/sobre-nosotros'),
   }
 }
 

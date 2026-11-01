@@ -76,9 +76,12 @@ export default function PaymentsPage() {
     bloqueada: copy('Sin activación · requiere revisión','Not activated · review required'),
     provisional: copy('Activación provisional','Provisionally activated'), confirmada: copy('Pago confirmado','Payment confirmed'), rechazada: copy('Pago rechazado','Payment rejected'),
   }
-  if (loading) return <main className="max-w-3xl mx-auto p-6" role="status">{copy('Cargando…','Loading…')}</main>
-  if (!user) return <main className="max-w-3xl mx-auto p-6"><LocalLink href="/login?redirect=%2Fpagos">{copy('Inicia sesión para gestionar tus pagos','Sign in to manage payments')}</LocalLink></main>
-  return <main className="max-w-3xl mx-auto px-4 py-10 space-y-6">
+  const queryStr = params.toString()
+  const returnTo = queryStr ? `/pagos?${queryStr}` : '/pagos'
+  const loginHref = `/login?redirect=${encodeURIComponent(returnTo)}`
+  if (loading) return <div className="max-w-3xl mx-auto p-6" role="status">{copy('Cargando…','Loading…')}</div>
+  if (!user) return <div className="max-w-3xl mx-auto p-6"><LocalLink href={loginHref}>{copy('Inicia sesión para gestionar tus pagos','Sign in to manage payments')}</LocalLink></div>
+  return <div className="max-w-3xl mx-auto px-4 py-10 space-y-6">
     <h1 className="text-3xl font-bold">{copy('Pagos y justificantes','Payments and receipts')}</h1>
     <p>{copy('Paga por Pago Móvil o Binance. Analizamos la imagen con OCR gratuito: no confirma el ingreso bancario. Las activaciones automáticas son provisionales y pueden revocarse si el pago no existe.', 'Pay with Pago Móvil or Binance. Free OCR checks the image, not the bank deposit. Automatic activations are provisional and may be revoked if payment is invalid.')}</p>
     {planStatus && !trialDays && <p className="text-sm text-gray-600">{copy('Los planes se pagan por 30 días, sin cobros automáticos. Una subida comienza al activarse; las renovaciones y los planes inferiores comienzan al finalizar el período actual. El importe indicado es el precio completo del nuevo período, sin prorrateo.', 'Plans are prepaid for 30 days, without automatic charges. Upgrades start on activation; renewals and lower plans start at the end of the current period. The amount is the full price for the new period, without proration.')}</p>}
@@ -125,5 +128,5 @@ export default function PaymentsPage() {
         <button disabled={!!busy || !files[order.id]} onClick={() => upload(order)} className="rounded-lg bg-brand-primary text-white px-5 py-3 disabled:opacity-50">{busy === order.id ? copy('Analizando comprobante…','Checking receipt…') : copy('Enviar y verificar justificante','Submit and check receipt')}</button>
       </div>}
     </article>)}
-  </main>
+  </div>
 }

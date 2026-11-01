@@ -63,7 +63,7 @@ export default function ContactPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#FBF9F3]">
+    <div className="min-h-screen bg-[#FBF9F3]">
       <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8 lg:py-16">
         <div className="grid gap-6 lg:grid-cols-[0.82fr_1.18fr] lg:gap-8">
           <section className="flex flex-col justify-between bg-brand-dark p-7 text-white sm:p-10">
@@ -214,6 +214,6 @@ export default function ContactPage() {
           </section>
         </div>
       </div>
-    </main>
+    </div>
   )
 }

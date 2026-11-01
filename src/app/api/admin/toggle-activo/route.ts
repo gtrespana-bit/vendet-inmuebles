@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { revalidatePath } from 'next/cache'
 import { requireAdmin } from '@/lib/api-auth'
 import { requireUUIDs } from '@/lib/validation'
+import { isPlanQuotaError, planQuotaResponse } from '@/lib/quota-errors'
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,7 +21,14 @@ export async function POST(request: NextRequest) {
       .update({ activo: body.activo })
       .eq('id', body.productId)
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) {
+      // Reactivar puede exceder el cupo del plan (trigger 012 de la migración).
+      if (isPlanQuotaError(error)) {
+        const quota = planQuotaResponse(error.message)
+        return NextResponse.json(quota.body, { status: quota.status })
+      }
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
 
     revalidatePath('/')
     revalidatePath('/catalogo')

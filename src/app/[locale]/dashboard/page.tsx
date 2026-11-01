@@ -180,8 +180,7 @@ export default function DashboardPage() {
     } else {
       data.setCreditos(result.balance)
       data.setToast(t('boostApplied'))
-      const { data: prods } = await supabase.from('vw_propiedades_publicas').select('id, titulo, precio, estado, ciudad, activo, visitas, creado_en, main_image_url, operacion_nombre, destacado').eq('usuario_id', user!.id).order('creado_en', { ascending: false })
-      data.setProductos(prods || [])
+      data.refreshAll()
     }
     setBoostTarget(null)
     setTimeout(() => data.setToast(null), 4000)
@@ -194,8 +193,7 @@ export default function DashboardPage() {
     } else {
       data.setCreditos(result.balance)
       data.setToast(t('featuredActivated', { hours: horas }))
-      const { data: prods } = await supabase.from('vw_propiedades_publicas').select('id, titulo, precio, estado, ciudad, activo, visitas, creado_en, main_image_url, operacion_nombre, destacado').eq('usuario_id', user!.id).order('creado_en', { ascending: false })
-      data.setProductos(prods || [])
+      data.refreshAll()
     }
     setDestacadoTarget(null)
     setTimeout(() => data.setToast(null), 4000)
@@ -259,7 +257,7 @@ export default function DashboardPage() {
         {destacadoTarget && (
           <DestacadoModal
             titulo={destacadoTarget.titulo}
-            creditos={data.creditos}
+            creditos={data.creditos + (data.planInfo?.creditosRestantesPlan ?? 0)}
             onClose={() => setDestacadoTarget(null)}
             onDestacar={(h) => handleDestacar(destacadoTarget.productId, h)}
           />
@@ -278,7 +276,7 @@ export default function DashboardPage() {
           creadoEn={data.creadoEn}
           resenasCount={data.resenas.length}
           promedioResenas={data.promedioResenas}
-          creditos={data.creditos}
+          creditos={data.creditos + (data.planInfo?.creditosRestantesPlan ?? 0)}
           planInfo={data.planInfo}
           onGoToTab={setActiveTab}
           onFotoChange={handleFoto}
@@ -349,7 +347,12 @@ export default function DashboardPage() {
             </Suspense>
           )}
           {activeTab === 'creditos' && (
-            <TabCreditos creditos={data.creditos} tasaBs={tasaBs} refreshCreditos={data.refreshAll} />
+            <TabCreditos
+              creditos={data.creditos}
+              planInfo={data.planInfo}
+              tasaBs={tasaBs}
+              refreshCreditos={data.refreshAll}
+            />
           )}
           {activeTab === 'favoritos' && <TabFavoritos favoritos={data.favoritos} />}
           {activeTab === 'verificacion' && <SolicitarVerificacion />}

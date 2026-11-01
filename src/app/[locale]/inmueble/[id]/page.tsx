@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
@@ -23,6 +24,8 @@ import {
 } from 'lucide-react'
 import { getTranslations } from 'next-intl/server'
 import { createServerClient } from '@/lib/supabase-server'
+import { isValidUUID } from '@/lib/validation'
+import { buildPageAlternates } from '@/lib/seo-metadata'
 import { claveAmenidad, leerAmenidades, ordenAmenidad } from '@/lib/amenities'
 import PropertyGallery from '@/components/PropertyGallery'
 import TrackInmueble from '@/components/TrackInmueble'
@@ -43,22 +46,23 @@ interface PageProps {
 
 type PropertyRecord = Record<string, any>
 
-async function getPublicProperty(identifier: string): Promise<PropertyRecord | null> {
+const getPublicProperty = cache(async function getPublicProperty(identifier: string): Promise<PropertyRecord | null> {
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) return null
 
   try {
     const supabase = createServerClient()
-    const byId = await supabase
-      .from('vw_propiedades_publicas')
-      .select('*')
-      .eq('id', identifier)
-      .eq('activo', true)
-      .maybeSingle()
+    if (isValidUUID(identifier)) {
+      const byId = await supabase
+        .from('vw_propiedades_publicas')
+        .select('*')
+        .eq('id', identifier)
+        .eq('activo', true)
+        .maybeSingle()
 
-    if (byId.data) return byId.data as PropertyRecord
+      if (byId.data) return byId.data as PropertyRecord
+    }
 
-    // Cards may use a public slug. Resolve it to the canonical record so all
-    // actions (favorites, chat and structured URLs) still use the database ID.
+    // Cards may use a public slug. Resolve it directly without wasting an invalid-UUID query.
     const bySlug = await supabase
       .from('vw_propiedades_publicas')
       .select('*')
@@ -71,7 +75,7 @@ async function getPublicProperty(identifier: string): Promise<PropertyRecord | n
     console.error('[property-detail] Could not load public property:', error)
     return null
   }
-}
+})
 
 function getPropertyImages(property: PropertyRecord): string[] {
   const images: string[] = []
@@ -144,7 +148,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     description: description || (locale === 'en'
       ? `Explore this property${location ? ` in ${location}` : ' in Venezuela'} on Venezuela Inmuebles.`
       : `Conoce este inmueble${location ? ` en ${location}` : ' en Venezuela'} en Venezuela Inmuebles.`),
-    alternates: { canonical: `https://venezuela-inmuebles.online${localizedPath}` },
+    alternates: buildPageAlternates(locale, `/inmueble/${canonicalId}`),
     openGraph: {
       type: 'website',
       title: `${title} · Venezuela Inmuebles`,

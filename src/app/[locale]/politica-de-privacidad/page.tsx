@@ -1,8 +1,13 @@
 import type { Metadata } from 'next'
 import { getTranslations } from 'next-intl/server'
+import { buildPageAlternates } from '@/lib/seo-metadata'
 
-export const metadata: Metadata = {
-  title: 'Política de Privacidad — Venezuela Inmuebles',
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale } = await params
+  return {
+    title: locale === 'en' ? 'Privacy Policy' : 'Política de Privacidad',
+    alternates: buildPageAlternates(locale, '/politica-de-privacidad'),
+  }
 }
 
 export default async function PrivacidadPage() {

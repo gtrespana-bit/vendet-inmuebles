@@ -1,6 +1,6 @@
 # Venezuela Inmuebles
 
-Portal inmobiliario para publicar y descubrir inmuebles en Venezuela. La aplicación está construida con Next.js 14, React 18, Supabase y Cloudflare R2 (opcional para imágenes de publicaciones).
+Portal inmobiliario para publicar y descubrir inmuebles en Venezuela. La aplicación está construida con Next.js 15, React 18, Supabase y Cloudflare R2 (opcional para imágenes de publicaciones).
 
 ## Configuración de Supabase
 
@@ -39,13 +39,27 @@ La aplicación se abrirá en `http://localhost:3000`.
 Antes de desplegar, ejecuta:
 
 ```bash
+npm test          # pruebas de dominio, sesiones, cupos y traducciones
 npx tsc --noEmit
+npx next lint
 npm run build
+```
+
+`npm test` usa el ejecutor de Node con eliminación de tipos (`--experimental-strip-types`),
+por lo que requiere **Node 22.6 o superior**. Incluye las pruebas de la migración 012
+contra PostgreSQL en WASM (PGlite); no se conecta a Supabase.
+
+La prueba opcional de concurrencia real crea y destruye un PostgreSQL efímero local:
+
+```bash
+python3 -m venv .venv
+.venv/bin/pip install pgserver 'psycopg[binary]'
+.venv/bin/python tests/security-quota-concurrency.py
 ```
 
 ## Arquitectura
 
-- **Frontend:** Next.js 14, React 18, Tailwind CSS y `next-intl`.
+- **Frontend:** Next.js 15, React 18, Tailwind CSS y `next-intl` 4.
 - **Backend y datos:** Supabase Auth, PostgreSQL, RLS, Realtime y Storage.
 - **Imágenes de publicaciones:** Cloudflare R2 opcional; cédulas y comprobantes permanecen en buckets privados de Supabase.
 - **Hosting previsto:** Vercel.

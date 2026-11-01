@@ -50,20 +50,34 @@ function getPosts(): Post[] {
   })
 }
 
-export const metadata: Metadata = {
-  title: 'Blog — Venezuela Inmuebles | Consejos de compra, venta y emprendimiento',
-  description: 'Guías, precios del mercado venezolano y consejos para comprar y vender sin estafas. Todo sobre emprendimiento y comercio electrónico en Venezuela.',
-  alternates: {
-    canonical: 'https://venezuela-inmuebles.online/blog',
-  },
-  openGraph: {
-    title: 'Blog Venezuela Inmuebles — Compra, Venta y Emprendimiento',
-    description: 'Guías del mercado venezolano, consejos para emprendedores y mucho más.',
-    url: 'https://venezuela-inmuebles.online/blog',
-    siteName: 'Venezuela Inmuebles',
-    type: 'website',
-    locale: 'es_VE',
-  },
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale } = await params
+  const en = locale === 'en'
+  const canonical = en ? 'https://venezuela-inmuebles.online/en/blog' : 'https://venezuela-inmuebles.online/blog'
+  return {
+    title: en ? 'Real Estate Blog & Market Guides' : 'Blog inmobiliario y guías del mercado',
+    description: en
+      ? 'Real estate guides, Venezuelan market prices and practical tips for buying, selling and renting safely.'
+      : 'Guías inmobiliarias, precios del mercado venezolano y consejos prácticos para comprar, vender y alquilar con seguridad.',
+    alternates: {
+      canonical,
+      languages: {
+        'es-VE': 'https://venezuela-inmuebles.online/blog',
+        'en-US': 'https://venezuela-inmuebles.online/en/blog',
+        'x-default': 'https://venezuela-inmuebles.online/blog',
+      },
+    },
+    openGraph: {
+      title: en ? 'Venezuela Inmuebles Blog' : 'Blog Venezuela Inmuebles',
+      description: en
+        ? 'Real estate guides, Venezuelan market insights and safe buying/selling tips.'
+        : 'Guías del mercado inmobiliario venezolano y consejos de compra, venta y alquiler.',
+      url: canonical,
+      siteName: 'Venezuela Inmuebles',
+      type: 'website',
+      locale: en ? 'en_US' : 'es_VE',
+    },
+  }
 }
 
 const categoryIcons: Record<string, string> = {

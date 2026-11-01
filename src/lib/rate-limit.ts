@@ -59,6 +59,22 @@ function getSupabaseClient() {
   )
 }
 
+/**
+ * Política ante fallo de la base de datos (F07).
+ * Las operaciones costosas o sensibles fallan cerrado; las de bajo coste
+ * (analítica, visitas, favoritos) siguen fallando abierto para no degradar la
+ * navegación por un problema del limitador.
+ */
+const FAIL_CLOSED = new Set([
+  'auth:login', 'auth:register', 'auth:reset', 'pagos:crear', 'creditos:comprar',
+  'ai-descripcion', 'contacto:send', 'r2-upload', 'producto:create', 'mensaje:create',
+  'push:send', 'denuncia:create', 'conversacion:create', 'foto-perfil:update',
+])
+
+export function failClosed(key: string): boolean {
+  return FAIL_CLOSED.has(key)
+}
+
 export async function checkRateLimit(
   key: string,
   identifier: string, // userId o IP
@@ -67,79 +83,57 @@ export async function checkRateLimit(
   const limit = LIMITS[key]
   if (!limit) return { ok: true, remaining: 999, resetIn: 0, limit: 0 }
 
-  // Timeout de seguridad: si la DB tarda o no responde, se permite el paso
-  // (fail-open). NUNCA se debe bloquear una operación crítica (p. ej. login)
-  // por un rate limiter lento.
-  const falloApertura = { ok: true, remaining: 999, resetIn: 0, limit: limit.max }
+  const fallo = failClosed(key)
+    ? { ok: false, remaining: 0, resetIn: limit.windowMs, limit: limit.max }
+    : { ok: true, remaining: 999, resetIn: 0, limit: limit.max }
+
+  // La reserva es atómica en la base (migración 015). El tiempo máximo evita
+  // colgar la petición si la base no responde.
   return await Promise.race([
     checkRateLimitInner(key, identifier, extraData),
-    new Promise<typeof falloApertura>((resolve) => setTimeout(() => resolve(falloApertura), 2500)),
+    new Promise<typeof fallo>((resolve) => setTimeout(() => resolve(fallo), 2500)),
   ])
 }
 
 async function checkRateLimitInner(
   key: string,
-  identifier: string, // userId o IP
+  identifier: string,
   extraData?: { ip?: string }
 ): Promise<{ ok: boolean; remaining: number; resetIn: number; limit: number }> {
   const limit = LIMITS[key]
   if (!limit) return { ok: true, remaining: 999, resetIn: 0, limit: 0 }
 
-  const now = Date.now()
-  const windowStart = new Date(now - limit.windowMs).toISOString()
-
-  const sb = getSupabaseClient()
+  const fallo = failClosed(key)
+    ? { ok: false, remaining: 0, resetIn: limit.windowMs, limit: limit.max }
+    : { ok: true, remaining: 999, resetIn: 0, limit: limit.max }
 
   try {
-    // Contar intentos en la ventana actual
-    const { count, error: countError } = await sb
-      .from('rate_limit')
-      .select('*', { count: 'exact', head: true })
-      .eq('key', key)
-      .eq('identifier', identifier)
-      .gte('created_at', windowStart)
-
-    if (countError) {
-      console.error('Rate limit count error:', countError)
-      // Si falla la DB, permitir por defecto (fail-open)
-      return { ok: true, remaining: 999, resetIn: 0, limit: limit.max }
-    }
-
-    const currentCount = count || 0
-    const remaining = Math.max(0, limit.max - currentCount)
-
-    if (currentCount >= limit.max) {
-      // Calcular reset: encontrar el registro más antiguo en la ventana
-      const { data: oldest } = await sb
-        .from('rate_limit')
-        .select('created_at')
-        .eq('key', key)
-        .eq('identifier', identifier)
-        .gte('created_at', windowStart)
-        .order('created_at', { ascending: true })
-        .limit(1)
-        .single()
-
-      const resetIn = oldest
-        ? new Date(oldest.created_at).getTime() + limit.windowMs - now
-        : limit.windowMs
-
-      return { ok: false, remaining: 0, resetIn: Math.max(0, resetIn), limit: limit.max }
-    }
-
-    // Registrar este intento (async, no bloquear)
-    sb.from('rate_limit').insert({
-      key,
-      identifier,
-      ip: extraData?.ip || null,
-    }).then(({ error }) => {
-      if (error) console.error('Rate limit insert error:', error)
+    // Una sola llamada: cuenta y reserva en la misma transacción.
+    const { data, error } = await getSupabaseClient().rpc('reservar_rate_limit', {
+      p_key: key,
+      p_identifier: identifier,
+      p_ip: extraData?.ip || null,
+      p_max: limit.max,
+      p_ventana_segundos: Math.ceil(limit.windowMs / 1000),
     })
 
-    return { ok: true, remaining: remaining - 1, resetIn: limit.windowMs, limit: limit.max }
+    if (error) {
+      console.error('Rate limit RPC error:', error)
+      return fallo
+    }
+
+    const fila = Array.isArray(data) ? data[0] : data
+    if (!fila) return fallo
+
+    return {
+      ok: fila.permitido !== false,
+      remaining: Number(fila.restantes ?? 0),
+      resetIn: Number(fila.reinicia_en ?? 0) * 1000,
+      limit: limit.max,
+    }
   } catch (err) {
     console.error('Rate limit check error:', err)
-    return { ok: true, remaining: 999, resetIn: 0, limit: limit.max }
+    return fallo
   }
 }
 

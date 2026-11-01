@@ -1,131 +1,117 @@
 import { Metadata } from 'next'
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import LocalLink from '@/components/LocalLink'
 import { createServerClient } from '@/lib/supabase-server'
+import { fetchListingsByLocation, resolveStateByParam } from '@/lib/location-listings'
 import PropertyCard from '@/components/PropertyCard'
 import Breadcrumbs from '@/components/Breadcrumbs'
-import { getTranslations } from 'next-intl/server'
 
 interface PageProps {
   params: Promise<{ locale: string; estado: string }>
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { locale, estado } = await params
-  
+  const isEn = locale === 'en'
   const supabase = createServerClient()
-  const { data: stateData } = await supabase
-    .from('states')
-    .select('name')
-    .eq('id', estado)
-    .single()
-  
-  const estadoName = stateData?.name || estado
-  
+  const { state } = await resolveStateByParam(supabase, estado)
+  const estadoName = state?.name || estado
+  const slug = state?.slug || state?.id || estado
+
+  const title = isEn
+    ? `Properties for sale in ${estadoName}`
+    : `Propiedades en venta en ${estadoName}`
+  const description = isEn
+    ? `Find houses, apartments, land and commercial spaces for sale in ${estadoName}, Venezuela.`
+    : `Encuentra propiedades en venta en ${estadoName}. Casas, apartamentos, terrenos y más.`
+
   return {
-    title: `Propiedades en venta en ${estadoName} - Venezuela Inmuebles`,
-    description: `Encuentra propiedades en venta en ${estadoName}. Casas, apartamentos, terrenos y más.`
+    title,
+    description,
+    alternates: {
+      canonical: `https://venezuela-inmuebles.online${isEn ? '/en' : ''}/propiedades/venta/${slug}`,
+      languages: {
+        'es-VE': `https://venezuela-inmuebles.online/propiedades/venta/${slug}`,
+        'en-US': `https://venezuela-inmuebles.online/en/propiedades/venta/${slug}`,
+      },
+    },
   }
 }
 
-export default async function VentasPorEstadoPage({ params, searchParams }: PageProps) {
+export default async function VentasPorEstadoPage({ params }: PageProps) {
   const { locale, estado } = await params
-  const filters = await searchParams
-  
-  const t = await getTranslations({ locale, namespace: 'properties' })
-  
+  const isEn = locale === 'en'
   const supabase = createServerClient()
-  
-  // Obtener información del estado
-  const { data: stateData } = await supabase
-    .from('states')
-    .select('id, name')
-    .eq('id', estado)
-    .single()
-  
-  if (!stateData) {
+
+  const { state: stateData, serviceError: stateError } = await resolveStateByParam(supabase, estado)
+  if (!stateData && !stateError) {
     notFound()
   }
-  
-  // Obtener ciudades de este estado
-  const { data: ciudades } = await supabase
-    .from('cities')
-    .select('id, name')
-    .eq('state_id', estado)
-    .order('name')
-  
-  // Obtener propiedades de venta en este estado
-  const { data: propiedades } = await supabase
-    .from('vw_propiedades_publicas')
-    .select(`
-      *,
-      property_images (url),
-      states (name),
-      cities (name)
-    `)
-    .eq('operacion_tipo', 'Venta')
-    .eq('ubicacion_estado_id', estado)
-    .eq('activo', true)
-    .limit(50)
-    .order('creado_en', { ascending: false })
-  
-  const breadcrumbItems = [
-    { label: t('breadcrumbs.home'), href: `/${locale}` },
-    { label: t('breadcrumbs.for_sale'), href: `/${locale}/propiedades/venta` },
-    { label: stateData.name }
-  ]
-  
+
+  const stateName = stateData?.name || estado
+  const stateSlug = stateData?.slug || stateData?.id || estado
+
+  const [{ data: ciudades }, { properties, serviceError: listingsError }] = stateData
+    ? await Promise.all([
+        supabase.from('cities').select('id, name, slug').eq('state_id', stateData.id).order('name'),
+        fetchListingsByLocation(supabase, { operacion: 'venta', state: stateData, limit: 50 }),
+      ])
+    : [{ data: null }, { properties: [], serviceError: true }]
+
+  const hasError = stateError || listingsError
+
   return (
     <div className="container mx-auto px-4 py-8">
-      <Breadcrumbs items={breadcrumbItems} />
-      
-      <h1 className="text-3xl font-bold mb-6">
-        Propiedades en venta en {stateData.name}
+      <Breadcrumbs
+        items={[
+          { label: isEn ? 'For Sale' : 'Venta', href: '/propiedades/venta' },
+          { label: stateName },
+        ]}
+      />
+
+      <h1 className="text-3xl font-bold mt-4 mb-6">
+        {isEn ? `Properties for sale in ${stateName}` : `Propiedades en venta en ${stateName}`}
       </h1>
-      
-      {/* Filtro por ciudades */}
+
       {ciudades && ciudades.length > 0 && (
         <div className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">Buscar por Ciudad</h2>
+          <h2 className="text-xl font-semibold mb-4">
+            {isEn ? 'Browse by City' : 'Buscar por Ciudad'}
+          </h2>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {ciudades.map((ciudad: any) => (
-              <Link
+              <LocalLink
                 key={ciudad.id}
-                href={`/${locale}/propiedades/venta/${estado}/${ciudad.id}`}
+                href={`/propiedades/venta/${stateSlug}/${ciudad.slug || ciudad.id}`}
                 className="p-4 bg-gray-100 hover:bg-gray-200 rounded-lg text-center transition-colors"
               >
                 {ciudad.name}
-              </Link>
+              </LocalLink>
             ))}
           </div>
         </div>
       )}
-      
-      {/* Listado de propiedades */}
+
       <div className="mt-8">
-        <h2 className="text-xl font-semibold mb-4">Propiedades Disponibles</h2>
-        {propiedades && propiedades.length > 0 ? (
+        <h2 className="text-xl font-semibold mb-4">
+          {isEn ? 'Available Properties' : 'Propiedades Disponibles'}
+        </h2>
+        {hasError ? (
+          <p role="alert" className="text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-4">
+            {isEn
+              ? 'We could not load properties for this state right now. Please try again in a moment.'
+              : 'No pudimos cargar las propiedades de este estado en este momento. Intenta nuevamente en unos instantes.'}
+          </p>
+        ) : properties.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {propiedades.map((propiedad: any) => {
-              const transformed = {
-                id: propiedad.id,
-                title: propiedad.titulo || 'Sin título',
-                slug: propiedad.slug || '',
-                price: propiedad.precio ?? 0,
-                operation_type: 'venta' as ('venta' | 'alquiler'),
-                city: propiedad.ciudad ?? 'Ciudad no especificada',
-                state: propiedad.ubicacion_estado ?? 'Estado no especificado',
-                main_image_url: propiedad.main_image_url ?? null,
-                bedrooms: propiedad.caracteristicas?.habitaciones ?? 0,
-                bathrooms: propiedad.caracteristicas?.banos ?? 0,
-                area_size: propiedad.caracteristicas?.area_m2 ?? 0
-              };
-              return <PropertyCard key={propiedad.id} property={transformed} locale={locale} />;
-            })}
+            {properties.map((propiedad) => (
+              <PropertyCard key={propiedad.id} property={propiedad} locale={locale} />
+            ))}
           </div>
         ) : (
-          <p className="text-gray-500">No hay propiedades disponibles en esta zona.</p>
+          <p className="text-gray-500">
+            {isEn ? 'No properties available in this area.' : 'No hay propiedades disponibles en esta zona.'}
+          </p>
         )}
       </div>
     </div>
