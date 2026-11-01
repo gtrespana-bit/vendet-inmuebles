@@ -8,6 +8,7 @@ import {
   readCookieConsent,
   writeCookieConsent,
 } from '@/lib/cookie-consent'
+import { updateGa4Consent } from '@/lib/ga4'
 
 export default function CookieConsent() {
   const en = useLocale() === 'en'
@@ -24,6 +25,7 @@ export default function CookieConsent() {
 
   const choose = (choice: 'accepted' | 'rejected') => {
     writeCookieConsent(choice)
+    updateGa4Consent(choice)
     setShowBanner(false)
   }
 
