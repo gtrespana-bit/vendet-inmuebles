@@ -1,16 +1,3 @@
--- 015 · Reserva atómica del rate limit (F07)
---
--- Antes: la API contaba filas y después insertaba de forma asíncrona, así que
--- dos peticiones simultáneas podían pasar con el mismo presupuesto, y ante un
--- fallo o 2,5 s de espera se dejaba pasar siempre (fail-open).
---
--- Ahora el conteo y la reserva ocurren en una sola transacción, serializada por
--- una clave de bloqueo por (operación, identificador). Las políticas de fallo
--- (abierto o cerrado) se deciden en la aplicación según el coste de cada
--- operación. Sin cambios de datos previos: sigue usando `public.rate_limit`.
-
-BEGIN;
-
 CREATE OR REPLACE FUNCTION public.reservar_rate_limit(
   p_key text,
   p_identifier text,
@@ -32,10 +19,8 @@ BEGIN
     RETURN;
   END IF;
 
-  -- Serializa solo a quien comparte (operación, identificador).
   PERFORM pg_advisory_xact_lock(hashtextextended(p_key || '|' || p_identifier, 0));
 
-  -- La ventana se recicla: no queda historial indefinido de una misma clave.
   DELETE FROM public.rate_limit
    WHERE key = p_key AND identifier = p_identifier AND created_at < v_desde;
 
@@ -58,8 +43,5 @@ COMMENT ON FUNCTION public.reservar_rate_limit(text, text, text, integer, intege
   'Reserva atómica de presupuesto por (operación, identificador). Solo para el servidor: sin EXECUTE para anon/authenticated.';
 REVOKE ALL ON FUNCTION public.reservar_rate_limit(text, text, text, integer, integer) FROM PUBLIC, anon, authenticated;
 
--- Índice de apoyo para la ventana por clave e identificador.
 CREATE INDEX IF NOT EXISTS idx_rate_limit_key_identifier_created
   ON public.rate_limit (key, identifier, created_at DESC);
-
-COMMIT;
