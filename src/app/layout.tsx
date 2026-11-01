@@ -1,5 +1,10 @@
 import type { Metadata } from 'next'
 import { getLocale } from 'next-intl/server'
+import {
+  GA4_MEASUREMENT_ID,
+  buildGa4BootstrapScript,
+  isValidGaMeasurementId,
+} from '@/lib/ga4'
 
 export const metadata: Metadata = {
   robots: {
@@ -21,8 +26,26 @@ export default async function RootLayout({
     lang = 'es'
   }
 
+  const gaEnabled = isValidGaMeasurementId(GA4_MEASUREMENT_ID)
+
   return (
     <html lang={lang}>
+      <head>
+        {gaEnabled && (
+          <>
+            <script
+              async
+              src={`https://www.googletagmanager.com/gtag/js?id=${GA4_MEASUREMENT_ID}`}
+            />
+            <script
+              id="ga4-init"
+              dangerouslySetInnerHTML={{
+                __html: buildGa4BootstrapScript(GA4_MEASUREMENT_ID),
+              }}
+            />
+          </>
+        )}
+      </head>
       <body>{children}</body>
     </html>
   )

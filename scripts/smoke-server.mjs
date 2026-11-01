@@ -70,9 +70,18 @@ try {
     assert.equal(res.status, 200, 'GET /planes debe devolver 200')
     assert.equal(res.headers.get('x-content-type-options'), 'nosniff')
     assert.equal(res.headers.get('x-frame-options'), 'DENY')
-    assert.match(res.headers.get('content-security-policy') || '', /default-src 'self'/)
+    const cspHeader = res.headers.get('content-security-policy') || ''
+    assert.match(cspHeader, /default-src 'self'/)
+    assert.match(cspHeader, /script-src[^;]*https:\/\/www\.googletagmanager\.com/, 'CSP script-src debe permitir GTM para GA4')
+    assert.match(cspHeader, /connect-src[^;]*https:\/\/www\.google-analytics\.com/, 'CSP connect-src debe permitir Google Analytics 4')
     const html = await res.text()
     assert.match(html, /<html[^>]*\blang="es"/, '/planes debe emitir <html lang="es">')
+    assert.match(
+      html,
+      /https:\/\/www\.googletagmanager\.com\/gtag\/js\?id=G-BSE60G6TX4/,
+      'El HTML SSR debe incluir la etiqueta oficial de GA4 (G-BSE60G6TX4)'
+    )
+    assert.match(html, /gtag\('consent','default'/, 'El HTML SSR debe inicializar Google Consent Mode v2')
     assert.match(html, /href="https:\/\/venezuela-inmuebles\.online\/planes"/, '/planes debe tener canonical propio')
     assert.match(html, /Escaparate con URL personalizada/)
     const mainMatches = html.match(/<main\b/g) || []

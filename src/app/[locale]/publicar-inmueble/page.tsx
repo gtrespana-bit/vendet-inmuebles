@@ -15,6 +15,7 @@ import { compressImage } from '@/lib/image-compress';
 import { limpiarMetodosContacto, validarMetodosContacto } from '@/lib/contact-methods';
 import { FORM_AMENITY_GROUPS } from '@/lib/amenities';
 import ContactMethodsFields, { type MetodosContactoForm } from '@/components/ContactMethodsFields';
+import { trackGa4Event } from '@/lib/ga4';
 import { Sparkles, Loader2 } from 'lucide-react';
 
 interface ImagePreview {
@@ -390,6 +391,12 @@ export default function PublicarInmueblePage() {
       }
 
       const nuevaPropiedad = await res.json();
+      trackGa4Event('publish_property', {
+        item_id: nuevaPropiedad.id,
+        operation: tipoOperacion,
+        property_type: tipoPropiedad,
+        state: estado,
+      });
       setSuccess(true);
       setTimeout(() => {
         router.push(`${locale === 'en' ? '/en' : ''}/inmueble/${nuevaPropiedad.id}`);

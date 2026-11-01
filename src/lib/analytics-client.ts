@@ -3,6 +3,8 @@
  * Envía eventos a /api/track con sendBeacon (sobrevive a la navegación).
  */
 
+import { trackGa4Event } from './ga4.ts'
+
 const SESSION_KEY = 'vi_sid'
 const UTM_KEY = 'vi_utm'
 
@@ -58,6 +60,19 @@ export interface TrackPayload {
  */
 export function trackEvent(tipo: string, payload: TrackPayload = {}): void {
   if (typeof window === 'undefined') return
+  try {
+    if (tipo === 'registro') {
+      trackGa4Event('sign_up', { method: 'email' })
+    } else if (tipo === 'busqueda') {
+      const searchTerm =
+        typeof payload.meta?.q === 'string'
+          ? payload.meta.q.slice(0, 100)
+          : typeof payload.titulo === 'string'
+            ? payload.titulo.slice(0, 100)
+            : undefined
+      trackGa4Event('search', searchTerm ? { search_term: searchTerm } : undefined)
+    }
+  } catch { /* silencio */ }
   try {
     const body = JSON.stringify({
       tipo,

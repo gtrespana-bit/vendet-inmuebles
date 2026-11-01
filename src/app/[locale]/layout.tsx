@@ -12,6 +12,7 @@ import { Footer } from '@/components/Footer'
 import { AuthProvider } from '@/components/AuthProvider'
 import { ServiceWorkerRegistration } from '@/components/ServiceWorkerRegistration'
 import AnalyticsGate from '@/components/AnalyticsGate'
+import GoogleAnalyticsTracker from '@/components/GoogleAnalyticsTracker'
 import CookieConsent from '@/components/CookieConsent'
 import PWAInstallBanner from '@/components/PWAInstallBanner'
 import PushNotificationBanner from '@/components/PushNotificationBanner'
@@ -131,6 +132,7 @@ export default async function LocaleLayout({
           <BottomTabNav />
           <CookieConsent />
         </AuthProvider>
+        <GoogleAnalyticsTracker />
         <AnalyticsGate />
         <ServiceWorkerRegistration />
       </NextIntlClientProvider>
