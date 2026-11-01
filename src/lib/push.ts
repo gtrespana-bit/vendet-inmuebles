@@ -5,6 +5,7 @@
  */
 
 import webpush from 'web-push'
+import { esEndpointPushPermitido } from './push-endpoint'
 
 // ── VAPID ──────────────────────────────────────────
 
@@ -33,6 +34,12 @@ export async function sendPush(
   subscription: { endpoint: string; keys: { p256dh: string; auth: string } },
   payload: PushPayload,
 ) {
+  // Suscripciones guardadas antes de la validación: no se envían a terceros.
+  if (!esEndpointPushPermitido(subscription.endpoint)) {
+    console.error('Push descartado: endpoint no permitido')
+    return false
+  }
+
   const data = {
     ...payload,
     timestamp: Date.now(),
