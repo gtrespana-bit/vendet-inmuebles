@@ -373,7 +373,10 @@ export default function PublicarPage() {
       
       if (!res.ok || !apiResult.ok) {
         console.error('API error:', apiResult)
-        setError('Error al guardar: ' + (apiResult.error || 'Error desconocido'))
+        // El exceso de cupo se muestra tal cual lo explica el servidor.
+        setError(apiResult.code === 'cupo_excedido' && apiResult.error
+          ? apiResult.error
+          : 'Error al guardar: ' + (apiResult.error || 'Error desconocido'))
         setLoading(false)
         return
       }

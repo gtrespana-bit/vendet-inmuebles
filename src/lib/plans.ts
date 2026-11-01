@@ -16,7 +16,10 @@ export async function checkPlanLimits(userId: string) {
     .in('estado', ['activa', 'trial'])
     .lte('inicio', new Date().toISOString())
     .or(`fin.is.null,fin.gt.${new Date().toISOString()}`)
+    // Mismo desempate que `plan_efectivo_publicacion` (012): la última
+    // suscripción creada decide el plan efectivo también en la aplicación.
     .order('created_at', { ascending: false })
+    .order('id', { ascending: false })
     .limit(1)
     .maybeSingle()
 

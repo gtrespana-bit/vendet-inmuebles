@@ -270,6 +270,11 @@ export default function EditarInmueblePage() {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
+        // El cupo del plan se explica con el mensaje del servidor, no como fallo genérico.
+        if (data.code === 'cupo_excedido' && typeof data.error === 'string' && data.error) {
+          setError(data.error)
+          return
+        }
         throw new Error(data.error || 'Error')
       }
 

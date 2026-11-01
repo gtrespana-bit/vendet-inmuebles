@@ -49,9 +49,15 @@ La migración `012_limites_publicacion_en_bd.sql` está lista para revisión/apl
 - Reactivación de vendido restablece `vendido=false`; pausar/reactivar muestra errores en vez de recargar como si hubiera funcionado.
 - **Pendiente:** edición completa transaccional de campos/fotos/características y unificación de formularios. No se declara F13/F19 cerrado íntegramente.
 
+## Correcciones posteriores a la revisión del parche
+
+- **Cupo en administración:** aprobar una publicación (`moderar-producto`) o reactivarla (`toggle-activo`) puede exceder el cupo del plan. Antes devolvía 500 con el mensaje de PostgreSQL; ahora las cuatro rutas que escriben bajo los triggers (`/api/properties` POST y PATCH, `/api/publicar`, las dos de administración) usan un único mapeo (`src/lib/quota-errors.ts`) y responden **409 con `code: cupo_excedido`** y el motivo legible. Los formularios de alta y edición muestran ese motivo en vez de un error genérico.
+- **Desempate de plan efectivo:** la aplicación ordenaba las suscripciones solo por `created_at`; la función `plan_efectivo_publicacion` usa `created_at DESC, id DESC`. Se alineó `checkPlanLimits` para que ambos resuelvan el mismo plan cuando hay suscripciones del mismo instante.
+- **Documentación:** `README.md` actualizado a Next 15 y con el requisito de **Node 22.6+** para `npm test` (el ejecutor usa eliminación de tipos) y el comando de la prueba de concurrencia.
+
 ## Validación realizada
 
-- `npm test`: **97/97 pruebas**, más comprobación de traducciones de edición.
+- `npm test`: **101/101 pruebas** (incluye las 4 nuevas de mapeo de cupo), más comprobación de traducciones de edición.
 - TypeScript y lint: correctos.
 - Build Next 15: correcto, con variables Supabase de ejemplo, no una prueba autenticada de producción.
 - PostgreSQL real efímero: dos conexiones independientes bloqueadas simultáneamente compiten por el último anuncio y la última foto. En cada caso solo una confirma; la otra falla con `23514`. Conteo final: 3 anuncios / 8 fotos.

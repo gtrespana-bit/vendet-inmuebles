@@ -4,6 +4,7 @@ import { createServerClient } from '@/lib/supabase-server'
 import { checkPlanLimits } from '@/lib/plans'
 import { savePropertyFeatures } from '@/lib/property-features'
 import { sanitizarMetodosContacto } from '@/lib/contact-methods'
+import { isPlanQuotaError, planQuotaResponse } from '@/lib/quota-errors'
 
 export async function POST(req: NextRequest) {
   try {
@@ -95,7 +96,8 @@ export async function POST(req: NextRequest) {
       : []
 
     if (imageUrls.length > planData.limits.maxFotos) {
-      return NextResponse.json({ error: `Máximo ${planData.limits.maxFotos} fotos para este plan` }, { status: 403 })
+      const quota = planQuotaResponse(`Máximo ${planData.limits.maxFotos} fotos para este plan`)
+      return NextResponse.json(quota.body, { status: quota.status })
     }
     const lat = Number(latitud)
     const lng = Number(longitud)
@@ -144,7 +146,11 @@ export async function POST(req: NextRequest) {
 
     if (insertError || !property) {
       console.error('Error al crear inmueble:', insertError)
-      return NextResponse.json({ error: insertError?.message || 'Error al crear el inmueble' }, { status: insertError?.code === '23514' ? 403 : 500 })
+      if (isPlanQuotaError(insertError)) {
+        const quota = planQuotaResponse(insertError?.message)
+        return NextResponse.json(quota.body, { status: quota.status })
+      }
+      return NextResponse.json({ error: insertError?.message || 'Error al crear el inmueble' }, { status: 500 })
     }
 
     if (imageUrls.length > 0) {
@@ -235,7 +241,8 @@ export async function PATCH(req: NextRequest) {
       }
       // Grandfather existing photos after a downgrade, but do not allow new ones above quota.
       if (body.imagenes.length > editPlan.limits.maxFotos && body.imagenes.some((img: any) => !img.id)) {
-        return NextResponse.json({ error: `El plan ${editPlan.plan} permite ${editPlan.limits.maxFotos} fotos` }, { status: 403 })
+        const quota = planQuotaResponse(`El plan ${editPlan.plan} permite ${editPlan.limits.maxFotos} fotos`)
+        return NextResponse.json(quota.body, { status: quota.status })
       }
       const { data: currentImages, error: imageReadError } = await supabase.from('inmueble_imagenes')
         .select('id').eq('inmueble_id', id)
@@ -372,9 +379,13 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ success: true })
   } catch (error: any) {
     console.error('Error updating property:', error)
+    if (isPlanQuotaError(error)) {
+      const quota = planQuotaResponse(error?.message)
+      return NextResponse.json(quota.body, { status: quota.status })
+    }
     return NextResponse.json(
       { error: error?.message || 'Error interno del servidor' },
-      { status: error?.code === '23514' ? 403 : 500 }
+      { status: 500 }
     )
   }
 }

@@ -7,6 +7,7 @@ import { requireAuthenticatedUser } from '@/lib/api-auth'
 import { sanitizeString } from '@/lib/validation'
 import { sanitizarMetodosContacto } from '@/lib/contact-methods'
 import { checkPlanLimits } from '@/lib/plans'
+import { isPlanQuotaError, planQuotaResponse } from '@/lib/quota-errors'
 import { emailProductoPublicado, emailPropiedadEnRevision } from '@/lib/server-email'
 
 export async function POST(req: NextRequest) {
@@ -90,7 +91,8 @@ export async function POST(req: NextRequest) {
       ? body.imagenes.filter((url: unknown): url is string => typeof url === 'string' && url.startsWith('https://'))
       : []
     if (imageUrls.length > planData.limits.maxFotos) {
-      return NextResponse.json({ error: `Máximo ${planData.limits.maxFotos} fotos para este plan` }, { status: 403 })
+      const quota = planQuotaResponse(`Máximo ${planData.limits.maxFotos} fotos para este plan`)
+      return NextResponse.json(quota.body, { status: quota.status })
     }
 
     const firstImage = typeof body.imagen_url === 'string' && body.imagen_url.startsWith('https://')
@@ -126,7 +128,11 @@ export async function POST(req: NextRequest) {
       .select('*')
       .single()
     if (insertError || !property) {
-      return NextResponse.json({ error: insertError?.message || 'Error al publicar' }, { status: insertError?.code === '23514' ? 403 : 500 })
+      if (isPlanQuotaError(insertError)) {
+        const quota = planQuotaResponse(insertError?.message)
+        return NextResponse.json(quota.body, { status: quota.status })
+      }
+      return NextResponse.json({ error: insertError?.message || 'Error al publicar' }, { status: 500 })
     }
 
     if (imageUrls.length > 0) {
