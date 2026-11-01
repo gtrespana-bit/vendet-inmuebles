@@ -14,6 +14,7 @@ import { routing } from '@/i18n/routing'
 // Components
 import ProfileHero from './components/ProfileHero'
 import DashboardHeader from './components/DashboardHeader'
+import StorefrontSettingsCard from './components/StorefrontSettingsCard'
 import TabResumen from './components/TabResumen'
 import TabCreditos from './components/tabs/TabCreditos'
 import TabFavoritos from './components/tabs/TabFavoritos'
@@ -392,6 +393,7 @@ export default function DashboardPage() {
                 onLogout={handleLogout}
                 onFotoChange={handleFoto}
               />
+              <StorefrontSettingsCard userId={user!.id} onToast={data.setToast} />
               <div className="dashboard-profile-settings__public">
                 <div>
                   <strong>{t('publicProfileTitle')}</strong>

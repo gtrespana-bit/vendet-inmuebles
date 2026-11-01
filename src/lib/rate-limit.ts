@@ -52,6 +52,8 @@ const LIMITS: Record<string, { max: number; windowMs: number }> = {
   'inmueble:visita': { max: 60, windowMs: 60 * 60 * 1000 },
   // Recordatorio periódico de órdenes provisionales/en revisión: máx 1 cada 6 h
   'cron:alerta-provisionales': { max: 1, windowMs: 6 * 60 * 60 * 1000 },
+  // Edición de escaparate y URL personalizada: 15 cada 5 min por usuario
+  'perfil:escaparate': { max: 15, windowMs: 5 * 60 * 1000 },
 }
 
 function getSupabaseClient() {
@@ -71,6 +73,7 @@ const FAIL_CLOSED = new Set([
   'auth:login', 'auth:register', 'auth:reset', 'pagos:crear', 'creditos:comprar',
   'ai-descripcion', 'contacto:send', 'r2-upload', 'producto:create', 'mensaje:create',
   'push:send', 'denuncia:create', 'conversacion:create', 'foto-perfil:update',
+  'perfil:escaparate',
 ])
 
 export function failClosed(key: string): boolean {
