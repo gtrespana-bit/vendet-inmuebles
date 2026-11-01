@@ -8,6 +8,15 @@
 4. Entrar en **Administración → Pagos** para revisar ingresos. Los enlaces a imágenes son privados y vencen a los cinco minutos; el botón Actualizar los renueva.
 5. Hacer una prueba controlada con un ingreso real de importe pequeño antes de anunciar el sistema. Las pruebas automatizadas usan comprobantes sintéticos y PostgreSQL local en WASM, no cobran ni crean usuarios reales.
 
+## Corrección de rutas y prueba gratuita (migración 011)
+
+- Aplicar `011_cambio_plan_durante_prueba.sql` antes de desplegar la corrección de prueba. No modifica suscripciones existentes al instalarse.
+- `/pagos` está en la lista de páginas permitidas del middleware de **producción**. Las pruebas comparan esa lista con todas las páginas públicas de un segmento para detectar futuras omisiones.
+- Durante una prueba vigente, Planes muestra días restantes y fecha final. Permite cambiar al instante entre planes sin pagar, manteniendo inicio, fin y fecha original de prueba; no crea otra suscripción ni suma créditos al saldo por cambiar repetidamente.
+- Los planes de pago no pueden comprarse ni activarse por una orden antigua durante la prueba (protección en API y RPC). Los paquetes de créditos adicionales sí pueden comprarse, con el coste indicado. Pagos dirige a Planes a quien intenta contratar un plan durante su prueba.
+- Al finalizar la prueba, sin contratar un plan, se aplican los límites de Gratuita. No hay cobros automáticos. La UI reconsulta al volver a la pestaña y cada minuto; el servidor decide según su propia fecha.
+- Las tarjetas ya no ofrecen una prueba nueva a cuentas existentes, ni un precio anual que el checkout no soporta. Las bajadas programadas muestran fecha y el botón de cancelar solo se ofrece cuando hay una bajada gratuita pendiente.
+
 ## Flujo
 
 - `/creditos` y `/planes` conducen a `/pagos`. El servidor calcula el precio de cada orden; los valores enviados por el navegador no fijan importes.

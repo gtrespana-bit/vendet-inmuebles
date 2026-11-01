@@ -1,6 +1,6 @@
 import { Metadata } from 'next'
-import { PlanActionsProvider, PlanActionButton } from './PlanActions'
-import { Check, Star, Building2, User, Gift, HeartHandshake } from 'lucide-react'
+import { PlanActionsProvider, PlanActionButton, PlanTrialBadge } from './PlanActions'
+import { Check, Star, Building2, User, HeartHandshake } from 'lucide-react'
 
 export const metadata: Metadata = {
   title: 'Planes y Precios | Venezuela Inmuebles',
@@ -12,7 +12,6 @@ const planes = [
     id: 'gratuita' as const,
     nombre: 'Gratuita',
     precioMensual: '$0',
-    precioAnual: '$0',
     descripcion: 'Para quien vende o alquila su propio inmueble',
     icon: User,
     color: 'gray',
@@ -28,7 +27,6 @@ const planes = [
     id: 'profesional' as const,
     nombre: 'Profesional',
     precioMensual: '$9,99/mes',
-    precioAnual: '$99/año',
     descripcion: 'Para agentes y corredores independientes',
     icon: Star,
     color: 'brand-accent',
@@ -50,7 +48,6 @@ const planes = [
     id: 'agencia' as const,
     nombre: 'Agencia',
     precioMensual: '$39,99/mes',
-    precioAnual: '$399/año',
     descripcion: 'Para equipos y agencias inmobiliarias',
     icon: Building2,
     color: 'brand-primary',
@@ -87,7 +84,7 @@ export default function PlanesPage() {
             Planes y Precios
           </h1>
           <p className="text-xl text-brand-dark/70 max-w-2xl mx-auto">
-            Elige el plan ideal para ti. Todos los planes incluyen 30 días de prueba gratis, sin tarjeta de crédito y sin cobros automáticos.
+            Elige el plan ideal para ti. Al crear tu cuenta tienes una prueba gratuita de 30 días, sin tarjeta y sin cobros automáticos. Cambiar de plan durante la prueba no reinicia ese plazo.
           </p>
         </div>
 
@@ -121,21 +118,12 @@ export default function PlanesPage() {
                   <p className="text-brand-dark/70 text-sm mb-3 min-h-[40px]">
                     {plan.descripcion}
                   </p>
-                  {plan.trial && (
-                    <p className="mb-4 inline-flex items-center gap-1.5 rounded-full bg-brand-primary/10 px-3 py-1 text-xs font-semibold text-brand-primary">
-                      <Gift className="h-3.5 w-3.5" aria-hidden="true" />
-                      30 días de prueba gratis
-                    </p>
-                  )}
+                  <PlanTrialBadge />
                   <div className="mb-2">
                     <span className="text-4xl font-bold text-brand-dark">
                       {plan.precioMensual}
                     </span>
-                    {plan.nombre !== 'Gratuita' && (
-                      <span className="text-sm font-normal text-gray-500 ml-1">
-                        o {plan.precioAnual}
-                      </span>
-                    )}
+
                   </div>
                 </div>
 
