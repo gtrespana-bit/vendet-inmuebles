@@ -167,7 +167,7 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public.usar_boost(uuid, uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.usar_boost(uuid, uuid) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.usar_boost(uuid, uuid) TO authenticated, service_role;
 
 CREATE OR REPLACE FUNCTION public.usar_destacado(
@@ -240,7 +240,7 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public.usar_destacado(uuid, uuid, integer) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.usar_destacado(uuid, uuid, integer) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.usar_destacado(uuid, uuid, integer) TO authenticated, service_role;
 
 CREATE OR REPLACE FUNCTION public.admin_agregar_creditos(
