@@ -14,6 +14,7 @@ import EmailConfirmationRedirect from '@/components/EmailConfirmationRedirect'
 import { ServiceWorkerRegistration } from '@/components/ServiceWorkerRegistration'
 import AnalyticsGate from '@/components/AnalyticsGate'
 import GoogleAnalyticsTracker from '@/components/GoogleAnalyticsTracker'
+import ClientErrorMonitor from '@/components/ClientErrorMonitor'
 import CookieConsent from '@/components/CookieConsent'
 import PWAInstallBanner from '@/components/PWAInstallBanner'
 import PushNotificationBanner from '@/components/PushNotificationBanner'
@@ -136,6 +137,7 @@ export default async function LocaleLayout({
         </AuthProvider>
         <GoogleAnalyticsTracker />
         <AnalyticsGate />
+        <ClientErrorMonitor />
         <ServiceWorkerRegistration />
       </NextIntlClientProvider>
     </>

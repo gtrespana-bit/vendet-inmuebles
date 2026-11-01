@@ -1,25 +1,33 @@
-'use client';
+'use client'
 
-import { useEffect, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useEffect, useState } from 'react'
+import { useTranslations } from 'next-intl'
+import { reportarErrorCliente } from '@/components/ClientErrorMonitor'
 
 interface ErrorBoundaryProps {
-  children: React.ReactNode;
+  children: React.ReactNode
 }
 
 export const ErrorBoundary = ({ children }: ErrorBoundaryProps) => {
-  const [hasError, setHasError] = useState(false);
-  const t = useTranslations('common');
+  const [hasError, setHasError] = useState(false)
+  const t = useTranslations('common')
 
   useEffect(() => {
-    const handleError = (error: ErrorEvent) => {
-      console.error('Error caught by boundary:', error.error);
-      setHasError(true);
-    };
+    const handleError = (event: ErrorEvent) => {
+      console.error('Error caught by boundary:', event.error)
+      setHasError(true)
+      void reportarErrorCliente({
+        origen: 'react_boundary',
+        severidad: 'error',
+        nombre: event.error?.name || 'ErrorBoundary',
+        mensaje: event.error?.message || event.message || 'Error en componente',
+        stack: event.error?.stack || null,
+      })
+    }
 
-    window.addEventListener('error', handleError);
-    return () => window.removeEventListener('error', handleError);
-  }, []);
+    window.addEventListener('error', handleError)
+    return () => window.removeEventListener('error', handleError)
+  }, [])
 
   if (hasError) {
     return (
@@ -33,8 +41,8 @@ export const ErrorBoundary = ({ children }: ErrorBoundaryProps) => {
           {t('retry')}
         </button>
       </div>
-    );
+    )
   }
 
-  return <>{children}</>;
-};
+  return <>{children}</>
+}
