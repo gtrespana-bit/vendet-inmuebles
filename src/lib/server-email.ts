@@ -881,3 +881,133 @@ export async function emailPlanAsignadoAdmin(params: PlanAsignadoAdminParams): P
     { replyTo: CONTACT },
   )
 }
+
+// ─── 11. Alertas de Búsquedas Guardadas ────────────────────
+
+export interface InmuebleAlertaEmail {
+  id: string
+  slug?: string | null
+  titulo: string
+  precio: number
+  moneda?: string | null
+  ubicacion: string
+  operacion?: string | null
+}
+
+export async function emailAlertaBusquedaGuardada(params: {
+  email: string
+  nombreUsuario: string
+  nombreBusqueda: string
+  queryString: string
+  inmuebles: InmuebleAlertaEmail[]
+  unsubscribeUrl?: string
+}): Promise<boolean> {
+  const { email, nombreUsuario, nombreBusqueda, queryString, inmuebles, unsubscribeUrl } = params
+  if (!inmuebles.length) return false
+
+  const filasHtml = inmuebles
+    .slice(0, 5)
+    .map((item) => {
+      const targetUrl = `${URL}/inmueble/${encodeURIComponent(item.slug || item.id)}`
+      const precioFmt =
+        item.precio > 0
+          ? `$${new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(item.precio)}`
+          : 'Precio a consultar'
+      const sufijo = item.operacion === 'alquiler' && item.precio > 0 ? '/mes' : ''
+      return `<div style="padding:12px 0;border-bottom:1px solid ${COLORS.lightGray}">
+        <a href="${targetUrl}" style="font-size:15px;font-weight:700;color:${COLORS.primary};text-decoration:none">${esc(item.titulo)}</a>
+        <div style="margin-top:4px;font-size:13px;color:${COLORS.gray}">${esc(item.ubicacion)}</div>
+        <div style="margin-top:4px;font-size:15px;font-weight:700;color:${COLORS.accent}">${esc(precioFmt)}${sufijo}</div>
+      </div>`
+    })
+    .join('')
+
+  const catalogUrl = queryString ? `${URL}/catalogo?${queryString}` : `${URL}/catalogo`
+  const footerUnsub = unsubscribeUrl
+    ? `<p style="margin:12px 0 0;font-size:12px;color:${COLORS.gray}">¿No deseas recibir más alertas? Puedes pausarlas en tu panel o <a href="${esc(unsubscribeUrl)}" style="color:${COLORS.primary}">darte de baja con un clic</a>.</p>`
+    : ''
+
+  return enviar(
+    email,
+    `${inmuebles.length === 1 ? 'Nuevo inmueble' : `${inmuebles.length} nuevos inmuebles`} para tu alerta: ${nombreBusqueda}`,
+    emailLayout(
+      'Nuevas propiedades coinciden con tu búsqueda',
+      `<p style="margin:0 0 14px">Hola <strong>${esc(nombreUsuario || 'buscador')}</strong>,</p>
+       <p style="margin:0 0 18px">
+         Se publicaron nuevas propiedades que coinciden con tu alerta guardada
+         <strong>«${esc(nombreBusqueda)}»</strong>:
+       </p>
+       ${card(filasHtml)}
+       ${footerUnsub}`,
+      'Ver resultados completos',
+      catalogUrl,
+    ),
+    { replyTo: CONTACT, unsubscribeUrl },
+  )
+}
+
+// ─── 12. Solicitud de Visita / Consulta de Inmueble ────────
+
+export async function emailNuevaSolicitudVisita(params: {
+  emailDestino: string
+  nombreDestino: string
+  tituloInmueble: string
+  slugInmueble?: string | null
+  inmuebleId: string
+  nombreContacto: string
+  telefonoContacto: string
+  emailContacto?: string | null
+  modalidad: 'presencial' | 'videollamada' | 'llamada'
+  fechaPreferida?: string | null
+  franjaHoraria: string
+  mensaje?: string | null
+}): Promise<boolean> {
+  const modalidadLabel =
+    params.modalidad === 'videollamada'
+      ? 'Videollamada / Recorrido virtual guiado'
+      : params.modalidad === 'llamada'
+        ? 'Llamada telefónica'
+        : 'Visita presencial al inmueble'
+
+  const franjaLabel: Record<string, string> = {
+    manana: 'Mañana (8:00 a.m. – 12:00 m.)',
+    tarde: 'Tarde (1:00 p.m. – 6:00 p.m.)',
+    fin_de_semana: 'Fin de semana',
+    flexible: 'Horario flexible a convenir',
+  }
+
+  const soloDigitos = params.telefonoContacto.replace(/[^\d]/g, '')
+  const waDigits = soloDigitos.startsWith('0') && soloDigitos.length === 11
+    ? `58${soloDigitos.slice(1)}`
+    : soloDigitos
+  const waLink = waDigits.length >= 10 ? `https://wa.me/${waDigits}` : null
+  const fichaUrl = `${URL}/inmueble/${encodeURIComponent(params.slugInmueble || params.inmuebleId)}`
+
+  return enviar(
+    params.emailDestino,
+    `Nueva solicitud de visita: ${params.tituloInmueble}`,
+    emailLayout(
+      'Nuevo interesado en visitar tu inmueble',
+      `<p style="margin:0 0 14px">Hola <strong>${esc(params.nombreDestino || 'anunciante')}</strong>,</p>
+       <p style="margin:0 0 18px">
+         Recibiste una nueva solicitud sobre <a href="${fichaUrl}" style="color:${COLORS.primary};font-weight:700">${esc(params.tituloInmueble)}</a>:
+       </p>
+       ${card(`
+         <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+           ${priceLine('Interesado', esc(params.nombreContacto))}
+           ${priceLine('Teléfono / WhatsApp', esc(params.telefonoContacto))}
+           ${params.emailContacto ? priceLine('Correo', esc(params.emailContacto)) : ''}
+           ${priceLine('Modalidad', modalidadLabel)}
+           ${params.fechaPreferida ? priceLine('Fecha sugerida', esc(params.fechaPreferida)) : ''}
+           ${priceLine('Horario preferido', esc(franjaLabel[params.franjaHoraria] || params.franjaHoraria))}
+         </table>
+         ${params.mensaje ? `<div style="margin-top:12px;padding-top:12px;border-top:1px solid ${COLORS.lightGray};font-size:14px;color:${COLORS.dark}"><strong>Comentario:</strong> ${esc(params.mensaje)}</div>` : ''}
+         ${waLink ? `<div style="margin-top:14px"><a href="${waLink}" style="display:inline-block;padding:8px 14px;border-radius:8px;background:#16a34a;color:#ffffff;font-size:13px;font-weight:700;text-decoration:none">Responder directo por WhatsApp</a></div>` : ''}
+       `)}`,
+      'Gestionar visitas en mi panel',
+      `${URL}/dashboard?tab=visitas`,
+    ),
+    { replyTo: params.emailContacto || CONTACT },
+  )
+}
+

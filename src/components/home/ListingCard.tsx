@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import LocalLink from '@/components/LocalLink'
 import FavoriteCardButton from '@/components/FavoriteCardButton'
+import CompareCardButton from '@/components/CompareCardButton'
 import { Bath, BedDouble, Compass, MapPin, Ruler, Video } from 'lucide-react'
 import { isOptimizableImageSrc } from '@/lib/image-src'
 import { calculatePricePerM2 } from '@/lib/urbanizaciones'
@@ -89,13 +90,26 @@ export default function ListingCard({
   return (
     <article className={styles.card}>
       {!listing.sample ? (
-        <FavoriteCardButton
-          propertyId={listing.id}
-          propertySlug={listing.slug}
-          ownerId={listing.ownerId}
-          locale={locale}
-          className={styles.cardFav}
-        />
+        <>
+          <FavoriteCardButton
+            propertyId={listing.id}
+            propertySlug={listing.slug}
+            ownerId={listing.ownerId}
+            locale={locale}
+            className={styles.cardFav}
+          />
+          <CompareCardButton
+            propertyId={listing.id}
+            propertySlug={listing.slug}
+            title={listing.title}
+            price={listing.price}
+            image={listing.image || '/sinimagen.webp'}
+            location={[listing.zone, listing.city, listing.state].filter(Boolean).join(', ') || 'Venezuela'}
+            operation={listing.operation}
+            locale={locale}
+            className={styles.cardCompare}
+          />
+        </>
       ) : null}
       <div className={styles.cardMedia}>
         <Image

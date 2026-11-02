@@ -19,6 +19,7 @@ import CookieConsent from '@/components/CookieConsent'
 import PWAInstallBanner from '@/components/PWAInstallBanner'
 import PushNotificationBanner from '@/components/PushNotificationBanner'
 import BottomTabNav from '@/components/BottomTabNav'
+import CompareTray from '@/components/CompareTray'
 
 export const viewport: Viewport = {
   themeColor: '#16294B',
@@ -132,6 +133,7 @@ export default async function LocaleLayout({
           <Footer />
           <PWAInstallBanner />
           <PushNotificationBanner />
+          <CompareTray />
           <BottomTabNav />
           <CookieConsent />
         </AuthProvider>

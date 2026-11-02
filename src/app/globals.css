@@ -840,11 +840,30 @@ html { padding-top: env(safe-area-inset-top, 0); }
 }
 .property-card__fav:hover { transform: scale(1.06); background: #fff; color: var(--burgundy); }
 .property-card__fav.is-saved { color: #fffdf9; background: var(--burgundy); border-color: var(--burgundy); }
+.property-card__compare-btn {
+  position: absolute;
+  top: 10px;
+  right: 50px;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  color: #4f443b;
+  background: rgba(255, 253, 249, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 999px;
+  backdrop-filter: blur(6px);
+  cursor: pointer;
+  transition: transform 160ms ease, background 160ms ease, color 160ms ease;
+}
+.property-card__compare-btn:hover { transform: scale(1.06); background: #fff; color: #16294B; }
+.property-card__compare-btn.is-active { color: #fffdf9; background: #16294B; border-color: #16294B; }
 .property-card__link { display: block; color: inherit; text-decoration: none; }
 .property-card__media { position: relative; aspect-ratio: 1.42 / 1; overflow: hidden; background: #e8e3dc; }
 .property-card__image { object-fit: cover; transition: transform 450ms cubic-bezier(.2,.7,.2,1); }
 .property-card:hover .property-card__image { transform: scale(1.045); }
-.property-card__badges { position: absolute; top: 12px; left: 12px; right: 52px; z-index: 1; display: flex; flex-wrap: wrap; gap: 6px; }
+.property-card__badges { position: absolute; top: 12px; left: 12px; right: 92px; z-index: 1; display: flex; flex-wrap: wrap; gap: 6px; }
 .property-card__operation,
 .property-card__featured { display: inline-flex; align-items: center; min-height: 25px; padding: 0 9px; color: white; background: rgba(39, 31, 29, 0.88); font-size: 9px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
 .property-card__featured { color: #332a21; background: #e3c984; }

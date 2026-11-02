@@ -2,16 +2,23 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Heart, Share2 } from 'lucide-react'
+import { Heart, Scale, Share2, Check } from 'lucide-react'
 import { useAuth } from '@/components/AuthProvider'
 import { getSupabaseAuthHeaders } from '@/lib/supabase-auth-headers'
 import { isSupabaseConfigured, supabase } from '@/lib/supabase'
 import { localizePath } from '@/lib/auth-redirect'
 import { setCachedFavoriteState } from '@/hooks/useUserFavorites'
+import { usePropertyCompare } from '@/hooks/usePropertyCompare'
+import { isValidCompareId } from '@/lib/property-compare'
 
 interface PropertyDetailActionsProps {
   propertyId: string
+  propertySlug?: string | null
   title: string
+  price?: number | null
+  image?: string | null
+  location?: string | null
+  operation?: string | null
   locale: string
   labels: {
     save: string
@@ -23,12 +30,25 @@ interface PropertyDetailActionsProps {
   }
 }
 
-export default function PropertyDetailActions({ propertyId, title, locale, labels }: PropertyDetailActionsProps) {
+export default function PropertyDetailActions({
+  propertyId,
+  propertySlug,
+  title,
+  price,
+  image,
+  location,
+  operation,
+  locale,
+  labels,
+}: PropertyDetailActionsProps) {
   const router = useRouter()
   const { user, loading: authLoading } = useAuth()
+  const { isCompared, toggle: toggleCompare, limitNotice, max: maxCompare } = usePropertyCompare()
   const [isSaved, setIsSaved] = useState(false)
   const [saving, setSaving] = useState(false)
   const [status, setStatus] = useState('')
+  const isEn = locale === 'en'
+  const compared = isValidCompareId(propertyId) ? isCompared(propertyId) : false
 
   useEffect(() => {
     let cancelled = false
@@ -113,6 +133,40 @@ export default function PropertyDetailActions({ propertyId, title, locale, label
         <Heart size={18} fill={isSaved ? 'currentColor' : 'none'} aria-hidden="true" />
         <span>{saving ? '…' : isSaved ? labels.saved : labels.save}</span>
       </button>
+      {isValidCompareId(propertyId) && (
+        <button
+          type="button"
+          className={`property-detail-actions__button ${compared ? 'is-saved' : ''}`}
+          onClick={() =>
+            toggleCompare({
+              id: propertyId,
+              slug: propertySlug,
+              title,
+              price,
+              image,
+              location,
+              operation,
+            })
+          }
+          aria-pressed={compared}
+          aria-label={isEn ? 'Compare property' : 'Comparar inmueble'}
+        >
+          {compared ? <Check size={18} aria-hidden="true" /> : <Scale size={18} aria-hidden="true" />}
+          <span>
+            {limitNotice
+              ? isEn
+                ? `Max ${maxCompare}`
+                : `Máx. ${maxCompare}`
+              : compared
+                ? isEn
+                  ? 'Comparing'
+                  : 'Comparando'
+                : isEn
+                  ? 'Compare'
+                  : 'Comparar'}
+          </span>
+        </button>
+      )}
       <button
         type="button"
         className="property-detail-actions__button"

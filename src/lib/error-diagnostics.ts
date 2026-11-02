@@ -78,6 +78,7 @@ export function sanitizarUrlRuta(rawUrl: unknown, fallback = '/'): string {
 
     const paramsLimpios = new URLSearchParams()
     parsed.searchParams.forEach((val, key) => {
+      if (key === '_rsc') return
       if (PARAMETROS_SENSIBLES.test(key)) {
         paramsLimpios.set(key, '[REDACTED]')
       } else {
@@ -97,7 +98,7 @@ export function sanitizarUrlRuta(rawUrl: unknown, fallback = '/'): string {
 }
 
 /**
- * Normaliza segmentos dinámicos (UUIDs, números largos, tokens de invitación)
+ * Normaliza segmentos dinámicos (UUIDs, slugs de fichas/perfiles, tokens de invitación)
  * para agrupar ocurrencias equivalentes bajo la misma huella.
  */
 export function normalizarRutaParaAgrupacion(ruta: string): string {
@@ -105,6 +106,9 @@ export function normalizarRutaParaAgrupacion(ruta: string): string {
   return sinQuery
     .replace(/^\/(es|en)(?=\/|$)/i, '')
     .replace(/\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '/:uuid')
+    .replace(/\/inmueble\/editar\/[^/]+/gi, '/inmueble/editar/:id')
+    .replace(/\/inmueble\/(?!editar(?:\/|$))[^/]+/gi, '/inmueble/:slug')
+    .replace(/\/vendedor\/[^/]+/gi, '/vendedor/:slug')
     .replace(/\/invitacion\/[A-Za-z0-9_-]{12,}/g, '/invitacion/:token')
     .replace(/\/\d{2,}/g, '/:id') || '/'
 }
