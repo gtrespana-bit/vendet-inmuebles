@@ -723,7 +723,7 @@ export interface TiempoExtraPlanParams {
   email: string
   nombre: string
   empresaNombre?: string | null
-  plan: 'agencia' | 'profesional'
+  plan: 'agencia' | 'profesional_plus' | 'profesional'
   estado: 'activa' | 'trial'
   diasAgregados: number
   fechaVencimiento?: string | null
@@ -731,15 +731,29 @@ export interface TiempoExtraPlanParams {
   motivo?: string | null
 }
 
-function beneficiosPlanHtml(plan: 'agencia' | 'profesional', creditosIncluidos?: number | null): string {
+function beneficiosPlanHtml(
+  plan: 'agencia' | 'profesional_plus' | 'profesional',
+  creditosIncluidos?: number | null,
+): string {
   if (plan === 'agencia') {
     const creditos = creditosIncluidos ?? 20
     return `<p style="margin:18px 0 8px;font-weight:600;color:${COLORS.dark}">Qué incluye tu Plan Agencia:</p>
       <p style="margin:0;color:${COLORS.gray};font-size:14px;line-height:1.65">
         • <strong>Publicaciones ilimitadas</strong> activas en toda Venezuela.<br>
         • <strong>Gestión de equipo multi-agente:</strong> invita agentes por correo o enlace y asigna propiedades.<br>
-        • <strong>Hasta 30 fotografías</strong>, vídeo y planos por propiedad.<br>
-        • <strong>${creditos} créditos mensuales incluidos</strong> para impulsar o destacar tus anuncios.
+        • <strong>Hasta 30 fotografías</strong>, vídeo y recorridos/planos por propiedad.<br>
+        • <strong>${creditos} créditos mensuales incluidos</strong> para impulsar o destacar tus anuncios.<br>
+        • <strong>Asistencia prioritaria</strong>, solicitud de asistencia por teléfono y ayuda en la importación masiva de tu cartera.
+      </p>`
+  }
+  if (plan === 'profesional_plus') {
+    const creditos = creditosIncluidos ?? 12
+    return `<p style="margin:18px 0 8px;font-weight:600;color:${COLORS.dark}">Qué incluye tu Plan Profesional Plus:</p>
+      <p style="margin:0;color:${COLORS.gray};font-size:14px;line-height:1.65">
+        • <strong>Hasta 35 inmuebles activos</strong> simultáneamente (1 usuario individual, sin multiagente).<br>
+        • <strong>Hasta 30 fotografías</strong>, vídeo y recorridos/planos por propiedad.<br>
+        • <strong>${creditos} créditos mensuales incluidos</strong> para impulsar o destacar tus anuncios.<br>
+        • <strong>Asistencia prioritaria</strong>, solicitud de asistencia por teléfono y ayuda en la importación masiva de tu cartera.
       </p>`
   }
   const creditos = creditosIncluidos ?? 5
@@ -765,7 +779,12 @@ export async function emailTiempoExtraPlan(params: TiempoExtraPlanParams): Promi
     motivo,
   } = params
 
-  const planLabel = plan === 'agencia' ? 'Agencia' : 'Profesional'
+  const planLabel =
+    plan === 'agencia'
+      ? 'Agencia'
+      : plan === 'profesional_plus'
+        ? 'Profesional Plus'
+        : 'Profesional'
   const diasTxt = `${diasAgregados} ${diasAgregados === 1 ? 'día' : 'días'}`
   const estadoTxt = estado === 'trial' ? 'Período de prueba extendido' : 'Suscripción activa extendida'
   const mencionEmpresa = empresaNombre ? ` para <strong>${esc(empresaNombre)}</strong>` : ''
@@ -805,7 +824,7 @@ export interface PlanAsignadoAdminParams {
   email: string
   nombre: string
   empresaNombre?: string | null
-  plan: 'agencia' | 'profesional' | 'gratuita'
+  plan: 'agencia' | 'profesional_plus' | 'profesional' | 'gratuita'
   estado: 'activa' | 'trial' | 'cancelada'
   dias?: number | null
   fechaVencimiento?: string | null
@@ -847,7 +866,12 @@ export async function emailPlanAsignadoAdmin(params: PlanAsignadoAdminParams): P
     )
   }
 
-  const planLabel = plan === 'agencia' ? 'Agencia' : 'Profesional'
+  const planLabel =
+    plan === 'agencia'
+      ? 'Agencia'
+      : plan === 'profesional_plus'
+        ? 'Profesional Plus'
+        : 'Profesional'
   const estadoTxt = estado === 'trial' ? 'Período de prueba sin costo' : 'Suscripción activa'
   const duracionTxt = dias && dias > 0 ? `${dias} ${dias === 1 ? 'día' : 'días'}` : 'Vigencia activa'
   const mencionEmpresa = empresaNombre ? ` para <strong>${esc(empresaNombre)}</strong>` : ''

@@ -171,7 +171,7 @@ export async function notificarCambioPlanAdmin(
   params: {
     userId: string
     operacion: 'extender' | 'asignar' | 'cancelar'
-    plan: 'agencia' | 'profesional' | 'gratuita'
+    plan: 'agencia' | 'profesional_plus' | 'profesional' | 'gratuita'
     estado: 'activa' | 'trial' | 'cancelada'
     dias?: number | null
     fechaVencimiento?: string | null
@@ -184,7 +184,7 @@ export async function notificarCambioPlanAdmin(
 
   if (
     params.operacion === 'extender' &&
-    (params.plan === 'agencia' || params.plan === 'profesional') &&
+    (params.plan === 'agencia' || params.plan === 'profesional_plus' || params.plan === 'profesional') &&
     (params.estado === 'activa' || params.estado === 'trial')
   ) {
     await enviarSeguro(
@@ -193,7 +193,7 @@ export async function notificarCambioPlanAdmin(
           email: destinatario.email,
           nombre: destinatario.nombre,
           empresaNombre: destinatario.empresaNombre,
-          plan: params.plan as 'agencia' | 'profesional',
+          plan: params.plan as 'agencia' | 'profesional_plus' | 'profesional',
           estado: params.estado as 'activa' | 'trial',
           diasAgregados: Math.max(1, Number(params.dias) || 30),
           fechaVencimiento: params.fechaVencimiento,

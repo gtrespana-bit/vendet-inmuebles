@@ -74,7 +74,11 @@ export function sanitizeExternalMediaUrl(raw: unknown): string | null {
  */
 export function canPlanIncludeRichMedia(effectivePlan: unknown): boolean {
   if (!isPlanName(effectivePlan)) return false
-  return effectivePlan === 'profesional' || effectivePlan === 'agencia'
+  return (
+    effectivePlan === 'profesional' ||
+    effectivePlan === 'profesional_plus' ||
+    effectivePlan === 'agencia'
+  )
 }
 
 function extractYoutubeInfo(url: URL): { id: string; isShorts: boolean } | null {

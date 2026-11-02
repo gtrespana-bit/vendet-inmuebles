@@ -15,6 +15,7 @@ import { ESTADOS, CIUDADES_POR_ESTADO } from '@/lib/ubicaciones'
 import {
   ACCOUNT_TYPES,
   PLAN_LIMITS,
+  PLAN_NAMES,
   TRIAL_DAYS,
   accountTypeForPlan,
   formatListingLimit,
@@ -22,7 +23,6 @@ import {
   isUnlimited,
   planForAccountType,
   type AccountType,
-  type PlanName,
 } from '@/lib/plan-catalog'
 import {
   EMPTY_DRAFT,
@@ -88,9 +88,12 @@ export default function RegisterPage() {
     } else if (isPlanName(requested)) {
       const tipoSugerido = accountTypeForPlan(requested)
       setTipo(tipoSugerido)
-      // Se sincroniza también el tipo de cuenta para que el paso de datos pida
-      // los campos correctos (una agencia no pide apellidos).
-      setDraft((current) => applyAccountType({ ...current, plan: requested }, tipoSugerido))
+      // Se sincroniza también el tipo de cuenta conservando el plan solicitado
+      // (p. ej. `profesional_plus` mantiene `tipoCuenta: 'profesional'` y `plan: 'profesional_plus'`).
+      setDraft((current) => ({
+        ...applyAccountType(current, tipoSugerido),
+        plan: requested,
+      }))
     }
   }, [locale])
 
@@ -257,7 +260,7 @@ export default function RegisterPage() {
           </div>
 
           <div className="reg-options" role="radiogroup" aria-labelledby="reg-plan-title">
-            {(['gratuita', 'profesional', 'agencia'] as PlanName[]).map((value) => {
+            {PLAN_NAMES.map((value) => {
               const limits = PLAN_LIMITS[value]
               return (
                 <button

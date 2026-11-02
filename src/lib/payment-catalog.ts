@@ -3,7 +3,7 @@ export const CREDIT_PACKAGES = [
   { creditos: 2, precio: 1 }, { creditos: 15, precio: 5 },
   { creditos: 40, precio: 10 }, { creditos: 100, precio: 20 },
 ] as const
-export const PLAN_PRICES = { profesional: 9.99, agencia: 39.99 } as const
+export const PLAN_PRICES = { profesional: 9.99, profesional_plus: 19.99, agencia: 39.99 } as const
 export const PAYMENT_METHODS = {
   pagomovil: { nombre: 'Pago Móvil', instrucciones: { telefono: '04126443099', cedula: 'V20794917', banco: 'Banco Provincial BBVA' } },
   binance: { nombre: 'Binance Pay', instrucciones: { id: '204147542' } },

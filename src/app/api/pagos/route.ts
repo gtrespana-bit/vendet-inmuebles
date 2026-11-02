@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuthenticatedUser } from '@/lib/api-auth'
 import { CREDIT_PACKAGES, PLAN_PRICES, recipientData } from '@/lib/payment-catalog'
+import { getPlanRank } from '@/lib/plan-catalog'
 import { getTasaBCV } from '@/lib/tasaBCV'
 import { checkRateLimit } from '@/lib/rate-limit'
 export const dynamic = 'force-dynamic'
@@ -18,7 +19,7 @@ export async function POST(req: NextRequest) {
   if (!limit.ok) return NextResponse.json({ error: 'Demasiados intentos. Espera unos minutos.' }, { status: 429 })
   try {
     const body = await req.json()
-    if (!['creditos','profesional','agencia'].includes(body.concepto)) return NextResponse.json({error:'Concepto inválido'},{status:400})
+    if (!['creditos','profesional','profesional_plus','agencia'].includes(body.concepto)) return NextResponse.json({error:'Concepto inválido'},{status:400})
     if (!['pagomovil','binance'].includes(body.metodo)) return NextResponse.json({ error: 'Método inválido' }, { status: 400 })
     const pack = CREDIT_PACKAGES.find(p => p.creditos === body.creditos)
     const price = body.concepto === 'creditos' ? pack?.precio : PLAN_PRICES[body.concepto as keyof typeof PLAN_PRICES]
@@ -33,7 +34,7 @@ export async function POST(req: NextRequest) {
       }
       if (subscriptions?.some(s => Date.parse(s.inicio)>Date.now())) return NextResponse.json({error:'Ya tienes un cambio de plan pagado programado. Revisa tus pagos.'},{status:409})
       const current = subscriptions?.[0]
-      if (current && !current.fin && (current.plan === body.concepto || (current.plan === 'agencia' && body.concepto === 'profesional'))) return NextResponse.json({error:'Tu plan actual no tiene fecha de fin. Contacta con soporte antes de pagar.'},{status:409})
+      if (current && !current.fin && getPlanRank(body.concepto) <= getPlanRank(current.plan)) return NextResponse.json({error:'Tu plan actual no tiene fecha de fin. Contacta con soporte antes de pagar.'},{status:409})
     }
     const rate = body.metodo === 'pagomovil' ? await getTasaBCV() : null
     // A stale hard-coded exchange rate must never trigger an automatic activation.
