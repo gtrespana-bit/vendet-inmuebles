@@ -29,6 +29,8 @@ import { buildPageAlternates } from '@/lib/seo-metadata'
 import { claveAmenidad, leerAmenidades, ordenAmenidad } from '@/lib/amenities'
 import PropertyGallery from '@/components/PropertyGallery'
 import PropertyRichMedia from '@/components/PropertyRichMedia'
+import PropertyFinancialEstimator from '@/components/PropertyFinancialEstimator'
+import PropertyVisitScheduler from '@/components/PropertyVisitScheduler'
 import PropertyCard, { type PropertyCardData } from '@/components/PropertyCard'
 import TrackInmueble from '@/components/TrackInmueble'
 import PropertyDetailActions from '@/components/PropertyDetailActions'
@@ -511,7 +513,12 @@ export default async function PropertyDetailPage({ params }: PageProps) {
           </div>
           <PropertyDetailActions
             propertyId={propertyId}
+            propertySlug={property.slug ? String(property.slug) : null}
             title={title}
+            price={numericPrice > 0 ? numericPrice : null}
+            image={images[0] || null}
+            location={location || 'Venezuela'}
+            operation={isRent ? 'alquiler' : 'venta'}
             locale={locale}
             labels={labels}
           />
@@ -617,6 +624,14 @@ export default async function PropertyDetailPage({ params }: PageProps) {
               )}
               {!mapItem && <p className="property-detail__muted">{isEnglish ? 'The exact location is shared by the owner.' : 'La ubicación exacta se coordina directamente con el propietario.'}</p>}
             </section>
+
+            {numericPrice > 0 && (
+              <PropertyFinancialEstimator
+                priceUsd={numericPrice}
+                isRent={isRent}
+                locale={locale}
+              />
+            )}
           </div>
 
           <aside className="property-detail__aside" aria-label={isEnglish ? 'Contact the owner' : 'Contactar al propietario'}>
@@ -720,6 +735,12 @@ export default async function PropertyDetailPage({ params }: PageProps) {
                 {isEnglish ? 'Ask about viewing times, availability and any details you need.' : 'Consulta disponibilidad, horarios para visitar y cualquier detalle que necesites.'}
               </p>
             </section>
+
+            <PropertyVisitScheduler
+              propertyId={propertyId}
+              ownerId={ownerId || null}
+              locale={locale}
+            />
 
             <section className="property-detail__meta">
               <h2>{isEnglish ? 'Listing information' : 'Información del anuncio'}</h2>

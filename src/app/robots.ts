@@ -16,6 +16,7 @@ const PRIVATE_PATHS = [
   '/confirm',
   '/confirmacion',
   '/buscar',
+  '/comparar',
   '/offline',
   '/publicar',
   '/inmueble/editar',

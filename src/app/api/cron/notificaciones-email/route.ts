@@ -4,6 +4,7 @@ import { createServerClient } from '@/lib/supabase-server'
 import { cleanOldRateLimits } from '@/lib/rate-limit'
 import { limpiarNotificacionesEmailAntiguas, procesarNotificacionesEmailPendientes } from '@/lib/notificaciones-email'
 import { alertarPagosPendientesRevision } from '@/lib/pagos-alertas'
+import { procesarAlertasBusquedasGuardadas } from '@/lib/search-alerts-server'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
@@ -56,6 +57,14 @@ async function procesar(request: NextRequest) {
       revisionAntiguos: 0,
       alertaEnviada: false,
     }))
+    // Alertas automáticas de búsquedas guardadas (Etapa B) — best effort
+    const alertasBusquedas = await procesarAlertasBusquedasGuardadas(supabase).catch(() => ({
+      evaluadas: 0,
+      enviadas: 0,
+      omitidasCooldown: 0,
+      omitidasPreferencia: 0,
+      errores: 0,
+    }))
     return NextResponse.json({
       ok: true,
       ...resultado,
@@ -63,6 +72,7 @@ async function procesar(request: NextRequest) {
       rateLimitsLimpiados,
       eventosLimpiados,
       pagosPendientesAntiguos,
+      alertasBusquedas,
     })
   } catch (error: any) {
     console.error('Cron notificaciones-email:', error)

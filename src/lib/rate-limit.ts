@@ -60,6 +60,10 @@ const LIMITS: Record<string, { max: number; windowMs: number }> = {
   'agencia:aceptar': { max: 15, windowMs: 60 * 60 * 1000 },
   // Telemetría interna de errores: máx 25 reportes cada 15 min por IP (anti-inundación)
   'errores:reportar': { max: 25, windowMs: 15 * 60 * 1000 },
+  // Búsquedas guardadas: 40 por hora por usuario
+  'busqueda:guardar': { max: 40, windowMs: 60 * 60 * 1000 },
+  // Solicitudes de visita / consulta rápida: 12 por hora por IP
+  'visita:solicitar': { max: 12, windowMs: 60 * 60 * 1000 },
 }
 
 function getSupabaseClient() {

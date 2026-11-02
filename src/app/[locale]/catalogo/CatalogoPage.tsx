@@ -12,6 +12,7 @@ import { OptimizedProductGrid } from '@/components/OptimizedProductGrid'
 import { CatalogFilters } from '@/components/CatalogFilters'
 import { useProductLoader } from '@/hooks/useProductLoader'
 import { LoadingIndicator } from '@/components/LoadingIndicator'
+import SaveSearchButton from '@/components/SaveSearchButton'
 import { normalizeCatalogSort, sortCatalogProperties, type CatalogSortKey } from '@/lib/catalog-sort'
 import type { CatalogPropertyRecord } from '@/types/property'
 
@@ -292,6 +293,8 @@ export default function CatalogoClient({ initialProducts = [], initialCount = 0 
                   </p>
                 </div>
                 <div className="catalog-head-tools">
+                  <SaveSearchButton />
+
                   <div className="catalog-sort">
                     <label htmlFor="catalog-sort-select" className="sr-only">
                       {t('catalog.sort')}

@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { ArrowUpRight, Bath, BedDouble, Camera, Compass, MapPin, Ruler, Video } from 'lucide-react'
 import LocalLink from './LocalLink'
 import FavoriteCardButton from './FavoriteCardButton'
+import CompareCardButton from './CompareCardButton'
 import { isOptimizableImageSrc } from '@/lib/image-src'
 import { calculatePricePerM2 } from '@/lib/urbanizaciones'
 import type { CatalogPropertyRecord } from '@/types/property'
@@ -81,6 +82,16 @@ export const ProductCardLazy = ({ p, t, priority = false }: ProductCardLazyProps
         propertyId={p.id}
         propertySlug={p.slug}
         ownerId={p.usuario_id || p.user_id || null}
+        locale={locale}
+      />
+      <CompareCardButton
+        propertyId={p.id}
+        propertySlug={p.slug}
+        title={title}
+        price={price}
+        image={imageUrl}
+        location={location}
+        operation={isRent ? 'alquiler' : 'venta'}
         locale={locale}
       />
       <LocalLink href={`/inmueble/${p.slug || p.id}`} className="property-card__link group" aria-label={`${title} · ${location}`}>

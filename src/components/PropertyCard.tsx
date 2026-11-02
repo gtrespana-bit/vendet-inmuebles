@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { ArrowUpRight, Bath, BedDouble, Camera, Compass, MapPin, Ruler, Video } from 'lucide-react'
 import { isOptimizableImageSrc } from '@/lib/image-src'
 import FavoriteCardButton from '@/components/FavoriteCardButton'
+import CompareCardButton from '@/components/CompareCardButton'
 import { calculatePricePerM2 } from '@/lib/urbanizaciones'
 
 export interface PropertyCardData {
@@ -99,6 +100,16 @@ export default function PropertyCard({ property, locale, priority = false, label
         propertyId={property.id}
         propertySlug={property.slug}
         ownerId={property.owner_id}
+        locale={locale}
+      />
+      <CompareCardButton
+        propertyId={property.id}
+        propertySlug={property.slug}
+        title={property.title}
+        price={property.price}
+        image={imageUrl}
+        location={location || 'Venezuela'}
+        operation={isRent ? 'alquiler' : 'venta'}
         locale={locale}
       />
       <Link href={href} className="property-card__link group" aria-label={`${property.title} · ${location || 'Venezuela'}`}>

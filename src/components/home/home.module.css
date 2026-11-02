@@ -841,6 +841,13 @@
   color: #fffdf9;
 }
 
+.cardCompare {
+  position: absolute;
+  top: 11px;
+  right: 51px;
+  z-index: 2;
+}
+
 .cardMediaPills {
   position: absolute;
   bottom: 10px;

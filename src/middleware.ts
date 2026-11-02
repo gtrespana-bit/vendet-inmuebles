@@ -14,7 +14,7 @@ const CITY_SLUGS = new Set(CIUDADES_SEO.map((c) => c.slug))
 
 // Segmentos únicos válidos que NO son ciudades (páginas estáticas y privadas).
 const STATIC_SEGMENTS = new Set([
-  'catalogo', 'mapa', 'buscar', 'blog', 'como-funciona', 'como-instalar-app',
+  'catalogo', 'mapa', 'buscar', 'comparar', 'blog', 'como-funciona', 'como-instalar-app',
   'contacto', 'creditos', 'pagos', 'planes', 'sobre-nosotros', 'faq',
   'terminos-y-condiciones', 'politica-de-privacidad', 'publicar', 'publicar-inmueble',
   'offline',
