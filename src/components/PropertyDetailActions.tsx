@@ -105,6 +105,18 @@ export default function PropertyDetailActions({
   async function shareProperty() {
     const url = window.location.href
     try {
+      const payload = JSON.stringify({
+        tipo: 'compartir',
+        ruta: window.location.pathname,
+        meta: { inmueble_id: propertyId },
+      })
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon('/api/track', new Blob([payload], { type: 'application/json' }))
+      }
+    } catch {
+      // silencioso
+    }
+    try {
       if (navigator.share) {
         await navigator.share({ title, text: title, url })
         return

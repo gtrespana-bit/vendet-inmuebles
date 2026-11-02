@@ -14,6 +14,7 @@ import {
   MapPin,
   MessageCircle,
   Phone,
+  Star,
   UserCheck,
   Video,
   XCircle,
@@ -140,6 +141,58 @@ export default function TabVisitasLeads({
   useEffect(() => {
     void loadItems()
   }, [loadItems])
+
+  const [reviewOpenVisitId, setReviewOpenVisitId] = useState<string | null>(null)
+  const [reviewScore, setReviewScore] = useState<number>(5)
+  const [reviewComment, setReviewComment] = useState<string>('')
+  const [submittingReview, setSubmittingReview] = useState<boolean>(false)
+  const [reviewedVisitIds, setReviewedVisitIds] = useState<Record<string, boolean>>({})
+
+  async function submitVisitReview(item: VisitaItem) {
+    if (submittingReview) return
+    setSubmittingReview(true)
+    try {
+      const headers = {
+        'Content-Type': 'application/json',
+        ...(await getSupabaseAuthHeaders()),
+      }
+      const res = await fetch('/api/resenas', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          producto_id: item.inmueble_id,
+          puntuacion: reviewScore,
+          comentario: reviewComment.trim() || null,
+        }),
+      })
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        if (res.status === 409) {
+          setReviewedVisitIds((prev) => ({ ...prev, [item.id]: true }))
+          setReviewOpenVisitId(null)
+        }
+        onToast?.(
+          json.error ||
+            (isEn ? 'Could not submit verified review' : 'No se pudo registrar la calificación'),
+        )
+        return
+      }
+      setReviewedVisitIds((prev) => ({ ...prev, [item.id]: true }))
+      setReviewOpenVisitId(null)
+      setReviewComment('')
+      setReviewScore(5)
+      onToast?.(
+        isEn
+          ? '⭐ Thank you! Your verified tour review has been published.'
+          : '⭐ ¡Gracias! Tu reseña de visita confirmada ya es pública.',
+      )
+      setTimeout(() => onToast?.(null), 4000)
+    } catch {
+      onToast?.(isEn ? 'Connection error' : 'Error de conexión')
+    } finally {
+      setSubmittingReview(false)
+    }
+  }
 
   async function updateVisit(
     id: string,
@@ -660,19 +713,107 @@ export default function TabVisitasLeads({
                 </div>
 
                 {isSentView ? (
-                  (item.estado === 'pendiente' || item.estado === 'confirmada') && (
-                    <div className="mt-3 pt-3 border-t border-[#f0ebe1] flex items-center justify-end">
-                      <button
-                        type="button"
-                        disabled={updatingId === item.id}
-                        onClick={() => updateVisit(item.id, { estado: 'cancelada' }, 'sent')}
-                        className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 px-3 py-1 text-xs font-semibold disabled:opacity-50"
-                      >
-                        <XCircle size={13} />{' '}
-                        {isEn ? 'Cancel my request' : 'Cancelar mi solicitud'}
-                      </button>
+                  <div className="mt-3 pt-3 border-t border-[#f0ebe1] space-y-2.5">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      {(item.estado === 'confirmada' || item.estado === 'atendida') && (
+                        reviewedVisitIds[item.id] ? (
+                          <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700">
+                            <CheckCircle2 size={13} />
+                            {isEn ? 'Verified review submitted' : 'Calificación enviada'}
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setReviewOpenVisitId(reviewOpenVisitId === item.id ? null : item.id)
+                              setReviewScore(5)
+                              setReviewComment('')
+                            }}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-900 px-3 py-1 text-xs font-bold transition"
+                          >
+                            <Star size={13} className="fill-amber-400 text-amber-500" />
+                            <span>
+                              {isEn ? 'Rate advisor attention' : 'Calificar atención del asesor'}
+                            </span>
+                          </button>
+                        )
+                      )}
+
+                      {(item.estado === 'pendiente' || item.estado === 'confirmada') && (
+                        <button
+                          type="button"
+                          disabled={updatingId === item.id}
+                          onClick={() => updateVisit(item.id, { estado: 'cancelada' }, 'sent')}
+                          className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 px-3 py-1 text-xs font-semibold disabled:opacity-50 ml-auto"
+                        >
+                          <XCircle size={13} />{' '}
+                          {isEn ? 'Cancel my request' : 'Cancelar mi solicitud'}
+                        </button>
+                      )}
                     </div>
-                  )
+
+                    {reviewOpenVisitId === item.id && (
+                      <div className="rounded-xl border border-[#e7dfd1] bg-[#faf8f4] p-3.5 space-y-2.5">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <span className="text-xs font-bold text-[#16294B]">
+                            {isEn
+                              ? 'How was your visit / video tour experience?'
+                              : '¿Cómo fue la puntualidad y atención durante la visita?'}
+                          </span>
+                          <div className="inline-flex items-center gap-1">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <button
+                                key={star}
+                                type="button"
+                                onClick={() => setReviewScore(star)}
+                                aria-label={`${star} ${isEn ? 'stars' : 'estrellas'}`}
+                                className="p-0.5"
+                              >
+                                <Star
+                                  size={18}
+                                  className={
+                                    star <= reviewScore
+                                      ? 'fill-amber-400 text-amber-400'
+                                      : 'text-slate-300'
+                                  }
+                                />
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <textarea
+                          rows={2}
+                          maxLength={1000}
+                          value={reviewComment}
+                          onChange={(e) => setReviewComment(e.target.value)}
+                          placeholder={
+                            isEn
+                              ? 'Optional comment about communication, accuracy of photos, punctuality…'
+                              : 'Comentario opcional sobre puntualidad, trato y veracidad del inmueble…'
+                          }
+                          className="w-full rounded-lg border border-[#dfd8cc] bg-white px-3 py-1.5 text-xs"
+                        />
+                        <div className="flex justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setReviewOpenVisitId(null)}
+                            className="rounded-lg border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600"
+                          >
+                            {isEn ? 'Cancel' : 'Cancelar'}
+                          </button>
+                          <button
+                            type="button"
+                            disabled={submittingReview}
+                            onClick={() => submitVisitReview(item)}
+                            className="inline-flex items-center gap-1 rounded-lg bg-[#16294B] text-white px-3 py-1 text-xs font-bold hover:bg-[#0f1e38] disabled:opacity-50"
+                          >
+                            {submittingReview && <Loader2 size={12} className="animate-spin" />}
+                            <span>{isEn ? 'Submit review' : 'Publicar calificación'}</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 ) : (
                   <div className="mt-3 pt-3 border-t border-[#f0ebe1] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="flex flex-wrap items-center gap-1.5">

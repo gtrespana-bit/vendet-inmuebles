@@ -52,6 +52,7 @@ export function Footer() {
 
         <nav className="site-footer__links" aria-label={t('footer.information')}>
           <h2>{t('footer.information')}</h2>
+          <LocalLink href="/asesores">{en ? 'Agencies & Advisors' : 'Inmobiliarias y asesores'}</LocalLink>
           {informationLinks.map((link) => <LocalLink key={link.href} href={link.href}>{link.label}</LocalLink>)}
           <LocalLink href="/planes">{en ? 'Plans & Pricing' : 'Planes y tarifas'}</LocalLink>
           <LocalLink href="/faq">FAQ</LocalLink>

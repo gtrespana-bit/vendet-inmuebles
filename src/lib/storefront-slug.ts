@@ -7,7 +7,9 @@ const SLUG_REGEX = /^[a-z0-9](?:[a-z0-9-]{1,48}[a-z0-9])$/
 
 export const RESERVED_STOREFRONT_SLUGS = new Set([
   'admin',
+  'agencias',
   'api',
+  'asesores',
   'auth',
   'ayuda',
   'blog',

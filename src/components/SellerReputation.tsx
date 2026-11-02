@@ -25,14 +25,15 @@ const NIVELES: Record<number, { nombre: string; desc: string; bg: string; text: 
 }
 
 const BADGE_CONFIG: Record<string, { label: string; color: string; tooltip: string }> = {
-  vendedor_activo: { label: '🟢 Vendedor Activo', color: 'bg-green-100 text-green-800 border-green-200', tooltip: 'Publicó en los últimos 7 días' },
+  vendedor_activo: { label: '🟢 Vendedor Activo', color: 'bg-green-100 text-green-800 border-green-200', tooltip: 'Cartera activa o publicación reciente' },
+  atencion_visitas: { label: '📅 Visitas Verificadas', color: 'bg-teal-100 text-teal-800 border-teal-200', tooltip: '3+ visitas o videollamadas confirmadas/atendidas' },
   '10_ventas': { label: '📦 10+ ventas', color: 'bg-blue-100 text-blue-700 border-blue-200', tooltip: 'Más de 10 ventas' },
   '20_ventas': { label: '📦 20+ ventas', color: 'bg-blue-100 text-blue-800 border-blue-200', tooltip: 'Más de 20 ventas' },
   '50_ventas': { label: '🏆 50+ ventas', color: 'bg-purple-100 text-purple-800 border-purple-200', tooltip: 'Más de 50 ventas' },
   '20_publicaciones': { label: '📋 20+ publicaciones', color: 'bg-gray-100 text-gray-700 border-gray-200', tooltip: 'Más de 20 publicaciones' },
   '50_publicaciones': { label: '📋 50+ publicaciones', color: 'bg-gray-100 text-gray-800 border-gray-200', tooltip: 'Más de 50 publicaciones' },
   '100_publicaciones': { label: '⭐ 100+ publicaciones', color: 'bg-yellow-100 text-yellow-800 border-yellow-200', tooltip: 'Más de 100 publicaciones en total' },
-  buena_reputacion: { label: '⭐ Buena reputación', color: 'bg-amber-100 text-amber-800 border-amber-200', tooltip: '5+ reseñas con promedio 4.0+' },
+  buena_reputacion: { label: '⭐ Buena reputación', color: 'bg-amber-100 text-amber-800 border-amber-200', tooltip: '3+ reseñas con promedio 4.0+' },
   top_vendedor: { label: '👑 Top Vendedor', color: 'bg-yellow-100 text-amber-900 border-amber-300', tooltip: '10+ reseñas con promedio 4.5+' },
 }
 

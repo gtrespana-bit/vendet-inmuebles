@@ -176,13 +176,16 @@ export function buildSitemapEntries({
     buildLocalizedPair(`/blog/${post.slug}`, 0.7, 'monthly', post.lastModified)
   )
 
-  // 4. Escaparates públicos verificados / con cartera activa
-  const sellerEntries: MetadataRoute.Sitemap = sellers.flatMap((seller) => {
-    const idOrSlug = (seller.slug && seller.slug.trim()) || seller.id
-    if (!idOrSlug) return []
-    const mod = parseValidDate(seller.ultima_actividad || seller.creado_en)
-    return buildLocalizedPair(`/vendedor/${idOrSlug}`, 0.6, 'weekly', mod)
-  })
+  // 4. Escaparates públicos verificados / con cartera activa + Directorio (solo si existe al menos 1 perfil activo)
+  const sellerEntries: MetadataRoute.Sitemap = [
+    ...(sellers.length > 0 ? buildLocalizedPair('/asesores', 0.75, 'daily', latestAnyProperty) : []),
+    ...sellers.flatMap((seller) => {
+      const idOrSlug = (seller.slug && seller.slug.trim()) || seller.id
+      if (!idOrSlug) return []
+      const mod = parseValidDate(seller.ultima_actividad || seller.creado_en)
+      return buildLocalizedPair(`/vendedor/${idOrSlug}`, 0.6, 'weekly', mod)
+    }),
+  ]
 
   // Deduplicación estricta por URL exacta
   const seenUrls = new Set<string>()
