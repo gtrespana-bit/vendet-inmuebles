@@ -6,6 +6,7 @@ import { fetchListingsByLocation, resolveCityByParam, resolveStateByParam } from
 import { buildPageAlternates } from '@/lib/seo-metadata'
 import Breadcrumbs from '@/components/Breadcrumbs'
 import PropertyCard from '@/components/PropertyCard'
+import SaveSearchButton from '@/components/SaveSearchButton'
 
 interface PageProps {
   params: Promise<{ locale: string; estado: string; ciudad: string }>
@@ -86,11 +87,18 @@ export default async function AlquilerPorCiudadPage({ params }: PageProps) {
         ]}
       />
 
-      <h1 className="text-3xl font-bold mt-4 mb-6">
-        {isEn
-          ? `Properties for rent in ${cityName}, ${stateName}`
-          : `Propiedades en alquiler en ${cityName}, ${stateName}`}
-      </h1>
+      <div className="flex flex-wrap items-end justify-between gap-4 mt-4 mb-6">
+        <h1 className="text-3xl font-bold m-0">
+          {isEn
+            ? `Properties for rent in ${cityName}, ${stateName}`
+            : `Propiedades en alquiler en ${cityName}, ${stateName}`}
+        </h1>
+
+        <SaveSearchButton
+          presetFilters={{ operacion: 'alquiler', estado: stateName, ciudad: cityName }}
+          label={isEn ? `Alert rentals in ${cityName}` : `Crear alerta en ${cityName}`}
+        />
+      </div>
 
       {hasError ? (
         <p role="alert" className="text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-4">

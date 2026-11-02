@@ -3,8 +3,10 @@ import { createServerClient } from '@/lib/supabase-server'
 import { requireAuthenticatedUser } from '@/lib/api-auth'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { isValidUUID } from '@/lib/validation'
-import { emailNuevaSolicitudVisita } from '@/lib/server-email'
+import { emailEstadoSolicitudVisita, emailNuevaSolicitudVisita } from '@/lib/server-email'
+import { notifyUser } from '@/lib/push-notify'
 import { registrarEvento, rutaDesdeReferer } from '@/lib/analytics-server'
+import { buildGoogleCalendarUrl } from '@/lib/visit-calendar'
 
 export const dynamic = 'force-dynamic'
 
@@ -159,7 +161,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: insErr.message }, { status: 500 })
   }
 
-  // Notificación inmediata por correo al asesor asignado o propietario (best effort)
+  // Notificación inmediata por Push + Correo al asesor asignado o propietario (best effort)
+  void notifyUser(supabaseAdmin, destinatarioPrincipalId, {
+    title: '📅 Nueva solicitud de visita',
+    body: `${nombreContacto} desea agendar (${modalidad}) para "${String(inmueble.titulo || 'tu inmueble')}"`,
+    tag: `visita-${inserted.id}`,
+    icon: '/icon-192.png',
+    click_url: '/dashboard?tab=visitas',
+  }).catch(() => undefined)
+
   void (async () => {
     try {
       const { data: perfilDest } = await supabaseAdmin
@@ -208,8 +218,10 @@ export async function POST(req: NextRequest) {
 
 /**
  * GET /api/visitas
- * Lista las solicitudes de visita recibidas por el usuario autenticado
- * (como propietario, asesor asignado o titular/admin de agencia).
+ * Devuelve:
+ *  - `items`: solicitudes recibidas (como propietario, asesor asignado o titular/admin de agencia)
+ *  - `sentItems`: visitas agendadas por el propio usuario como comprador (`solicitante_user_id`)
+ *  - `pendingCount`: cantidad de leads recibidos pendientes de respuesta
  */
 export async function GET(req: NextRequest) {
   const auth = await requireAuthenticatedUser(req)
@@ -217,7 +229,6 @@ export async function GET(req: NextRequest) {
 
   const userId = auth.user.id
 
-  // Verificar si administra alguna agencia para incluir los leads de su cartera
   const [{ data: ownedAgencies }, { data: adminMemberships }] = await Promise.all([
     auth.supabaseAdmin.from('agencias').select('id').eq('owner_id', userId),
     auth.supabaseAdmin
@@ -240,47 +251,102 @@ export async function GET(req: NextRequest) {
     orClauses.push(`agencia_id.in.(${managedAgencyIds.join(',')})`)
   }
 
-  const { data: rows, error } = await auth.supabaseAdmin
-    .from('solicitudes_visita')
-    .select(
-      'id, inmueble_id, propietario_id, agencia_id, agente_id, nombre_contacto, telefono_contacto, email_contacto, modalidad, fecha_preferida, franja_horaria, mensaje, estado, nota_vendedor, creado_en, actualizado_en',
-    )
-    .or(orClauses.join(','))
-    .order('creado_en', { ascending: false })
-    .limit(100)
+  const [{ data: receivedRows, error: recErr }, { data: sentRows, error: sentErr }] = await Promise.all([
+    auth.supabaseAdmin
+      .from('solicitudes_visita')
+      .select(
+        'id, inmueble_id, propietario_id, agencia_id, agente_id, solicitante_user_id, nombre_contacto, telefono_contacto, email_contacto, modalidad, fecha_preferida, franja_horaria, mensaje, estado, nota_vendedor, creado_en, actualizado_en',
+      )
+      .or(orClauses.join(','))
+      .order('creado_en', { ascending: false })
+      .limit(100),
+    auth.supabaseAdmin
+      .from('solicitudes_visita')
+      .select(
+        'id, inmueble_id, propietario_id, agencia_id, agente_id, solicitante_user_id, nombre_contacto, telefono_contacto, email_contacto, modalidad, fecha_preferida, franja_horaria, mensaje, estado, nota_vendedor, creado_en, actualizado_en',
+      )
+      .eq('solicitante_user_id', userId)
+      .order('creado_en', { ascending: false })
+      .limit(50),
+  ])
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  if (recErr) {
+    return NextResponse.json({ error: recErr.message }, { status: 500 })
+  }
+  if (sentErr) {
+    return NextResponse.json({ error: sentErr.message }, { status: 500 })
   }
 
+  const allRows = [...(receivedRows || []), ...(sentRows || [])]
   const propIds = Array.from(
-    new Set((rows || []).map((r: any) => String(r.inmueble_id)).filter(isValidUUID)),
+    new Set(allRows.map((r: any) => String(r.inmueble_id)).filter(isValidUUID)),
+  )
+  const advisorIds = Array.from(
+    new Set(
+      allRows
+        .map((r: any) => String(r.agente_id || r.propietario_id || ''))
+        .filter(isValidUUID),
+    ),
   )
 
   const propMap = new Map<string, any>()
-  if (propIds.length > 0) {
-    const { data: props } = await auth.supabaseAdmin
-      .from('inmuebles')
-      .select('id, titulo, slug, imagen_url, precio, moneda, ciudad, estado, zona')
-      .in('id', propIds)
+  const advisorMap = new Map<string, { nombre: string | null; telefono: string | null }>()
 
-    for (const p of props || []) {
-      propMap.set(String(p.id), p)
+  await Promise.all([
+    propIds.length > 0
+      ? auth.supabaseAdmin
+          .from('inmuebles')
+          .select('id, titulo, slug, imagen_url, precio, moneda, ciudad, estado, zona')
+          .in('id', propIds)
+          .then(({ data }) => {
+            for (const p of data || []) propMap.set(String(p.id), p)
+          })
+      : Promise.resolve(),
+    advisorIds.length > 0
+      ? auth.supabaseAdmin
+          .from('perfiles')
+          .select('id, nombre, telefono')
+          .in('id', advisorIds)
+          .then(({ data }) => {
+            for (const u of data || []) {
+              advisorMap.set(String(u.id), {
+                nombre: u.nombre ? String(u.nombre) : null,
+                telefono: u.telefono ? String(u.telefono) : null,
+              })
+            }
+          })
+      : Promise.resolve(),
+  ])
+
+  const enrichRow = (r: any) => {
+    const advisorKey = String(r.agente_id || r.propietario_id || '')
+    const advisor = advisorMap.get(advisorKey) || null
+    const agentOnly = r.agente_id ? advisorMap.get(String(r.agente_id)) || null : null
+    return {
+      ...r,
+      inmueble: propMap.get(String(r.inmueble_id)) || null,
+      agente_nombre: agentOnly?.nombre || null,
+      asesor_contacto: advisor,
     }
   }
 
-  const enriched = (rows || []).map((r: any) => ({
-    ...r,
-    inmueble: propMap.get(String(r.inmueble_id)) || null,
-  }))
+  const enrichedReceived = (receivedRows || []).map(enrichRow)
+  const enrichedSent = (sentRows || []).map(enrichRow)
+  const pendingCount = enrichedReceived.filter((r: any) => r.estado === 'pendiente').length
 
-  return NextResponse.json({ ok: true, items: enriched })
+  return NextResponse.json({
+    ok: true,
+    items: enrichedReceived,
+    sentItems: enrichedSent,
+    pendingCount,
+  })
 }
 
 /**
  * PATCH /api/visitas
- * Actualiza el estado (`pendiente`, `confirmada`, `atendida`, `cancelada`)
- * o la nota interna del vendedor sobre una solicitud de visita.
+ * - El asesor/propietario/admin de agencia actualiza `estado` o `nota_vendedor`
+ *   (y notifica por correo/push al comprador cuando confirma o cancela).
+ * - El comprador autenticado (`solicitante_user_id`) puede cancelar su propia solicitud pendiente/confirmada.
  */
 export async function PATCH(req: NextRequest) {
   const auth = await requireAuthenticatedUser(req)
@@ -300,7 +366,9 @@ export async function PATCH(req: NextRequest) {
 
   const { data: current, error: fetchErr } = await auth.supabaseAdmin
     .from('solicitudes_visita')
-    .select('id, propietario_id, agente_id, agencia_id')
+    .select(
+      'id, inmueble_id, propietario_id, agente_id, agencia_id, solicitante_user_id, nombre_contacto, email_contacto, modalidad, fecha_preferida, franja_horaria, estado, nota_vendedor',
+    )
     .eq('id', id)
     .maybeSingle()
 
@@ -308,10 +376,10 @@ export async function PATCH(req: NextRequest) {
   if (!current) return NextResponse.json({ error: 'Solicitud no encontrada' }, { status: 404 })
 
   const userId = auth.user.id
-  let authorized =
-    current.propietario_id === userId || (current.agente_id && current.agente_id === userId)
+  let isRecipient =
+    current.propietario_id === userId || Boolean(current.agente_id && current.agente_id === userId)
 
-  if (!authorized && current.agencia_id) {
+  if (!isRecipient && current.agencia_id) {
     const [{ data: ownerRow }, { data: adminRow }] = await Promise.all([
       auth.supabaseAdmin
         .from('agencias')
@@ -328,10 +396,16 @@ export async function PATCH(req: NextRequest) {
         .in('rol', ['owner', 'admin'])
         .maybeSingle(),
     ])
-    authorized = Boolean(ownerRow || adminRow)
+    isRecipient = Boolean(ownerRow || adminRow)
   }
 
-  if (!authorized) {
+  const isRequesterCancelling =
+    !isRecipient &&
+    Boolean(current.solicitante_user_id && current.solicitante_user_id === userId) &&
+    body.estado === 'cancelada' &&
+    (current.estado === 'pendiente' || current.estado === 'confirmada')
+
+  if (!isRecipient && !isRequesterCancelling) {
     return NextResponse.json({ error: 'No autorizado' }, { status: 403 })
   }
 
@@ -339,12 +413,15 @@ export async function PATCH(req: NextRequest) {
     actualizado_en: new Date().toISOString(),
   }
 
-  if (typeof body.estado === 'string' && ESTADOS_VALIDOS.has(body.estado)) {
-    updates.estado = body.estado
-  }
-
-  if (body.nota_vendedor !== undefined) {
-    updates.nota_vendedor = sanitizePlainText(body.nota_vendedor, 500) || null
+  if (isRequesterCancelling) {
+    updates.estado = 'cancelada'
+  } else {
+    if (typeof body.estado === 'string' && ESTADOS_VALIDOS.has(body.estado)) {
+      updates.estado = body.estado
+    }
+    if (body.nota_vendedor !== undefined) {
+      updates.nota_vendedor = sanitizePlainText(body.nota_vendedor, 500) || null
+    }
   }
 
   const { data: updated, error: updErr } = await auth.supabaseAdmin
@@ -355,5 +432,107 @@ export async function PATCH(req: NextRequest) {
     .single()
 
   if (updErr) return NextResponse.json({ error: updErr.message }, { status: 500 })
+
+  const nuevoEstado = String(updated.estado || '')
+  const cambioEstado = nuevoEstado !== String(current.estado || '')
+
+  // Si el comprador canceló su propia cita, avisar por push al asesor
+  if (isRequesterCancelling && cambioEstado) {
+    const advisorDestId = String(current.agente_id || current.propietario_id)
+    void notifyUser(auth.supabaseAdmin, advisorDestId, {
+      title: 'Visita cancelada por el interesado',
+      body: `${String(current.nombre_contacto || 'El interesado')} canceló su solicitud de visita.`,
+      tag: `visita-cancel-${current.id}`,
+      icon: '/icon-192.png',
+      click_url: '/dashboard?tab=visitas',
+    }).catch(() => undefined)
+  }
+
+  // Si el asesor confirmó o canceló la cita, avisar al comprador por Push y Correo
+  if (
+    isRecipient &&
+    cambioEstado &&
+    (nuevoEstado === 'confirmada' || nuevoEstado === 'cancelada')
+  ) {
+    void (async () => {
+      try {
+        const [{ data: prop }, { data: advisor }] = await Promise.all([
+          auth.supabaseAdmin
+            .from('inmuebles')
+            .select('id, titulo, slug, ciudad, estado, zona')
+            .eq('id', current.inmueble_id)
+            .maybeSingle(),
+          auth.supabaseAdmin
+            .from('perfiles')
+            .select('nombre, telefono')
+            .eq('id', userId)
+            .maybeSingle(),
+        ])
+
+        const tituloInmueble = String(prop?.titulo || 'Inmueble en Venezuela')
+        const slugOrId = String(prop?.slug || current.inmueble_id)
+        const baseSite =
+          process.env.NEXT_PUBLIC_SITE_URL || 'https://venezuela-inmuebles.online'
+        const propertyUrl = `${baseSite}/inmueble/${encodeURIComponent(slugOrId)}`
+        const ubicacionInmueble = [prop?.zona, prop?.ciudad, prop?.estado]
+          .filter(Boolean)
+          .join(', ')
+
+        if (current.solicitante_user_id) {
+          await notifyUser(auth.supabaseAdmin, String(current.solicitante_user_id), {
+            title:
+              nuevoEstado === 'confirmada'
+                ? '✅ Tu visita fue confirmada'
+                : 'Actualización de tu solicitud de visita',
+            body:
+              nuevoEstado === 'confirmada'
+                ? `Confirmada tu solicitud para "${tituloInmueble}".`
+                : `Revisa el estado de tu solicitud para "${tituloInmueble}".`,
+            tag: `visita-estado-${current.id}`,
+            icon: '/icon-192.png',
+            click_url: '/dashboard?tab=visitas',
+          }).catch(() => undefined)
+        }
+
+        const emailComp = current.email_contacto ? String(current.email_contacto).trim() : ''
+        if (emailComp && EMAIL_SIMPLE_RX.test(emailComp)) {
+          const calendarUrl = current.fecha_preferida
+            ? buildGoogleCalendarUrl({
+                id: String(current.id),
+                propertyTitle: tituloInmueble,
+                propertyUrl,
+                location: ubicacionInmueble || 'Venezuela',
+                modalidad: current.modalidad as 'presencial' | 'videollamada' | 'llamada',
+                fechaPreferida: String(current.fecha_preferida),
+                franjaHoraria: current.franja_horaria,
+                counterpartyName: advisor?.nombre ? String(advisor.nombre) : undefined,
+                notes: updated.nota_vendedor ? String(updated.nota_vendedor) : undefined,
+                locale: 'es',
+              })
+            : null
+
+          await emailEstadoSolicitudVisita({
+            emailComprador: emailComp,
+            nombreComprador: String(current.nombre_contacto || 'interesado'),
+            nombreAsesor: String(advisor?.nombre || 'Asesor inmobiliario'),
+            telefonoAsesor: advisor?.telefono ? String(advisor.telefono) : null,
+            tituloInmueble,
+            slugInmueble: prop?.slug ? String(prop.slug) : null,
+            inmuebleId: String(current.inmueble_id),
+            ubicacionInmueble: ubicacionInmueble || null,
+            estado: nuevoEstado as 'confirmada' | 'cancelada',
+            modalidad: current.modalidad as 'presencial' | 'videollamada' | 'llamada',
+            fechaPreferida: current.fecha_preferida ? String(current.fecha_preferida) : null,
+            franjaHoraria: current.franja_horaria ? String(current.franja_horaria) : null,
+            notaVendedor: updated.nota_vendedor ? String(updated.nota_vendedor) : null,
+            calendarUrl,
+          })
+        }
+      } catch (err) {
+        console.error('Aviso comprador cambio estado visita:', err)
+      }
+    })()
+  }
+
   return NextResponse.json({ ok: true, item: updated })
 }

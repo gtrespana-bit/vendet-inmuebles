@@ -5,6 +5,7 @@ import { requireUUIDs } from '@/lib/validation'
 import { notifyUser } from '@/lib/push-notify'
 import { notificarPropiedadModerada } from '@/lib/email-eventos'
 import { isPlanQuotaError, planQuotaResponse } from '@/lib/quota-errors'
+import { dispararAlertasInmediatasPorInmueble } from '@/lib/search-alerts-server'
 
 export async function POST(req: NextRequest) {
   try {
@@ -63,6 +64,12 @@ export async function POST(req: NextRequest) {
       aprobada,
       motivo: aprobada ? null : 'El contenido no cumple nuestras normas de publicación.',
     })
+
+    if (aprobada) {
+      void dispararAlertasInmediatasPorInmueble(auth.supabaseAdmin, product.id).catch((err) => {
+        console.error('Alertas inmediatas tras moderación:', err)
+      })
+    }
 
     revalidatePath('/')
     revalidatePath('/catalogo')

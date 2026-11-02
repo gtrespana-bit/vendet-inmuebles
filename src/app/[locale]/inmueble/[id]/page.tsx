@@ -630,6 +630,17 @@ export default async function PropertyDetailPage({ params }: PageProps) {
                 priceUsd={numericPrice}
                 isRent={isRent}
                 locale={locale}
+                listingPricePerM2={pricePerM2}
+                comparablePricesPerM2={similarProperties
+                  .map((s) => calculatePricePerM2(s.price, s.built_area, s.area_size))
+                  .filter((x): x is number => x != null && x > 0)}
+                areaLabel={
+                  property.zona
+                    ? String(property.zona)
+                    : property.ciudad
+                      ? String(property.ciudad)
+                      : null
+                }
               />
             )}
           </div>
@@ -738,6 +749,9 @@ export default async function PropertyDetailPage({ params }: PageProps) {
 
             <PropertyVisitScheduler
               propertyId={propertyId}
+              propertyTitle={title}
+              propertySlug={property.slug ? String(property.slug) : null}
+              location={location || null}
               ownerId={ownerId || null}
               locale={locale}
             />

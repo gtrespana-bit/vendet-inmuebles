@@ -17,10 +17,17 @@ import {
   toggleCompareItem,
 } from '../src/lib/property-compare.ts'
 import {
+  computeZonePriceBenchmark,
   estimateDirectFinancing,
   estimateRentalMoveIn,
   estimateRentalYield,
 } from '../src/lib/financial-estimator.ts'
+import {
+  buildGoogleCalendarUrl,
+  buildVisitIcsContent,
+  buildVisitsCsv,
+  resolveVenezuelaVisitUtcWindow,
+} from '../src/lib/visit-calendar.ts'
 import {
   normalizarRutaParaAgrupacion,
   sanitizarUrlRuta,
@@ -218,6 +225,84 @@ test('Etapa B — Calculadora inmobiliaria venezolana: financiamiento directo, B
   })
   assert.equal(moveIn.totalMoveInUsd, 1800)
   assert.equal(moveIn.totalMoveInVes, 81000)
+
+  const benchmark = computeZonePriceBenchmark(820, [950, 1000, 1080, 1120])
+  assert.ok(benchmark)
+  assert.equal(benchmark.medianPricePerM2, 1040)
+  assert.equal(benchmark.positioning, 'below_market')
+  assert.ok(benchmark.deltaPct < -15)
+  assert.equal(computeZonePriceBenchmark(900, [950]), null)
+})
+
+test('Etapa B — Calendario (.ics / Google Calendar VET UTC-4) y exportación CSV anti-inyección', () => {
+  // 09:30 VET (America/Caracas, UTC-4) === 13:30 UTC
+  const win = resolveVenezuelaVisitUtcWindow('2026-11-14', 'manana')
+  assert.deepEqual(win, {
+    startUtc: '20261114T133000Z',
+    endUtc: '20261114T143000Z',
+  })
+
+  const gcal = buildGoogleCalendarUrl({
+    id: 'vis-123',
+    propertyTitle: 'Casa Quinta en San Diego',
+    propertyUrl: 'https://venezuela-inmuebles.online/inmueble/casa-quinta',
+    location: 'Poblado de San Diego, Carabobo',
+    modalidad: 'presencial',
+    fechaPreferida: '2026-11-14',
+    franjaHoraria: 'manana',
+    counterpartyName: 'María Pérez',
+    notes: 'Confirmado en garita principal',
+    locale: 'es',
+  })
+  assert.ok(gcal)
+  assert.match(gcal, /calendar\.google\.com\/calendar\/render/)
+  assert.match(gcal, /20261114T133000Z%2F20261114T143000Z/)
+  assert.match(gcal, /ctz=America%2FCaracas/)
+
+  const ics = buildVisitIcsContent({
+    id: 'vis-123',
+    propertyTitle: 'Casa Quinta en San Diego',
+    propertyUrl: 'https://venezuela-inmuebles.online/inmueble/casa-quinta',
+    location: 'San Diego, Carabobo',
+    modalidad: 'videollamada',
+    fechaPreferida: '2026-11-14',
+    franjaHoraria: 'tarde',
+    locale: 'es',
+  })
+  assert.ok(ics)
+  assert.match(ics, /BEGIN:VCALENDAR/)
+  assert.match(ics, /DTSTART:20261114T190000Z/)
+  assert.match(ics, /SUMMARY:Videollamada inmueble: Casa Quinta en San Diego/)
+
+  // CSV neutraliza payloads `=CMD(...)` de inyección de fórmulas
+  const csv = buildVisitsCsv([
+    {
+      createdAt: '2026-11-01 14:20',
+      status: 'Pendiente',
+      propertyTitle: 'Casa, "El Bosque"',
+      location: 'Valencia, Carabobo',
+      modality: 'Visita presencial',
+      preferredDate: '2026-11-14',
+      timeSlot: 'Mañana',
+      contactName: '=HYPERLINK("https://evil.example","Click")',
+      contactPhone: '+584121234567',
+      contactEmail: 'comprador@example.com',
+      assignedAgent: 'Ana Gómez',
+      message: 'Me interesa visitar el sábado',
+      sellerNote: '',
+    },
+  ])
+  assert.match(csv, /"'=HYPERLINK\(""https:\/\/evil\.example"",""Click""\)"/)
+})
+
+test('Etapa B — Disparo en tiempo real de alertas inmediatas al publicar o aprobar en moderación', () => {
+  const propertiesRoute = readFileSync('src/app/api/properties/route.ts', 'utf8')
+  const publicarRoute = readFileSync('src/app/api/publicar/route.ts', 'utf8')
+  const moderarRoute = readFileSync('src/app/api/admin/moderar-producto/route.ts', 'utf8')
+
+  assert.match(propertiesRoute, /dispararAlertasInmediatasPorInmueble/)
+  assert.match(publicarRoute, /dispararAlertasInmediatasPorInmueble/)
+  assert.match(moderarRoute, /dispararAlertasInmediatasPorInmueble/)
 })
 
 test('Etapa B — Migración 021 en PostgreSQL (PGlite): RLS estricto para búsquedas y visitas de agencia', async () => {
@@ -260,6 +345,7 @@ test('Etapa B — Migración 021 en PostgreSQL (PGlite): RLS estricto para búsq
   `)
 
   await db.exec(readFileSync('supabase/migrations/021_etapa_b_alertas_visitas_comparador.sql', 'utf8'))
+  await db.exec(readFileSync('supabase/migrations/022_etapa_b_visitas_comprador_rls.sql', 'utf8'))
 
   const uBuyer = (await db.query("INSERT INTO perfiles (nombre) VALUES ('Comprador') RETURNING id")).rows[0].id
   const uAgencyOwner = (await db.query("INSERT INTO perfiles (nombre) VALUES ('Dueño Agencia') RETURNING id")).rows[0].id
@@ -296,13 +382,16 @@ test('Etapa B — Migración 021 en PostgreSQL (PGlite): RLS estricto para búsq
   const strangerSearches = await db.query('SELECT id FROM busquedas_guardadas')
   assert.equal(strangerSearches.rows.length, 0)
 
-  // 2. Solicitudes de visita: insertada vía service_role; visible para agente asignado y dueño de agencia, invisible para uStranger
+  // 2. Solicitudes de visita: insertada vía service_role; visible para comprador, agente asignado y dueño de agencia, invisible para uStranger
   await db.exec('RESET ROLE;')
-  await db.query(
-    `INSERT INTO solicitudes_visita (inmueble_id, propietario_id, agencia_id, agente_id, nombre_contacto, telefono_contacto, modalidad)
-     VALUES ($1, $2, $3, $4, 'María Pérez', '+584121234567', 'presencial')`,
-    [propId, uAgencyOwner, agenciaId, uAgent],
-  )
+  const visitId = (
+    await db.query(
+      `INSERT INTO solicitudes_visita (inmueble_id, propietario_id, agencia_id, agente_id, solicitante_user_id, nombre_contacto, telefono_contacto, modalidad)
+       VALUES ($1, $2, $3, $4, $5, 'María Pérez', '+584121234567', 'presencial')
+       RETURNING id`,
+      [propId, uAgencyOwner, agenciaId, uAgent, uBuyer],
+    )
+  ).rows[0].id
 
   await db.exec(`SET ROLE authenticated; SELECT set_config('request.jwt.claim.sub', '${uAgent}', false);`)
   const agentVisits = await db.query('SELECT id FROM solicitudes_visita')
@@ -315,6 +404,17 @@ test('Etapa B — Migración 021 en PostgreSQL (PGlite): RLS estricto para búsq
   await db.exec(`SELECT set_config('request.jwt.claim.sub', '${uStranger}', false);`)
   const strangerVisits = await db.query('SELECT id FROM solicitudes_visita')
   assert.equal(strangerVisits.rows.length, 0)
+
+  // 3. Migración 022: el comprador autenticado puede autocancelar su cita pero NO autoconfirmarla
+  await db.exec(`SELECT set_config('request.jwt.claim.sub', '${uBuyer}', false);`)
+  await assert.rejects(
+    db.query("UPDATE solicitudes_visita SET estado = 'confirmada' WHERE id = $1", [visitId]),
+  )
+  await db.query("UPDATE solicitudes_visita SET estado = 'cancelada' WHERE id = $1", [visitId])
+  const afterBuyerCancel = await db.query('SELECT estado FROM solicitudes_visita WHERE id = $1', [
+    visitId,
+  ])
+  assert.equal(afterBuyerCancel.rows[0].estado, 'cancelada')
 })
 
 test('Monitor de errores: normaliza slugs dinámicos y descarta _rsc efímero de Next.js', () => {

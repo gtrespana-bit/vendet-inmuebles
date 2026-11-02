@@ -11,6 +11,7 @@ import { canUserManageProperty, getUserAgencyContext } from '@/lib/agency-server
 import { resolveEffectiveAgencyPublisher } from '@/lib/agency'
 import { isValidUUID } from '@/lib/validation'
 import { canPlanIncludeRichMedia, sanitizeExternalMediaUrl } from '@/lib/property-media'
+import { dispararAlertasInmediatasPorInmueble } from '@/lib/search-alerts-server'
 
 export async function POST(req: NextRequest) {
   try {
@@ -241,6 +242,12 @@ export async function POST(req: NextRequest) {
         if (rollbackError) console.error('No se pudo revertir el inmueble:', rollbackError)
         return NextResponse.json({ error: 'No se pudieron guardar las características del inmueble' }, { status: 500 })
       }
+    }
+
+    if (moderacion.estadoModeracion === 'aprobado') {
+      void dispararAlertasInmediatasPorInmueble(supabase, property.id).catch((err) => {
+        console.error('Alertas inmediatas al publicar inmueble:', err)
+      })
     }
 
     // La ficha y el catálogo deben reflejar el anuncio recién creado.

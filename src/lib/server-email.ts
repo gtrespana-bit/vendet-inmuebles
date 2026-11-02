@@ -1011,3 +1011,83 @@ export async function emailNuevaSolicitudVisita(params: {
   )
 }
 
+// ─── 13. Confirmación / Actualización de Visita para el Comprador ──
+
+export async function emailEstadoSolicitudVisita(params: {
+  emailComprador: string
+  nombreComprador: string
+  nombreAsesor: string
+  telefonoAsesor?: string | null
+  tituloInmueble: string
+  slugInmueble?: string | null
+  inmuebleId: string
+  ubicacionInmueble?: string | null
+  estado: 'confirmada' | 'cancelada' | 'atendida'
+  modalidad: 'presencial' | 'videollamada' | 'llamada'
+  fechaPreferida?: string | null
+  franjaHoraria?: string | null
+  notaVendedor?: string | null
+  calendarUrl?: string | null
+}): Promise<boolean> {
+  const fichaUrl = `${URL}/inmueble/${encodeURIComponent(params.slugInmueble || params.inmuebleId)}`
+  const esConfirmada = params.estado === 'confirmada'
+  const esCancelada = params.estado === 'cancelada'
+
+  const modalidadLabel =
+    params.modalidad === 'videollamada'
+      ? 'Videollamada / Recorrido virtual'
+      : params.modalidad === 'llamada'
+        ? 'Llamada telefónica'
+        : 'Visita presencial'
+
+  const franjaLabel: Record<string, string> = {
+    manana: 'Mañana (9:30 a.m.)',
+    tarde: 'Tarde (3:00 p.m.)',
+    fin_de_semana: 'Fin de semana (10:30 a.m.)',
+    flexible: 'Horario acordado con el asesor',
+  }
+
+  const asunto = esConfirmada
+    ? `✅ Visita confirmada: ${params.tituloInmueble}`
+    : esCancelada
+      ? `Actualización de tu solicitud de visita: ${params.tituloInmueble}`
+      : `Gracias por visitar: ${params.tituloInmueble}`
+
+  const encabezado = esConfirmada
+    ? '¡Tu solicitud de visita fue confirmada!'
+    : esCancelada
+      ? 'Tu solicitud de visita requiere reprogramación'
+      : 'Visita registrada como atendida'
+
+  const intro = esConfirmada
+    ? `El asesor <strong>${esc(params.nombreAsesor || 'del inmueble')}</strong> confirmó tu solicitud sobre <a href="${fichaUrl}" style="color:${COLORS.primary};font-weight:700">${esc(params.tituloInmueble)}</a>.`
+    : esCancelada
+      ? `El asesor actualizó el estado de tu solicitud sobre <a href="${fichaUrl}" style="color:${COLORS.primary};font-weight:700">${esc(params.tituloInmueble)}</a>. Si deseas elegir otro horario, puedes responder directamente o reprogramar en la ficha.`
+      : `Registramos como completada tu consulta/visita sobre <a href="${fichaUrl}" style="color:${COLORS.primary};font-weight:700">${esc(params.tituloInmueble)}</a>.`
+
+  return enviar(
+    params.emailComprador,
+    asunto,
+    emailLayout(
+      encabezado,
+      `<p style="margin:0 0 14px">Hola <strong>${esc(params.nombreComprador || 'interesado')}</strong>,</p>
+       <p style="margin:0 0 18px">${intro}</p>
+       ${card(`
+         <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+           ${priceLine('Modalidad', modalidadLabel)}
+           ${params.fechaPreferida ? priceLine('Fecha', esc(params.fechaPreferida)) : ''}
+           ${params.franjaHoraria ? priceLine('Horario', esc(franjaLabel[params.franjaHoraria] || params.franjaHoraria)) : ''}
+           ${params.ubicacionInmueble ? priceLine('Ubicación', esc(params.ubicacionInmueble)) : ''}
+           ${params.telefonoAsesor ? priceLine('Contacto del asesor', esc(params.telefonoAsesor)) : ''}
+         </table>
+         ${params.notaVendedor ? `<div style="margin-top:12px;padding-top:12px;border-top:1px solid ${COLORS.lightGray};font-size:14px;color:${COLORS.dark}"><strong>Nota del asesor:</strong> ${esc(params.notaVendedor)}</div>` : ''}
+         ${esConfirmada && params.calendarUrl ? `<div style="margin-top:14px"><a href="${esc(params.calendarUrl)}" style="display:inline-block;padding:8px 14px;border-radius:8px;background:${COLORS.primary};color:#ffffff;font-size:13px;font-weight:700;text-decoration:none">📅 Añadir a Google Calendar</a></div>` : ''}
+       `)}`,
+      'Ver ficha del inmueble',
+      fichaUrl,
+    ),
+    { replyTo: CONTACT },
+  )
+}
+
+

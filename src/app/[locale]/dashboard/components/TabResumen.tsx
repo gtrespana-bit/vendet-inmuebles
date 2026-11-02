@@ -9,7 +9,7 @@ import Image from 'next/image'
 import { isOptimizableImageSrc } from '@/lib/image-src'
 import {
   PlusCircle, MessageSquare, Coins, ShieldCheck,
-  AlertCircle, ArrowRight, Eye, Sparkles, Users,
+  AlertCircle, ArrowRight, Eye, Sparkles, Users, CalendarCheck,
 } from 'lucide-react'
 import type { PlanInfo } from '../hooks/useDashboard'
 
@@ -22,16 +22,19 @@ export default function TabResumen({
   productos,
   verificado,
   planInfo,
+  visitasPendientes = 0,
   onGoToTab,
 }: {
   userId: string
   productos: any[]
   verificado: boolean
   planInfo: PlanInfo | null
+  visitasPendientes?: number
   onGoToTab: (tab: string) => void
 }) {
   const t = useTranslations('dashboard')
   const locale = useLocale()
+  const isEn = locale === 'en'
   const router = useRouter()
   const mensajesNoLeidos = useUnreadMessages(userId)
   const openChat = () => router.push(localizePath('/chat', locale))
@@ -40,6 +43,16 @@ export default function TabResumen({
   const recientes = productos.slice(0, 3)
 
   const atencionItems = [
+    visitasPendientes > 0 && {
+      id: 'visitas',
+      icon: CalendarCheck,
+      texto: isEn
+        ? `You have ${visitasPendientes} pending visit ${visitasPendientes === 1 ? 'request' : 'requests'} to confirm`
+        : `Tienes ${visitasPendientes} ${visitasPendientes === 1 ? 'solicitud de visita pendiente' : 'solicitudes de visita pendientes'} por confirmar`,
+      accion: () => onGoToTab('visitas'),
+      color: 'text-amber-800',
+      bg: 'bg-amber-50',
+    },
     mensajesNoLeidos > 0 && {
       id: 'mensajes',
       icon: MessageSquare,
@@ -68,6 +81,12 @@ export default function TabResumen({
 
   const accesos = [
     { href: '/publicar-inmueble', icon: PlusCircle, title: t('quickPublishTitle'), desc: t('quickPublishDesc') },
+    {
+      onClick: () => onGoToTab('visitas'),
+      icon: CalendarCheck,
+      title: isEn ? 'Visits & leads' : 'Visitas y leads',
+      desc: isEn ? 'Confirm tours, calls & buyer notes' : 'Confirma citas, videollamadas y seguimiento',
+    },
     ...(planInfo?.agencia || planInfo?.plan === 'agencia'
       ? [{ onClick: () => onGoToTab('equipo'), icon: Users, title: t('quickTeamTitle'), desc: t('quickTeamDesc') }]
       : []),

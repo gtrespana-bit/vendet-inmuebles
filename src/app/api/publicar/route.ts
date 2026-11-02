@@ -13,6 +13,7 @@ import { evaluarModeracionServidor } from '@/lib/moderacion'
 import { getUserAgencyContext } from '@/lib/agency-server'
 import { resolveEffectiveAgencyPublisher } from '@/lib/agency'
 import { isValidUUID } from '@/lib/validation'
+import { dispararAlertasInmediatasPorInmueble } from '@/lib/search-alerts-server'
 
 export async function POST(req: NextRequest) {
   try {
@@ -222,6 +223,12 @@ export async function POST(req: NextRequest) {
           }),
         }).catch(() => undefined)
       }
+    }
+
+    if (moderationState === 'aprobado') {
+      void dispararAlertasInmediatasPorInmueble(auth.supabaseAdmin, property.id).catch((err) => {
+        console.error('Alertas inmediatas tras publicar:', err)
+      })
     }
 
     return NextResponse.json({ ok: true, data: property }, { status: 201 })

@@ -1,19 +1,35 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { CalendarCheck, CheckCircle2, Loader2, Phone, Video, MapPin } from 'lucide-react'
+import {
+  CalendarCheck,
+  CalendarPlus,
+  CheckCircle2,
+  Download,
+  Loader2,
+  MapPin,
+  Phone,
+  Video,
+} from 'lucide-react'
 import { useAuth } from '@/components/AuthProvider'
 import { getSupabaseAuthHeaders } from '@/lib/supabase-auth-headers'
 import { isSupabaseConfigured, supabase } from '@/lib/supabase'
+import { buildGoogleCalendarUrl, buildVisitIcsContent } from '@/lib/visit-calendar'
 
 interface PropertyVisitSchedulerProps {
   propertyId: string
+  propertyTitle?: string
+  propertySlug?: string | null
+  location?: string | null
   ownerId?: string | null
   locale: string
 }
 
 export default function PropertyVisitScheduler({
   propertyId,
+  propertyTitle,
+  propertySlug,
+  location,
   ownerId,
   locale,
 }: PropertyVisitSchedulerProps) {
@@ -26,12 +42,21 @@ export default function PropertyVisitScheduler({
   const [telefono, setTelefono] = useState('')
   const [email, setEmail] = useState('')
   const [fechaPreferida, setFechaPreferida] = useState('')
-  const [franjaHoraria, setFranjaHoraria] = useState<'manana' | 'tarde' | 'fin_de_semana' | 'flexible'>('flexible')
+  const [franjaHoraria, setFranjaHoraria] = useState<
+    'manana' | 'tarde' | 'fin_de_semana' | 'flexible'
+  >('flexible')
   const [mensaje, setMensaje] = useState('')
   const [website, setWebsite] = useState('') // honeypot
   const [sending, setSending] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [submitted, setSubmitted] = useState(false)
+  const [createdVisitId, setCreatedVisitId] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.hash === '#agendar-visita') {
+      setOpen(true)
+    }
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -44,11 +69,13 @@ export default function PropertyVisitScheduler({
         .select('nombre, telefono')
         .eq('id', user.id)
         .maybeSingle()
-        .then(({ data }: { data: { nombre?: string | null; telefono?: string | null } | null }) => {
-          if (cancelled || !data) return
-          if (data.nombre) setNombre((prev) => prev || String(data.nombre))
-          if (data.telefono) setTelefono((prev) => prev || String(data.telefono))
-        })
+        .then(
+          ({ data }: { data: { nombre?: string | null; telefono?: string | null } | null }) => {
+            if (cancelled || !data) return
+            if (data.nombre) setNombre((prev) => prev || String(data.nombre))
+            if (data.telefono) setTelefono((prev) => prev || String(data.telefono))
+          },
+        )
         .catch(() => undefined)
     }
 
@@ -61,6 +88,52 @@ export default function PropertyVisitScheduler({
   if (user && ownerId && user.id === ownerId) return null
 
   const minDate = new Date().toISOString().slice(0, 10)
+  const effectiveTitle = propertyTitle || (isEn ? 'Property in Venezuela' : 'Inmueble en Venezuela')
+  const slugOrId = propertySlug || propertyId
+  const listingUrl =
+    typeof window !== 'undefined'
+      ? `${window.location.origin}${isEn ? '/en' : ''}/inmueble/${slugOrId}`
+      : `https://venezuela-inmuebles.online/inmueble/${slugOrId}`
+
+  const gcalHref =
+    submitted && fechaPreferida
+      ? buildGoogleCalendarUrl({
+          id: createdVisitId,
+          propertyTitle: effectiveTitle,
+          propertyUrl: listingUrl,
+          location: location || 'Venezuela',
+          modalidad,
+          fechaPreferida,
+          franjaHoraria,
+          notes: mensaje || undefined,
+          locale: isEn ? 'en' : 'es',
+        })
+      : null
+
+  function handleDownloadIcs() {
+    if (!fechaPreferida) return
+    const ics = buildVisitIcsContent({
+      id: createdVisitId,
+      propertyTitle: effectiveTitle,
+      propertyUrl: listingUrl,
+      location: location || 'Venezuela',
+      modalidad,
+      fechaPreferida,
+      franjaHoraria,
+      notes: mensaje || undefined,
+      locale: isEn ? 'en' : 'es',
+    })
+    if (!ics) return
+    const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `visita-${fechaPreferida}.ics`
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    setTimeout(() => URL.revokeObjectURL(url), 1000)
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -98,9 +171,14 @@ export default function PropertyVisitScheduler({
         return
       }
 
+      setCreatedVisitId(json.id ? String(json.id) : null)
       setSubmitted(true)
     } catch {
-      setErrorMsg(isEn ? 'Connection error. Please try again.' : 'Error de conexión. Intenta nuevamente.')
+      setErrorMsg(
+        isEn
+          ? 'Connection error. Please try again.'
+          : 'Error de conexión. Intenta nuevamente.',
+      )
     } finally {
       setSending(false)
     }
@@ -108,7 +186,8 @@ export default function PropertyVisitScheduler({
 
   return (
     <section
-      className="rounded-2xl border border-[#e5dfd5] bg-[#faf8f4] p-4 shadow-sm"
+      id="agendar-visita"
+      className="rounded-2xl border border-[#e5dfd5] bg-[#faf8f4] p-4 shadow-sm scroll-mt-24"
       aria-labelledby="visit-scheduler-title"
     >
       <div className="flex items-start justify-between gap-2">
@@ -131,9 +210,32 @@ export default function PropertyVisitScheduler({
           </div>
           <p className="text-xs text-emerald-800 mt-1.5 mb-0 leading-relaxed">
             {isEn
-              ? 'The listing advisor received your details and preferred schedule to confirm via WhatsApp or phone.'
-              : 'El anunciante recibió tus datos y horario sugerido para confirmarte por WhatsApp o llamada.'}
+              ? 'The listing advisor received your details and preferred schedule to confirm via WhatsApp, phone or email.'
+              : 'El asesor recibió tus datos y horario sugerido para confirmarte por WhatsApp, llamada o correo.'}
           </p>
+
+          {gcalHref && (
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <a
+                href={gcalHref}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-[11px] font-bold px-2.5 py-1.5 no-underline transition"
+              >
+                <CalendarPlus size={12} aria-hidden="true" />
+                <span>{isEn ? 'Add to Google Calendar' : 'Añadir a Google Calendar'}</span>
+              </a>
+              <button
+                type="button"
+                onClick={handleDownloadIcs}
+                className="inline-flex items-center gap-1 rounded-lg border border-emerald-300 bg-white hover:bg-emerald-100 text-emerald-900 text-[11px] font-semibold px-2.5 py-1.5 transition"
+              >
+                <Download size={12} aria-hidden="true" />
+                <span>.ics</span>
+              </button>
+            </div>
+          )}
+
           <button
             type="button"
             onClick={() => {
@@ -141,7 +243,7 @@ export default function PropertyVisitScheduler({
               setOpen(false)
               setMensaje('')
             }}
-            className="mt-2.5 text-xs font-semibold text-emerald-800 underline"
+            className="mt-2.5 block text-xs font-semibold text-emerald-800 underline"
           >
             {isEn ? 'Done' : 'Cerrar'}
           </button>
@@ -177,7 +279,11 @@ export default function PropertyVisitScheduler({
             />
           </div>
 
-          <div className="grid grid-cols-3 gap-1.5" role="group" aria-label={isEn ? 'Visit mode' : 'Modalidad'}>
+          <div
+            className="grid grid-cols-3 gap-1.5"
+            role="group"
+            aria-label={isEn ? 'Visit mode' : 'Modalidad'}
+          >
             {[
               { id: 'presencial' as const, icon: MapPin, es: 'Presencial', en: 'In person' },
               { id: 'videollamada' as const, icon: Video, es: 'Video 360°', en: 'Video call' },
@@ -221,7 +327,10 @@ export default function PropertyVisitScheduler({
           </div>
 
           <div>
-            <label htmlFor="visit-phone" className="block text-xs font-semibold text-[#334155] mb-1">
+            <label
+              htmlFor="visit-phone"
+              className="block text-xs font-semibold text-[#334155] mb-1"
+            >
               {isEn ? 'WhatsApp or phone *' : 'WhatsApp o teléfono *'}
             </label>
             <input
@@ -238,7 +347,10 @@ export default function PropertyVisitScheduler({
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label htmlFor="visit-date" className="block text-xs font-semibold text-[#334155] mb-1">
+              <label
+                htmlFor="visit-date"
+                className="block text-xs font-semibold text-[#334155] mb-1"
+              >
                 {isEn ? 'Preferred date' : 'Fecha sugerida'}
               </label>
               <input
@@ -251,7 +363,10 @@ export default function PropertyVisitScheduler({
               />
             </div>
             <div>
-              <label htmlFor="visit-slot" className="block text-xs font-semibold text-[#334155] mb-1">
+              <label
+                htmlFor="visit-slot"
+                className="block text-xs font-semibold text-[#334155] mb-1"
+              >
                 {isEn ? 'Time slot' : 'Horario'}
               </label>
               <select
@@ -269,8 +384,11 @@ export default function PropertyVisitScheduler({
           </div>
 
           <div>
-            <label htmlFor="visit-email" className="block text-xs font-semibold text-[#334155] mb-1">
-              {isEn ? 'Email (optional)' : 'Correo electrónico (opcional)'}
+            <label
+              htmlFor="visit-email"
+              className="block text-xs font-semibold text-[#334155] mb-1"
+            >
+              {isEn ? 'Email (for confirmation)' : 'Correo electrónico (para recibir confirmación)'}
             </label>
             <input
               id="visit-email"
@@ -303,7 +421,10 @@ export default function PropertyVisitScheduler({
           </div>
 
           {errorMsg && (
-            <p role="alert" className="text-xs font-medium text-red-700 bg-red-50 rounded-lg px-2.5 py-1.5 m-0">
+            <p
+              role="alert"
+              className="text-xs font-medium text-red-700 bg-red-50 rounded-lg px-2.5 py-1.5 m-0"
+            >
               {errorMsg}
             </p>
           )}
