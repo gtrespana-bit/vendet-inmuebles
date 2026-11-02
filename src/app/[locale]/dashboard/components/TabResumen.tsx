@@ -236,6 +236,7 @@ export default function TabResumen({
 }
 
 function planKey(plan: string): string {
+  if (plan === 'profesional_plus') return 'planProfessionalPlus'
   if (plan === 'profesional') return 'planProfessional'
   if (plan === 'agencia') return 'planAgency'
   return 'planFree'

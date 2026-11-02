@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import LocalLink from '@/components/LocalLink'
 import { getSupabaseAuthHeaders } from '@/lib/supabase-auth-headers'
 import { CREDIT_PACKAGES, PLAN_PRICES } from '@/lib/payment-catalog'
+import { getPlanDisplayName } from '@/lib/plan-catalog'
 import { translateReceiptReason } from '@/lib/receipt-validation'
 import { trialDaysRemaining } from '@/lib/trial-status'
 import { useAuth } from '@/components/AuthProvider'
@@ -97,7 +98,7 @@ export default function PaymentsPage() {
       <label className="block">{copy('Qué quieres comprar','Purchase')}
         <select className="block w-full border rounded p-3 mt-1" value={product} onChange={e => setProduct(e.target.value)}>
           {CREDIT_PACKAGES.map(p => <option key={p.creditos} value={`creditos:${p.creditos}`}>{p.creditos} {copy('créditos','credits')} — ${p.precio}</option>)}
-          {!trialDays && Object.entries(PLAN_PRICES).map(([name, price]) => <option key={name} value={name}>{name === 'agencia' ? copy('Agencia','Agency') : copy('Profesional','Professional')} — ${price} / 30 {copy('días','days')}</option>)}
+          {!trialDays && Object.entries(PLAN_PRICES).map(([name, price]) => <option key={name} value={name}>{getPlanDisplayName(name, en ? 'en' : 'es')} — ${price} / 30 {copy('días','days')}</option>)}
         </select>
       </label>
       <label className="block">{copy('Método de pago','Payment method')}
@@ -110,7 +111,7 @@ export default function PaymentsPage() {
     <div className="flex justify-between items-center"><h2 className="text-xl font-bold">{copy('Mis pagos','My payments')}</h2><button onClick={load} disabled={!!busy} className="underline">{copy('Actualizar','Refresh')}</button></div>
     {orders.length === 0 && <p>{copy('Todavía no tienes órdenes de pago.','No payment orders yet.')}</p>}
     {orders.map(order => <article key={order.id} className="border bg-white rounded-xl p-5 space-y-3">
-      <h3 className="font-bold">{order.concepto === 'creditos' ? `${order.creditos} ${copy('créditos','credits')}` : order.concepto} · {Number(order.monto).toFixed(2)} {order.moneda}</h3>
+      <h3 className="font-bold">{order.concepto === 'creditos' ? `${order.creditos} ${copy('créditos','credits')}` : getPlanDisplayName(order.concepto, en ? 'en' : 'es')} · {Number(order.monto).toFixed(2)} {order.moneda}</h3>
       <p className="font-semibold">{labels[order.estado]}</p>
       {order.suscripciones && <p className="text-sm">{copy('Período del plan','Plan period')}: {new Date(order.suscripciones.inicio).toLocaleDateString(en ? 'en':'es')} → {new Date(order.suscripciones.fin).toLocaleDateString(en ? 'en':'es')}</p>}<p className="text-xs text-gray-500">{order.id}</p>
       <dl className="text-sm space-y-1">{Object.entries(order.destinatario).map(([key,value]) => <div key={key} className="flex flex-wrap gap-2"><dt className="capitalize">{key}:</dt><dd className="font-mono select-all">{value}</dd></div>)}</dl>

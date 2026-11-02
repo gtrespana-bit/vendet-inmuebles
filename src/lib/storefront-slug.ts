@@ -103,5 +103,5 @@ export function validateStorefrontSlug(raw: string): SlugValidationResult {
 }
 
 export function canPlanUseCustomStorefront(plan: string | null | undefined): boolean {
-  return plan === 'profesional' || plan === 'agencia'
+  return plan === 'profesional' || plan === 'profesional_plus' || plan === 'agencia'
 }

@@ -336,11 +336,13 @@
       "planNames": {
         "gratuita": "Free",
         "profesional": "Professional",
+        "profesional_plus": "Professional Plus",
         "agencia": "Agency"
       },
       "planDescriptions": {
         "gratuita": "List your own property. Up to {max} active listings.",
         "profesional": "For independent agents. Up to {max} active listings.",
+        "profesional_plus": "High-capacity solo agent (1 user, no multi-agent team). Up to {max} active listings.",
         "agencia": "For agencies and teams. Unlimited listings."
       },
       "summaryPlan": "{plan} plan",
@@ -1136,6 +1138,7 @@
     "yourPlan": "Your plan",
     "planFree": "Free plan",
     "planProfessional": "Professional plan",
+    "planProfessionalPlus": "Professional Plus plan",
     "planAgency": "Agency plan",
     "planTrialBadge": "TRIAL",
     "planSeePlans": "View plans",
@@ -1812,6 +1815,8 @@
     "planFreePeriod": "forever",
     "planPro": "Professional",
     "planProPeriod": "per month",
+    "planProPlus": "Professional Plus",
+    "planProPlusPeriod": "per month",
     "planAgency": "Agency",
     "planAgencyPeriod": "per month",
     "planFreeFeature1": "3 active listings",
@@ -1820,6 +1825,9 @@
     "planProFeature1": "10 active listings",
     "planProFeature2": "20 photos per property",
     "planProFeature3": "5 monthly credits",
+    "planProPlusFeature1": "35 active listings (1 user)",
+    "planProPlusFeature2": "30 photos per property",
+    "planProPlusFeature3": "12 monthly credits",
     "planAgencyFeature1": "Unlimited listings",
     "planAgencyFeature2": "30 photos per property",
     "planAgencyFeature3": "20 monthly credits",

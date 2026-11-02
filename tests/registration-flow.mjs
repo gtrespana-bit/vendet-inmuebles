@@ -31,17 +31,22 @@ function draft(overrides = {}) {
   return { ...EMPTY_DRAFT, nombre: 'Ana', apellido: 'Pérez', email: 'ana@ejemplo.com', password: 'Secreta1', repeatPassword: 'Secreta1', ...overrides }
 }
 
-test('los límites de los planes son 3, 10 e ilimitados con 30 días de prueba', () => {
+test('los límites de los planes son 3, 10, 35 e ilimitados con 30 días de prueba', () => {
   assert.equal(PLAN_LIMITS.gratuita.maxAnuncios, 3)
   assert.equal(PLAN_LIMITS.profesional.maxAnuncios, 10)
+  assert.equal(PLAN_LIMITS.profesional_plus.maxAnuncios, 35)
+  assert.equal(PLAN_LIMITS.profesional_plus.maxFotos, 30)
+  assert.equal(PLAN_LIMITS.profesional_plus.creditosMes, 12)
   assert.ok(isUnlimited(PLAN_LIMITS.agencia.maxAnuncios))
   assert.equal(PLAN_LIMITS.agencia.maxAnuncios, UNLIMITED_LISTINGS)
   assert.equal(TRIAL_DAYS, 30)
   assert.equal(formatListingLimit(3), '3')
   assert.equal(formatListingLimit(10), '10')
+  assert.equal(formatListingLimit(35), '35')
   assert.equal(formatListingLimit(UNLIMITED_LISTINGS), '∞')
-  assert.deepEqual([...PLAN_NAMES], ['gratuita', 'profesional', 'agencia'])
+  assert.deepEqual([...PLAN_NAMES], ['gratuita', 'profesional', 'profesional_plus', 'agencia'])
   assert.deepEqual([...ACCOUNT_TYPES], ['particular', 'profesional', 'agencia'])
+  assert.equal(accountTypeForPlan('profesional_plus'), 'profesional')
 })
 
 test('cada tipo de cuenta tiene un plan por defecto y viceversa', () => {
@@ -184,12 +189,13 @@ test('las etiquetas ES/EN del nuevo registro existen y coinciden', () => {
   }
 })
 
-test('la página de planes muestra los nuevos límites y la prueba en los tres planes', () => {
+test('la página de planes muestra los nuevos límites y la prueba en los cuatro planes', () => {
   const planes = readFileSync('src/app/[locale]/planes/page.tsx', 'utf8')
   assert.match(planes, /'3 anuncios activos'/)
   assert.match(planes, /'10 anuncios activos'/)
+  assert.match(planes, /'35 anuncios activos \(alta capacidad\)'/)
   assert.match(planes, /'Anuncios activos sin límite'/)
-  assert.equal((planes.match(/trial: true/g) || []).length, 3)
+  assert.equal((planes.match(/trial: true/g) || []).length, 4)
   assert.doesNotMatch(planes, /'1 anuncio activo'/)
   assert.doesNotMatch(planes, /'5 anuncios activos'/)
 })

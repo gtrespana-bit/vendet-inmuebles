@@ -1,6 +1,6 @@
 import { Metadata } from 'next'
 import { PlanActionsProvider, PlanActionButton, PlanTrialBadge } from './PlanActions'
-import { Check, Star, Building2, User, HeartHandshake } from 'lucide-react'
+import { Check, Star, Zap, Building2, User, HeartHandshake } from 'lucide-react'
 import { buildPageAlternates } from '@/lib/seo-metadata'
 
 interface PageProps {
@@ -13,8 +13,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return {
     title: en ? 'Plans & Pricing' : 'Planes y Precios',
     description: en
-      ? 'Choose the plan that best fits your needs. 30-day free trial on any plan with no credit card and no automatic charges.'
-      : 'Elige el plan que mejor se adapte a tus necesidades. Prueba gratuita de 30 días en cualquiera de los planes, como iniciativa solidaria para apoyar al sector inmobiliario.',
+      ? 'Choose the plan that best fits your needs: Free, Professional, Professional Plus, or Agency. 30-day free trial on any plan with no credit card and no automatic charges.'
+      : 'Elige el plan que mejor se adapte a tus necesidades: Gratuita, Profesional, Profesional Plus o Agencia. Prueba gratuita de 30 días en cualquiera de los planes, como iniciativa solidaria para apoyar al sector inmobiliario.',
     alternates: buildPageAlternates(locale, '/planes'),
   }
 }
@@ -29,7 +29,7 @@ const planes = [
     descripcion: 'Para quien vende o alquila su propio inmueble',
     descripcionEn: 'For owners selling or renting their own property',
     icon: User,
-    color: 'gray',
+    color: 'gray' as const,
     features: [
       '3 anuncios activos',
       '8 fotos por inmueble',
@@ -41,6 +41,8 @@ const planes = [
       'Free identity verification',
     ],
     destacado: false,
+    badge: undefined as string | undefined,
+    badgeEn: undefined as string | undefined,
     trial: true,
   },
   {
@@ -52,7 +54,7 @@ const planes = [
     descripcion: 'Para agentes y corredores independientes',
     descripcionEn: 'For independent agents and brokers',
     icon: Star,
-    color: 'brand-accent',
+    color: 'brand-accent' as const,
     features: [
       '10 anuncios activos',
       '20 fotos por inmueble',
@@ -79,6 +81,45 @@ const planes = [
     trial: true,
   },
   {
+    id: 'profesional_plus' as const,
+    nombre: 'Profesional Plus',
+    nombreEn: 'Professional Plus',
+    precioMensual: '$19,99/mes',
+    precioMensualEn: '$19.99/mo',
+    descripcion: 'Alta capacidad para agentes independientes con amplia cartera (1 usuario, sin multiagente)',
+    descripcionEn: 'High capacity for top-producing solo agents (1 user, no multi-agent team)',
+    icon: Zap,
+    color: 'indigo' as const,
+    features: [
+      '35 anuncios activos (alta capacidad)',
+      '30 fotos por inmueble',
+      '12 créditos incluidos al mes (mayor bolsa de créditos)',
+      '1 usuario individual (sin funciones multiagente)',
+      'Escaparate con URL personalizada y estadísticas',
+      'Enlace a vídeo y recorridos/planos',
+      'Asistencia prioritaria',
+      'Solicitud de asistencia por teléfono',
+      'Ayuda en la importación masiva de su cartera de inmuebles',
+      'Verificación de identidad gratuita',
+    ],
+    featuresEn: [
+      '35 active listings (high capacity)',
+      '30 photos per property',
+      '12 monthly credits included (expanded credit pool)',
+      'Single-user account (no multi-agent features)',
+      'Custom storefront URL & full analytics',
+      'Video & virtual tour/floor plan links',
+      'Priority support',
+      'Phone support callback on request',
+      'Assisted bulk import of your property portfolio',
+      'Free identity verification',
+    ],
+    destacado: false,
+    badge: 'ALTA CAPACIDAD',
+    badgeEn: 'HIGH CAPACITY',
+    trial: true,
+  },
+  {
     id: 'agencia' as const,
     nombre: 'Agencia',
     nombreEn: 'Agency',
@@ -87,7 +128,7 @@ const planes = [
     descripcion: 'Para inmobiliarias con equipo de asesores y cartera propia',
     descripcionEn: 'For brokerages managing an advisor team and shared portfolio',
     icon: Building2,
-    color: 'brand-primary',
+    color: 'brand-primary' as const,
     features: [
       'Anuncios activos sin límite',
       '30 fotos por inmueble',
@@ -97,7 +138,10 @@ const planes = [
       'Asignación controlada de créditos a agentes',
       'Escaparate oficial con equipo y URL personalizada',
       'Enlace a vídeo y recorridos/planos',
-      'Soporte prioritario y verificación gratuita',
+      'Asistencia prioritaria',
+      'Solicitud de asistencia por teléfono',
+      'Ayuda en la importación masiva de su cartera de inmuebles',
+      'Verificación de identidad gratuita',
     ],
     featuresEn: [
       'Unlimited active listings',
@@ -108,9 +152,14 @@ const planes = [
       'Controlled credit allocation to agents',
       'Official agency storefront with team & custom URL',
       'Video & virtual tour/floor plan links',
-      'Priority support & free identity verification',
+      'Priority support',
+      'Phone support callback on request',
+      'Assisted bulk import of your property portfolio',
+      'Free identity verification',
     ],
     destacado: false,
+    badge: undefined as string | undefined,
+    badgeEn: undefined as string | undefined,
     trial: true,
   },
 ]
@@ -123,7 +172,11 @@ export default async function PlanesPage({ params }: PageProps) {
     ? [
         {
           q: 'How does the 30-day free trial work?',
-          a: 'When you create your account, we activate a 30-day free trial on the plan you select: Free, Professional, or Agency. You start without a credit card and with zero automatic charges. Switching plans during the trial applies the selected plan’s limits immediately without resetting your original 30-day trial window.',
+          a: 'When you create your account, we activate a 30-day free trial on the plan you select: Free, Professional, Professional Plus, or Agency. You start without a credit card and with zero automatic charges. Switching plans during the trial applies the selected plan’s limits immediately without resetting your original 30-day trial window.',
+        },
+        {
+          q: 'What is the difference between Professional Plus and Agency?',
+          a: 'Professional Plus ($19.99/mo) is designed for a single independent agent who manages a large portfolio (up to 35 active listings, 30 photos per listing, and 12 monthly credits, without multi-agent tools). Agency ($39.99/mo) is built for brokerages with multiple advisors: it offers unlimited listings, 20 monthly credits, agent onboarding via email/link, advisor performance analytics, and full portfolio ownership when agents rotate.',
         },
         {
           q: 'What happens when the trial ends if I choose not to pay?',
@@ -131,7 +184,7 @@ export default async function PlanesPage({ params }: PageProps) {
         },
         {
           q: 'How do included monthly credits work?',
-          a: 'Included monthly credits let you boost listings to #1 (1 credit) or feature them for 12h (4 credits), 24h (6 credits), or 48h (10 credits). Professional includes 5 credits per 30-day period and Agency includes 20 credits per 30-day period; included credits are consumed before any purchased credit packages.',
+          a: 'Included monthly credits let you boost listings to #1 (1 credit) or feature them for 12h (4 credits), 24h (6 credits), or 48h (10 credits). Professional includes 5 credits, Professional Plus includes 12 credits, and Agency includes 20 credits per 30-day period; included credits are consumed before any purchased credit packages.',
         },
         {
           q: 'How do I add and manage my real estate agents on the Agency plan?',
@@ -145,7 +198,11 @@ export default async function PlanesPage({ params }: PageProps) {
     : [
         {
           q: '¿Cómo funciona la prueba gratuita de 30 días?',
-          a: 'Como iniciativa solidaria para apoyar al sector inmobiliario, al crear tu cuenta activamos 30 días de prueba gratis en el plan que elijas: Gratuita, Profesional o Agencia. Empiezas sin tarjeta de crédito y sin cobros automáticos. Cambiar de plan durante la prueba aplica el cupo del nuevo plan sin reiniciar el plazo original de 30 días.',
+          a: 'Como iniciativa solidaria para apoyar al sector inmobiliario, al crear tu cuenta activamos 30 días de prueba gratis en el plan que elijas: Gratuita, Profesional, Profesional Plus o Agencia. Empiezas sin tarjeta de crédito y sin cobros automáticos. Cambiar de plan durante la prueba aplica el cupo del nuevo plan sin reiniciar el plazo original de 30 días.',
+        },
+        {
+          q: '¿Cuál es la diferencia entre Profesional Plus y Agencia?',
+          a: 'Profesional Plus ($19,99/mes) está pensado para un único agente independiente con amplia cartera de captaciones (hasta 35 anuncios activos, 30 fotos por inmueble y 12 créditos mensuales, sin funciones multiagente). Agencia ($39,99/mes) está diseñado para inmobiliarias con equipo de varios asesores: ofrece anuncios ilimitados, 20 créditos mensuales, invitación de agentes, embudo por asesor y protección de cartera si un agente se desvincula.',
         },
         {
           q: '¿Qué pasa cuando termina la prueba si no deseo pagar?',
@@ -153,7 +210,7 @@ export default async function PlanesPage({ params }: PageProps) {
         },
         {
           q: '¿Qué son los créditos incluidos?',
-          a: 'Los créditos incluidos te permiten subir tus anuncios al #1 (1 crédito) o destacarlos por 12h (4 créditos), 24h (6 créditos) o 48h (10 créditos). El plan Profesional incluye 5 créditos por período de 30 días y el plan Agencia incluye 20 créditos por período de 30 días; se consumen automáticamente antes que tus paquetes de créditos comprados.',
+          a: 'Los créditos incluidos te permiten subir tus anuncios al #1 (1 crédito) o destacarlos por 12h (4 créditos), 24h (6 créditos) o 48h (10 créditos). El plan Profesional incluye 5 créditos, Profesional Plus incluye 12 créditos y Agencia incluye 20 créditos por período de 30 días; se consumen automáticamente antes que tus paquetes de créditos comprados.',
         },
         {
           q: '¿Cómo incorporo y controlo a los agentes de mi inmobiliaria en el plan Agencia?',
@@ -186,9 +243,9 @@ export default async function PlanesPage({ params }: PageProps) {
           </p>
         </div>
 
-        {/* Planes Grid */}
+        {/* Planes Grid (4 planes) */}
         <PlanActionsProvider>
-          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-6 max-w-7xl mx-auto items-stretch">
             {planes.map((plan) => {
               const Icon = plan.icon
               const badge = en ? plan.badgeEn : plan.badge
@@ -199,39 +256,55 @@ export default async function PlanesPage({ params }: PageProps) {
               return (
                 <div
                   key={plan.id}
-                  className={`relative bg-white rounded-2xl shadow-lg p-8 flex flex-col ${
-                    plan.destacado ? 'ring-2 ring-brand-accent scale-105' : ''
+                  className={`relative bg-white rounded-2xl shadow-lg p-7 flex flex-col ${
+                    plan.destacado
+                      ? 'ring-2 ring-brand-accent xl:scale-[1.02]'
+                      : plan.id === 'profesional_plus'
+                        ? 'ring-1 ring-indigo-200'
+                        : ''
                   }`}
                 >
                   {badge && (
-                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-brand-accent text-[var(--on-gold)] px-4 py-1 rounded-full text-sm font-bold shadow-sm">
+                    <div
+                      className={`absolute -top-3.5 left-1/2 -translate-x-1/2 px-3.5 py-1 rounded-full text-xs font-bold shadow-sm whitespace-nowrap ${
+                        plan.id === 'profesional_plus'
+                          ? 'bg-indigo-600 text-white'
+                          : 'bg-brand-accent text-[var(--on-gold)]'
+                      }`}
+                    >
                       {badge}
                     </div>
                   )}
 
                   <div className="mb-6">
-                    <Icon className={`w-12 h-12 mb-4 ${
-                      plan.color === 'brand-accent' ? 'text-[var(--gold-text)]' :
-                      plan.color === 'brand-primary' ? 'text-brand-primary' :
-                      'text-gray-600'
-                    }`} />
+                    <Icon
+                      className={`w-11 h-11 mb-4 ${
+                        plan.color === 'brand-accent'
+                          ? 'text-[var(--gold-text)]'
+                          : plan.color === 'indigo'
+                            ? 'text-indigo-600'
+                            : plan.color === 'brand-primary'
+                              ? 'text-brand-primary'
+                              : 'text-gray-600'
+                      }`}
+                    />
                     <h2 className="text-2xl font-bold text-brand-dark mb-2">
                       {nombre}
                     </h2>
-                    <p className="text-brand-dark/70 text-sm mb-3 min-h-[40px]">
+                    <p className="text-brand-dark/70 text-sm mb-3 min-h-[44px]">
                       {descripcion}
                     </p>
                     <PlanTrialBadge />
                     <div className="mb-2">
-                      <span className="text-4xl font-bold text-brand-dark">
+                      <span className="text-3xl lg:text-4xl font-bold text-brand-dark">
                         {precio}
                       </span>
                     </div>
                   </div>
 
-                  <ul className="space-y-3 mb-8 flex-grow">
+                  <ul className="space-y-2.5 mb-8 flex-grow">
                     {lista.map((feature, idx) => (
-                      <li key={idx} className="flex items-start gap-3">
+                      <li key={idx} className="flex items-start gap-2.5">
                         <Check className="w-5 h-5 text-[var(--gold-text)] flex-shrink-0 mt-0.5" />
                         <span className="text-gray-700 text-sm">{feature}</span>
                       </li>
@@ -243,9 +316,11 @@ export default async function PlanesPage({ params }: PageProps) {
                     className={`block w-full text-center py-3 rounded-lg font-medium transition-colors ${
                       plan.destacado
                         ? 'bg-brand-accent hover:brightness-105 text-[var(--on-gold)]'
-                        : plan.id === 'agencia'
-                        ? 'bg-brand-primary hover:bg-brand-dark text-white'
-                        : 'bg-gray-100 hover:bg-gray-200 text-brand-dark'
+                        : plan.id === 'profesional_plus'
+                          ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                          : plan.id === 'agencia'
+                            ? 'bg-brand-primary hover:bg-brand-dark text-white'
+                            : 'bg-gray-100 hover:bg-gray-200 text-brand-dark'
                     }`}
                   />
                 </div>

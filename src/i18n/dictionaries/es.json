@@ -334,11 +334,13 @@
       "planNames": {
         "gratuita": "Gratuita",
         "profesional": "Profesional",
+        "profesional_plus": "Profesional Plus",
         "agencia": "Agencia"
       },
       "planDescriptions": {
         "gratuita": "Publica tu propio inmueble. Hasta {max} anuncios activos.",
         "profesional": "Para agentes independientes. Hasta {max} anuncios activos.",
+        "profesional_plus": "Alta capacidad individual (1 usuario, sin multiagente). Hasta {max} anuncios activos.",
         "agencia": "Para inmobiliarias y equipos. Anuncios ilimitados."
       },
       "summaryPlan": "Plan {plan}",
@@ -1134,6 +1136,7 @@
     "yourPlan": "Tu plan",
     "planFree": "Plan Gratuito",
     "planProfessional": "Plan Profesional",
+    "planProfessionalPlus": "Plan Profesional Plus",
     "planAgency": "Plan Agencia",
     "planTrialBadge": "PRUEBA",
     "planSeePlans": "Ver planes",
@@ -1810,6 +1813,8 @@
     "planFreePeriod": "siempre",
     "planPro": "Profesional",
     "planProPeriod": "al mes",
+    "planProPlus": "Profesional Plus",
+    "planProPlusPeriod": "al mes",
     "planAgency": "Agencia",
     "planAgencyPeriod": "al mes",
     "planFreeFeature1": "3 anuncios activos",
@@ -1818,6 +1823,9 @@
     "planProFeature1": "10 anuncios activos",
     "planProFeature2": "20 fotos por inmueble",
     "planProFeature3": "5 créditos al mes",
+    "planProPlusFeature1": "35 anuncios activos (1 usuario)",
+    "planProPlusFeature2": "30 fotos por inmueble",
+    "planProPlusFeature3": "12 créditos al mes",
     "planAgencyFeature1": "Anuncios sin límite",
     "planAgencyFeature2": "30 fotos por inmueble",
     "planAgencyFeature3": "20 créditos al mes",

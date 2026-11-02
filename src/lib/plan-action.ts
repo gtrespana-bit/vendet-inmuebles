@@ -1,4 +1,4 @@
-export type PlanName = 'gratuita' | 'profesional' | 'agencia'
+export type PlanName = 'gratuita' | 'profesional' | 'profesional_plus' | 'agencia'
 export type PlanAction = 'loading' | 'register' | 'current' | 'change' | 'error'
 
 /** Never offer registration while session or plan status is being checked. */

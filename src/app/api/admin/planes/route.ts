@@ -10,12 +10,13 @@ import { notificarCambioPlanAdmin } from '@/lib/email-eventos'
 //  - `operacion: 'asignar'`  -> activa o cambia de plan desde hoy por N días (por defecto 30).
 //  - `operacion: 'cancelar'` -> pasa al Plan Gratuito cancelando suscripciones vigentes.
 
-const PLANES_VALIDOS = ['gratuita', 'profesional', 'agencia'] as const
+const PLANES_VALIDOS = ['gratuita', 'profesional', 'profesional_plus', 'agencia'] as const
 const MODOS_VALIDOS = ['activa', 'trial', 'cancelar'] as const
 const OPERACIONES_VALIDAS = ['extender', 'asignar', 'cancelar'] as const
 
 const PLAN_NOMBRE: Record<string, string> = {
   agencia: 'Agencia',
+  profesional_plus: 'Profesional Plus',
   profesional: 'Profesional',
   gratuita: 'Gratuito',
 }
@@ -60,7 +61,7 @@ export async function POST(request: NextRequest) {
 
     if (operacion === 'asignar') {
       if (!plan || plan === 'gratuita') {
-        return NextResponse.json({ error: 'Selecciona el plan a activar (profesional o agencia)' }, { status: 400 })
+        return NextResponse.json({ error: 'Selecciona el plan a activar (profesional, profesional_plus o agencia)' }, { status: 400 })
       }
       if (!modo || modo === 'cancelar') {
         return NextResponse.json({ error: 'Selecciona el modo del plan (activa o trial)' }, { status: 400 })
@@ -105,7 +106,7 @@ export async function POST(request: NextRequest) {
 
     const resultado = (data || {}) as Record<string, any>
     const sub = (resultado.suscripcion || {}) as Record<string, any>
-    const planFinal = (sub.plan || resultado.plan || plan || 'gratuita') as 'agencia' | 'profesional' | 'gratuita'
+    const planFinal = (sub.plan || resultado.plan || plan || 'gratuita') as 'agencia' | 'profesional_plus' | 'profesional' | 'gratuita'
     const estadoFinal = (sub.estado || resultado.estado || 'cancelada') as 'activa' | 'trial' | 'cancelada'
     const fechaFin = (sub.fin || sub.trial_ends_at || null) as string | null
     const creditosFinales = typeof sub.creditos_incluidos === 'number' ? sub.creditos_incluidos : creditosIncluidos

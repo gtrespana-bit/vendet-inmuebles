@@ -6,6 +6,7 @@ import { useAuth } from '@/components/AuthProvider'
 import LocalLink from '@/components/LocalLink'
 import { getSupabaseAuthHeaders } from '@/lib/supabase-auth-headers'
 import { getPlanAction, type PlanName } from '@/lib/plan-action'
+import { getPlanDisplayName, isPlanName, isPlanUpgrade } from '@/lib/plan-catalog'
 import { trialDaysRemaining } from '@/lib/trial-status'
 
 type PlanState = {
@@ -15,7 +16,6 @@ type PlanState = {
 }
 const EMPTY: PlanState = { owner: null, plan: null, failed: false }
 const PlanContext = createContext<PlanState & { refresh: () => void }>({ ...EMPTY, refresh: () => {} })
-const names = { es: { gratuita: 'Gratuita', profesional: 'Profesional', agencia: 'Agencia' }, en: { gratuita: 'Free', profesional: 'Professional', agencia: 'Agency' } }
 
 export function PlanActionsProvider({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth()
@@ -38,7 +38,7 @@ export function PlanActionsProvider({ children }: { children: ReactNode }) {
         const response = await fetch('/api/user/plan', { headers: await getSupabaseAuthHeaders(), cache: 'no-store' })
         if (!response.ok) throw new Error('Could not load plan')
         const data = await response.json()
-        if (!['gratuita', 'profesional', 'agencia'].includes(data.plan)) throw new Error('Unknown plan')
+        if (!isPlanName(data.plan)) throw new Error('Unknown plan')
         if (!cancelled) setState({ owner: userId, plan: data.plan, failed: false, estado: data.estado, trialEndsAt: data.trialEndsAt, fin: data.fin, scheduled: data.scheduledPlan, freeAt: data.cambioGratuita ? data.fin : null })
       } catch {
         if (!cancelled) setState({ owner: userId, plan: null, failed: true })
@@ -50,6 +50,7 @@ export function PlanActionsProvider({ children }: { children: ReactNode }) {
   const visible = state.owner === userId && userId ? state : EMPTY
   const days = trialDaysRemaining(visible.estado, visible.trialEndsAt)
   const date = (value: string) => new Date(value).toLocaleDateString(en ? 'en' : 'es')
+  const localeKey = en ? 'en' : 'es'
   return <PlanContext.Provider value={{ ...visible, refresh: () => setVersion(v=>v+1) }}>
     {days > 0 && <div role="status" className="rounded-xl bg-blue-50 p-5 mb-8 text-blue-900 space-y-2">
       <p className="font-bold">{en ? `Free trial: ${days} day${days === 1 ? '' : 's'} remaining` : `Prueba gratuita: te queda${days === 1 ? '' : 'n'} ${days} día${days === 1 ? '' : 's'}`}</p>
@@ -58,7 +59,7 @@ export function PlanActionsProvider({ children }: { children: ReactNode }) {
     </div>}
     {(visible.scheduled || visible.freeAt) && <div role="status" className="rounded-lg bg-blue-50 p-4 mb-6 text-blue-900">
       {en ? 'Scheduled change: ' : 'Cambio programado: '}
-      {visible.scheduled ? `${names[en ? 'en' : 'es'][visible.scheduled.plan as PlanName]} · ${date(visible.scheduled.inicio)}` : `${names[en ? 'en' : 'es'].gratuita} · ${date(visible.freeAt!)}`}
+      {visible.scheduled ? `${getPlanDisplayName(visible.scheduled.plan, localeKey)} · ${date(visible.scheduled.inicio)}` : `${getPlanDisplayName('gratuita', localeKey)} · ${date(visible.freeAt!)}`}
       <p className="text-sm">{en ? 'Your current plan stays active until that date.' : 'Hasta esa fecha conservas tu plan actual.'}</p>
     </div>}
     {children}
@@ -110,7 +111,7 @@ export function PlanActionButton({ plan, className }: { plan: PlanName; classNam
       : <button disabled={busy} onClick={() => change()} className={className}>{en ? 'Switch at end of period' : 'Cambiar al finalizar el período'}</button>}
     {feedback}
   </div>
-  const upgrade = state.plan === 'gratuita' || (state.plan === 'profesional' && plan === 'agencia')
+  const upgrade = isPlanUpgrade(state.plan, plan)
   return <div><LocalLink href={`/pagos?plan=${plan}`} className={className}>{upgrade ? (en ? 'Upgrade and pay' : 'Subir de plan y pagar') : (en ? 'Schedule lower plan' : 'Programar bajada de plan')}</LocalLink><p className="text-xs text-gray-500 text-center mt-2">{upgrade
     ? (en ? 'Starts when your payment is validated.' : 'Se activa cuando se valida tu pago.')
     : (en ? `Starts after your current period${state.fin ? ` (${new Date(state.fin).toLocaleDateString('en')})` : ''}. You will see the payment amount before confirming.` : `Empieza al terminar tu período actual${state.fin ? ` (${new Date(state.fin).toLocaleDateString('es')})` : ''}. Verás el importe antes de pagar.`)}</p></div>

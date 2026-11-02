@@ -21,12 +21,14 @@ import {
 const PLAN_LABEL: Record<string, string> = {
   gratuita: 'Gratuita',
   profesional: 'Profesional',
+  profesional_plus: 'Profesional Plus',
   agencia: 'Agencia',
 }
 
 const PLAN_STYLE: Record<string, string> = {
   gratuita: 'bg-gray-100 text-gray-600',
   profesional: 'bg-amber-50 text-amber-700 border border-amber-200',
+  profesional_plus: 'bg-indigo-50 text-indigo-700 border border-indigo-200',
   agencia: 'bg-purple-50 text-purple-700 border border-purple-200',
 }
 
@@ -56,7 +58,7 @@ interface UsuarioPlan {
   tipo_cuenta: string | null
   verificado: boolean
   creado_en: string | null
-  plan: 'gratuita' | 'profesional' | 'agencia'
+  plan: 'gratuita' | 'profesional' | 'profesional_plus' | 'agencia'
   estado: 'activa' | 'trial' | 'vencida' | null
   fin: string | null
   trial_ends_at: string | null
@@ -69,7 +71,7 @@ interface UsuarioPlan {
 interface ModalState {
   user: UsuarioPlan
   pestana: 'extender' | 'asignar'
-  plan: 'gratuita' | 'profesional' | 'agencia'
+  plan: 'gratuita' | 'profesional' | 'profesional_plus' | 'agencia'
   modo: 'activa' | 'trial'
   dias: string
   creditosIncluidos: string
@@ -164,7 +166,7 @@ export default function PlanesTab({ notify }: { notify: (msg: string) => void })
       const fechaVenc = sub ? (sub.estado === 'trial' ? sub.trial_ends_at || sub.fin : sub.fin) : null
       const diasRest = calcularDiasRestantes(fechaVenc)
       const vencida = sub && diasRest !== null && diasRest <= 0
-      const planRaw = sub?.plan && ['gratuita', 'profesional', 'agencia'].includes(sub.plan)
+      const planRaw = sub?.plan && ['gratuita', 'profesional', 'profesional_plus', 'agencia'].includes(sub.plan)
         ? sub.plan
         : 'gratuita'
       const creadoMs = p.creado_en ? new Date(p.creado_en).getTime() : 0
@@ -201,7 +203,7 @@ export default function PlanesTab({ notify }: { notify: (msg: string) => void })
     todos: usuarios.length,
     nuevas_agencias: usuarios.filter(u => u.esNuevaAgencia).length,
     agencias: usuarios.filter(u => u.plan === 'agencia' || u.tipo_cuenta === 'agencia').length,
-    profesionales: usuarios.filter(u => u.plan === 'profesional' || u.tipo_cuenta === 'profesional').length,
+    profesionales: usuarios.filter(u => u.plan === 'profesional' || u.plan === 'profesional_plus' || u.tipo_cuenta === 'profesional').length,
     trial: usuarios.filter(u => u.estado === 'trial').length,
     activas: usuarios.filter(u => u.estado === 'activa').length,
     por_vencer: usuarios.filter(u => u.diasRestantes !== null && u.diasRestantes > 0 && u.diasRestantes <= 7).length,
@@ -212,7 +214,7 @@ export default function PlanesTab({ notify }: { notify: (msg: string) => void })
     const base = usuarios.filter(u => {
       if (filtro === 'nuevas_agencias' && !u.esNuevaAgencia) return false
       if (filtro === 'agencias' && u.plan !== 'agencia' && u.tipo_cuenta !== 'agencia') return false
-      if (filtro === 'profesionales' && u.plan !== 'profesional' && u.tipo_cuenta !== 'profesional') return false
+      if (filtro === 'profesionales' && u.plan !== 'profesional' && u.plan !== 'profesional_plus' && u.tipo_cuenta !== 'profesional') return false
       if (filtro === 'trial' && u.estado !== 'trial') return false
       if (filtro === 'activas' && u.estado !== 'activa') return false
       if (filtro === 'por_vencer' && !(u.diasRestantes !== null && u.diasRestantes > 0 && u.diasRestantes <= 7)) return false
@@ -241,12 +243,14 @@ export default function PlanesTab({ notify }: { notify: (msg: string) => void })
   }, [usuarios, busqueda, filtro, orden])
 
   function abrirModalExtender(u: UsuarioPlan) {
-    const planInicial: 'agencia' | 'profesional' =
+    const planInicial: 'agencia' | 'profesional_plus' | 'profesional' =
       u.plan === 'agencia' || u.tipo_cuenta === 'agencia'
         ? 'agencia'
-        : u.plan === 'profesional' || u.tipo_cuenta === 'profesional'
-          ? 'profesional'
-          : 'agencia'
+        : u.plan === 'profesional_plus'
+          ? 'profesional_plus'
+          : u.plan === 'profesional' || u.tipo_cuenta === 'profesional'
+            ? 'profesional'
+            : 'agencia'
 
     const modoInicial: 'activa' | 'trial' = u.estado === 'activa' ? 'activa' : 'trial'
 
@@ -265,7 +269,7 @@ export default function PlanesTab({ notify }: { notify: (msg: string) => void })
 
   function abrirModalGestionar(u: UsuarioPlan) {
     const tienePlanVigente = u.plan !== 'gratuita' && (u.estado === 'activa' || u.estado === 'trial')
-    const planInicial: 'gratuita' | 'profesional' | 'agencia' =
+    const planInicial: 'gratuita' | 'profesional' | 'profesional_plus' | 'agencia' =
       u.plan !== 'gratuita'
         ? u.plan
         : u.tipo_cuenta === 'agencia'
@@ -494,7 +498,7 @@ export default function PlanesTab({ notify }: { notify: (msg: string) => void })
                           }`}
                         >
                           {u.plan === 'agencia' && <Crown size={11} />}
-                          {u.plan === 'profesional' && <Sparkles size={11} />}
+                          {(u.plan === 'profesional' || u.plan === 'profesional_plus') && <Sparkles size={11} />}
                           {PLAN_LABEL[u.plan] || u.plan}
                         </span>
                       </td>
@@ -674,10 +678,10 @@ export default function PlanesTab({ notify }: { notify: (msg: string) => void })
                 <label className="block text-xs font-bold uppercase tracking-wide text-gray-600 mb-1.5">
                   {modal.pestana === 'extender' ? 'Plan sobre el que se aplica el tiempo extra' : 'Plan a asignar'}
                 </label>
-                <div className={`grid ${modal.pestana === 'extender' ? 'grid-cols-2' : 'grid-cols-3'} gap-2`}>
+                <div className={`grid ${modal.pestana === 'extender' ? 'grid-cols-3' : 'grid-cols-2 sm:grid-cols-4'} gap-2`}>
                   {(modal.pestana === 'extender'
-                    ? (['profesional', 'agencia'] as const)
-                    : (['gratuita', 'profesional', 'agencia'] as const)
+                    ? (['profesional', 'profesional_plus', 'agencia'] as const)
+                    : (['gratuita', 'profesional', 'profesional_plus', 'agencia'] as const)
                   ).map(p => (
                     <button
                       key={p}
@@ -788,7 +792,7 @@ export default function PlanesTab({ notify }: { notify: (msg: string) => void })
                       value={modal.creditosIncluidos}
                       onChange={e => setModal({ ...modal, creditosIncluidos: e.target.value })}
                       disabled={modal.procesando}
-                      placeholder={`Estándar del plan: ${modal.plan === 'agencia' ? '20' : '5'} créditos / mes`}
+                      placeholder={`Estándar del plan: ${modal.plan === 'agencia' ? '20' : modal.plan === 'profesional_plus' ? '12' : '5'} créditos / mes`}
                       className="w-full border rounded-lg px-3 py-2 text-sm"
                     />
                   </div>

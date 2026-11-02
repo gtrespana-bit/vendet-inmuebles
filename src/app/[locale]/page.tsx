@@ -211,6 +211,7 @@ const CITIES = ['Caracas', 'Valencia', 'San Diego', 'Maracaibo', 'Barquisimeto',
 const PLANS = [
   { nameKey: 'planFree', price: '$0', periodKey: 'planFreePeriod', features: ['planFreeFeature1', 'planFreeFeature2', 'planFreeFeature3'], featured: false, trial: true },
   { nameKey: 'planPro', price: '$9,99', periodKey: 'planProPeriod', features: ['planProFeature1', 'planProFeature2', 'planProFeature3'], featured: true, trial: true },
+  { nameKey: 'planProPlus', price: '$19,99', periodKey: 'planProPlusPeriod', features: ['planProPlusFeature1', 'planProPlusFeature2', 'planProPlusFeature3'], featured: false, trial: true },
   { nameKey: 'planAgency', price: '$39,99', periodKey: 'planAgencyPeriod', features: ['planAgencyFeature1', 'planAgencyFeature2', 'planAgencyFeature3'], featured: false, trial: true },
 ] as const
 
