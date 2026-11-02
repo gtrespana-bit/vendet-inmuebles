@@ -73,6 +73,7 @@ export function useDashboard() {
   const [resenas, setResenas] = useState<any[]>([])
   const [promedioResenas, setPromedioResenas] = useState(0)
   const [planInfo, setPlanInfo] = useState<PlanInfo | null>(null)
+  const [visitasPendientes, setVisitasPendientes] = useState(0)
   const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState<string | null>(null)
 
@@ -133,12 +134,24 @@ export function useDashboard() {
             setPromedioResenas(0)
           }
         }),
-      // Plan de suscripción (límites, estado y fechas)
+      // Plan de suscripción y contador de solicitudes de visita pendientes
       getSupabaseAuthHeaders()
-        .then((authHeaders: Record<string, string>) =>
-          fetch('/api/user/plan', { headers: authHeaders }).then((res: Response) => (res.ok ? res.json() : null))
-        )
-        .then((plan: any) => { if (plan && plan.plan) setPlanInfo(plan as PlanInfo) })
+        .then(async (authHeaders: Record<string, string>) => {
+          const [planRes, visitasRes] = await Promise.all([
+            fetch('/api/user/plan', { headers: authHeaders }).catch(() => null),
+            fetch('/api/visitas', { headers: authHeaders }).catch(() => null),
+          ])
+          if (planRes && planRes.ok) {
+            const plan = await planRes.json().catch(() => null)
+            if (plan && plan.plan) setPlanInfo(plan as PlanInfo)
+          }
+          if (visitasRes && visitasRes.ok) {
+            const visitasJson = await visitasRes.json().catch(() => null)
+            if (visitasJson && typeof visitasJson.pendingCount === 'number') {
+              setVisitasPendientes(visitasJson.pendingCount)
+            }
+          }
+        })
         .catch(() => {}),
     ]).finally(() => setLoading(false))
   }, [userId])
@@ -167,6 +180,6 @@ export function useDashboard() {
     creditos, setCreditos, pubCount, nombre, setNombre, telefono, setTelefono,
     estado, setEstado, ciudad, setCiudad, fotoUrl, setFotoUrl, verificado,
     nivelConfianza, badgesAuto, ultimaActividad, creadoEn, resenas,
-    promedioResenas, planInfo, loading, setToast, toast, refreshAll,
+    promedioResenas, planInfo, visitasPendientes, loading, setToast, toast, refreshAll,
   }
 }

@@ -7,8 +7,10 @@ import {
   ArrowLeft,
   ArrowUpRight,
   Award,
+  CalendarCheck,
   Check,
   Copy,
+  Landmark,
   Minus,
   Scale,
   ShieldCheck,
@@ -42,6 +44,22 @@ export default function CompararClient({
   const numLocale = isEn ? 'en-US' : 'es-VE'
   const { items: storedItems, remove, clear } = usePropertyCompare()
   const [copied, setCopied] = useState(false)
+  const [bcvRate, setBcvRate] = useState<number | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    fetch('/api/tasa-bcv')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (cancelled || !d) return
+        const rate = Number(d.tasa ?? d.promedio ?? d.usd ?? 0)
+        if (Number.isFinite(rate) && rate > 0) setBcvRate(rate)
+      })
+      .catch(() => undefined)
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   // Si el usuario entra a `/comparar` sin `?ids=...`, cargar desde su selección local
   useEffect(() => {
@@ -220,17 +238,35 @@ export default function CompararClient({
                         {item.title}
                       </LocalLink>
 
-                      <p className="text-lg font-extrabold text-[#8C6526] mt-1 mb-2">
+                      <p className="text-lg font-extrabold text-[#8C6526] mt-1 mb-0.5">
                         {fmtPrice(item)}
                       </p>
+                      {bcvRate && item.price > 0 && (
+                        <p className="text-[11px] font-medium text-[#64748B] mt-0 mb-2 inline-flex items-center gap-1">
+                          <Landmark size={11} className="text-[#8C6526]" aria-hidden="true" />
+                          Bs.{' '}
+                          {new Intl.NumberFormat('es-VE', { maximumFractionDigits: 0 }).format(
+                            Math.round(item.price * bcvRate),
+                          )}
+                        </p>
+                      )}
 
-                      <LocalLink
-                        href={target}
-                        className="inline-flex items-center gap-1 text-xs font-semibold text-[#16294B] hover:underline no-underline"
-                      >
-                        <span>{isEn ? 'View full listing' : 'Ver ficha completa'}</span>
-                        <ArrowUpRight size={13} aria-hidden="true" />
-                      </LocalLink>
+                      <div className="flex flex-wrap items-center gap-2 mt-1">
+                        <LocalLink
+                          href={target}
+                          className="inline-flex items-center gap-1 text-xs font-semibold text-[#16294B] hover:underline no-underline"
+                        >
+                          <span>{isEn ? 'View listing' : 'Ver ficha'}</span>
+                          <ArrowUpRight size={13} aria-hidden="true" />
+                        </LocalLink>
+                        <LocalLink
+                          href={`${target}#agendar-visita`}
+                          className="inline-flex items-center gap-1 rounded-lg bg-[#16294B] hover:bg-[#0f1e38] text-white text-[11px] font-bold px-2.5 py-1 no-underline transition"
+                        >
+                          <CalendarCheck size={12} aria-hidden="true" />
+                          <span>{isEn ? 'Schedule visit' : 'Agendar visita'}</span>
+                        </LocalLink>
+                      </div>
                     </th>
                   )
                 })}

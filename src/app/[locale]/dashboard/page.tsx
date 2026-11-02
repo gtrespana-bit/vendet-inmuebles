@@ -334,6 +334,11 @@ export default function DashboardPage() {
               >
                 <Icon size={16} aria-hidden="true" />
                 {item.label}
+                {item.id === 'visitas' && data.visitasPendientes > 0 && (
+                  <span className="ml-1 inline-flex items-center justify-center rounded-full bg-amber-500 text-white text-[10px] font-bold px-1.5 min-w-[18px] h-[18px]">
+                    {data.visitasPendientes}
+                  </span>
+                )}
               </button>
             )
           })}
@@ -352,6 +357,7 @@ export default function DashboardPage() {
               productos={data.productos}
               verificado={data.verificado}
               planInfo={data.planInfo}
+              visitasPendientes={data.visitasPendientes}
               onGoToTab={setActiveTab}
             />
           )}
@@ -369,7 +375,7 @@ export default function DashboardPage() {
             </Suspense>
           )}
           {activeTab === 'visitas' && (
-            <TabVisitasLeads onToast={data.setToast} />
+            <TabVisitasLeads onToast={data.setToast} onStatusChange={data.refreshAll} />
           )}
           {activeTab === 'equipo' && (
             <TabEquipo

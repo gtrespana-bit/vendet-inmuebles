@@ -1,8 +1,9 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { Calculator, TrendingUp, Landmark } from 'lucide-react'
+import { BarChart3, Calculator, Check, Copy, Landmark, TrendingUp } from 'lucide-react'
 import {
+  computeZonePriceBenchmark,
   estimateDirectFinancing,
   estimateRentalMoveIn,
   estimateRentalYield,
@@ -12,18 +13,25 @@ interface PropertyFinancialEstimatorProps {
   priceUsd: number
   isRent: boolean
   locale: string
+  listingPricePerM2?: number | null
+  comparablePricesPerM2?: number[]
+  areaLabel?: string | null
 }
 
 export default function PropertyFinancialEstimator({
   priceUsd,
   isRent,
   locale,
+  listingPricePerM2,
+  comparablePricesPerM2 = [],
+  areaLabel,
 }: PropertyFinancialEstimatorProps) {
   const isEn = locale === 'en'
   const numberLocale = isEn ? 'en-US' : 'es-VE'
 
   const [bcvRate, setBcvRate] = useState<number | null>(null)
   const [activeTab, setActiveTab] = useState<'plan' | 'yield'>('plan')
+  const [copiedSummary, setCopiedSummary] = useState(false)
 
   // Estado para Venta — Financiamiento directo corto
   const [downPaymentPct, setDownPaymentPct] = useState(40)
@@ -96,7 +104,32 @@ export default function PropertyFinancialEstimator({
     [priceUsd, depositMonths, advanceMonths, adminMonths, bcvRate],
   )
 
+  const zoneBenchmark = useMemo(
+    () =>
+      !isRent
+        ? computeZonePriceBenchmark(listingPricePerM2, comparablePricesPerM2)
+        : null,
+    [isRent, listingPricePerM2, comparablePricesPerM2],
+  )
+
   if (!Number.isFinite(priceUsd) || priceUsd <= 0) return null
+
+  async function handleCopyPlanSummary() {
+    const text = isRent
+      ? isEn
+        ? `Estimated move-in: ${fmtUsd(moveIn.totalMoveInUsd)} (${depositMonths}m deposit + ${advanceMonths}m advance + ${adminMonths}m fee)`
+        : `Estimado ingreso alquiler: ${fmtUsd(moveIn.totalMoveInUsd)} (${depositMonths} m depósito + ${advanceMonths} m adelanto + ${adminMonths} m gestión)`
+      : isEn
+        ? `Payment plan (${downPaymentPct}% down): Upfront ${fmtUsd(financing.upfrontTotalUsd)} + ${termMonths} installments of ${fmtUsd(financing.monthlyPaymentUsd)}/mo`
+        : `Plan de pago (${downPaymentPct}% inicial): Entrega inicial + cierre ${fmtUsd(financing.upfrontTotalUsd)} + ${termMonths} cuotas de ${fmtUsd(financing.monthlyPaymentUsd)}/mes`
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopiedSummary(true)
+      setTimeout(() => setCopiedSummary(false), 3000)
+    } catch {
+      // ignore
+    }
+  }
 
   return (
     <section
@@ -134,6 +167,57 @@ export default function PropertyFinancialEstimator({
               ? `${fmtVes(moveIn.monthlyRentVes || 0)}${isEn ? '/mo' : '/mes'}`
               : fmtVes(financing.priceVes || 0)}
           </span>
+        </div>
+      )}
+
+      {zoneBenchmark && (
+        <div className="mb-4 rounded-xl border border-[#e2dcd0] bg-white p-3.5">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+            <span className="inline-flex items-center gap-1.5 text-xs font-bold text-[#16294B]">
+              <BarChart3 size={14} className="text-[#8C6526]" aria-hidden="true" />
+              {isEn
+                ? `Price/m² benchmark${areaLabel ? ` in ${areaLabel}` : ''}`
+                : `Termómetro de $/m²${areaLabel ? ` en ${areaLabel}` : ' frente a similares'}`}
+            </span>
+            <span
+              className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ${
+                zoneBenchmark.positioning === 'below_market'
+                  ? 'bg-emerald-100 text-emerald-800'
+                  : zoneBenchmark.positioning === 'above_market'
+                    ? 'bg-amber-100 text-amber-900'
+                    : 'bg-blue-100 text-blue-800'
+              }`}
+            >
+              {zoneBenchmark.positioning === 'below_market'
+                ? isEn
+                  ? `${Math.abs(zoneBenchmark.deltaPct)}% below median`
+                  : `${Math.abs(zoneBenchmark.deltaPct)}% bajo la mediana`
+                : zoneBenchmark.positioning === 'above_market'
+                  ? isEn
+                    ? `+${zoneBenchmark.deltaPct}% vs median`
+                    : `+${zoneBenchmark.deltaPct}% sobre la mediana`
+                  : isEn
+                    ? 'In line with area median'
+                    : 'Alineado al mercado'}
+            </span>
+          </div>
+          <p className="text-xs text-[#475569] m-0">
+            {isEn ? (
+              <>
+                This listing: <strong>{fmtUsd(zoneBenchmark.listingPricePerM2)}/m²</strong> ·
+                Comparable median ({zoneBenchmark.sampleCount} active):{' '}
+                <strong>{fmtUsd(zoneBenchmark.medianPricePerM2)}/m²</strong> (range{' '}
+                {fmtUsd(zoneBenchmark.minPricePerM2)} – {fmtUsd(zoneBenchmark.maxPricePerM2)}/m²)
+              </>
+            ) : (
+              <>
+                Este inmueble: <strong>{fmtUsd(zoneBenchmark.listingPricePerM2)}/m²</strong> ·
+                Mediana comparable ({zoneBenchmark.sampleCount} activos):{' '}
+                <strong>{fmtUsd(zoneBenchmark.medianPricePerM2)}/m²</strong> (rango{' '}
+                {fmtUsd(zoneBenchmark.minPricePerM2)} – {fmtUsd(zoneBenchmark.maxPricePerM2)}/m²)
+              </>
+            )}
+          </p>
         </div>
       )}
 
@@ -388,11 +472,29 @@ export default function PropertyFinancialEstimator({
             </div>
           )}
 
-          <p className="text-[11px] text-[#64748B] mt-3 mb-0">
-            {isEn
-              ? 'Illustrative calculation for buyer guidance. Payment terms depend on direct agreement with the seller.'
-              : 'Cálculo referencial informativo. Las condiciones finales de pago o financiamiento dependen del acuerdo directo con el propietario o agencia.'}
-          </p>
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+            <p className="text-[11px] text-[#64748B] m-0">
+              {isEn
+                ? 'Illustrative calculation for buyer guidance. Payment terms depend on direct agreement with the seller.'
+                : 'Cálculo referencial informativo. Las condiciones finales de pago o financiamiento dependen del acuerdo directo con el propietario o agencia.'}
+            </p>
+            <button
+              type="button"
+              onClick={handleCopyPlanSummary}
+              className="inline-flex items-center gap-1 rounded-lg border border-[#d8d2c7] bg-white hover:bg-[#f7f4ee] px-2.5 py-1 text-[11px] font-semibold text-[#16294B] transition"
+            >
+              {copiedSummary ? <Check size={12} className="text-emerald-600" /> : <Copy size={12} />}
+              <span>
+                {copiedSummary
+                  ? isEn
+                    ? 'Copied!'
+                    : '¡Copiado!'
+                  : isEn
+                    ? 'Copy payment summary'
+                    : 'Copiar esquema'}
+              </span>
+            </button>
+          </div>
         </div>
       )}
     </section>

@@ -60,6 +60,57 @@ export interface RentalMoveInResult {
   totalMoveInVes: number | null
 }
 
+export interface ZonePriceBenchmarkResult {
+  listingPricePerM2: number
+  medianPricePerM2: number
+  minPricePerM2: number
+  maxPricePerM2: number
+  sampleCount: number
+  deltaPct: number
+  positioning: 'below_market' | 'at_market' | 'above_market'
+}
+
+/**
+ * Compara el `$/m²` de un inmueble frente a la mediana de inmuebles similares activos
+ * en su misma urbanización/ciudad (requiere al menos 2 comparables válidos).
+ */
+export function computeZonePriceBenchmark(
+  listingPricePerM2: number | null | undefined,
+  comparablePricesPerM2: Array<number | null | undefined>,
+): ZonePriceBenchmarkResult | null {
+  const current = Number(listingPricePerM2)
+  if (!Number.isFinite(current) || current <= 0) return null
+
+  const valid = comparablePricesPerM2
+    .map((v) => Number(v))
+    .filter((v) => Number.isFinite(v) && v > 20 && v < 50000)
+    .sort((a, b) => a - b)
+
+  if (valid.length < 2) return null
+
+  const mid = Math.floor(valid.length / 2)
+  const median =
+    valid.length % 2 === 0
+      ? round2((valid[mid - 1] + valid[mid]) / 2)
+      : round2(valid[mid])
+
+  if (median <= 0) return null
+
+  const deltaPct = round2(((current - median) / median) * 100)
+  const positioning: ZonePriceBenchmarkResult['positioning'] =
+    deltaPct <= -8 ? 'below_market' : deltaPct >= 8 ? 'above_market' : 'at_market'
+
+  return {
+    listingPricePerM2: Math.round(current),
+    medianPricePerM2: Math.round(median),
+    minPricePerM2: Math.round(valid[0]),
+    maxPricePerM2: Math.round(valid[valid.length - 1]),
+    sampleCount: valid.length,
+    deltaPct,
+    positioning,
+  }
+}
+
 function clamp(n: number, min: number, max: number): number {
   if (!Number.isFinite(n)) return min
   return Math.min(Math.max(n, min), max)
