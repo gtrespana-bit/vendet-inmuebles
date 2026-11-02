@@ -9,7 +9,7 @@ import Image from 'next/image'
 import { isOptimizableImageSrc } from '@/lib/image-src'
 import {
   PlusCircle, MessageSquare, Coins, ShieldCheck,
-  AlertCircle, ArrowRight, Eye, Sparkles, Users, CalendarCheck,
+  AlertCircle, ArrowRight, Eye, Sparkles, Users, CalendarCheck, TrendingUp,
 } from 'lucide-react'
 import type { PlanInfo } from '../hooks/useDashboard'
 
@@ -86,6 +86,12 @@ export default function TabResumen({
       icon: CalendarCheck,
       title: isEn ? 'Visits & leads' : 'Visitas y leads',
       desc: isEn ? 'Confirm tours, calls & buyer notes' : 'Confirma citas, videollamadas y seguimiento',
+    },
+    {
+      onClick: () => onGoToTab('analitica'),
+      icon: TrendingUp,
+      title: isEn ? 'Conversion funnel' : 'Embudo y analítica',
+      desc: isEn ? 'Views → favorites → WhatsApp & visits' : 'Vistas → favoritos → WhatsApp y citas',
     },
     ...(planInfo?.agencia || planInfo?.plan === 'agencia'
       ? [{ onClick: () => onGoToTab('equipo'), icon: Users, title: t('quickTeamTitle'), desc: t('quickTeamDesc') }]

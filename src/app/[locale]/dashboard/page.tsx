@@ -7,7 +7,7 @@ import { getSupabaseAuthHeaders } from '@/lib/supabase-auth-headers'
 import dynamic from 'next/dynamic'
 import { getTasaBCVClient, actualizarTasaClient } from '@/lib/tasaBCV'
 import { useTranslations } from 'next-intl'
-import { Package, CreditCard, Heart, X, Star, ShieldCheck, BarChart3, Settings, Users, CalendarCheck } from 'lucide-react'
+import { Package, CreditCard, Heart, X, Star, ShieldCheck, BarChart3, Settings, Users, CalendarCheck, TrendingUp } from 'lucide-react'
 import LocalLink from '@/components/LocalLink'
 import { routing } from '@/i18n/routing'
 
@@ -24,6 +24,7 @@ import DestacadoModal from './components/modals/DestacadoModal'
 // Lazy-load heavy tabs
 const TabProductos = lazy(() => import('./components/tabs/TabProductos'))
 const TabVisitasLeads = dynamic(() => import('./components/tabs/TabVisitasLeads'), { ssr: false })
+const TabAnaliticaEmbudo = dynamic(() => import('./components/tabs/TabAnaliticaEmbudo'), { ssr: false })
 const TabEquipo = dynamic(() => import('./components/tabs/TabEquipo'), { ssr: false })
 const SolicitarVerificacion = dynamic(() => import('@/components/SolicitarVerificacion'), { ssr: false })
 const TabReputacion = dynamic(() => import('./components/tabs/TabReputacion'), { ssr: false })
@@ -116,7 +117,7 @@ export default function DashboardPage() {
     const params = new URLSearchParams(window.location.search)
     const tab = params.get('tab')
     if (tab === 'mensajes') { router.replace(pathname.startsWith('/en') ? '/en/chat' : '/chat'); return }
-    if (tab && ['resumen', 'productos', 'visitas', 'equipo', 'creditos', 'favoritos', 'verificacion', 'reputacion', 'perfil'].includes(tab)) {
+    if (tab && ['resumen', 'productos', 'visitas', 'analitica', 'equipo', 'creditos', 'favoritos', 'verificacion', 'reputacion', 'perfil'].includes(tab)) {
       setActiveTab(tab)
     }
     if (params.get('confirmed') === '1' || params.get('confirmed') === 'true') {
@@ -248,10 +249,12 @@ export default function DashboardPage() {
 
   const averageViews = data.productos.length ? Math.round(data.visitasTotales / data.productos.length) : 0
   const promotedCount = data.productos.filter((p: any) => p.boosteado_en || (p.destacado && p.destacado_hasta > new Date().toISOString())).length
+  const isEnPath = pathname === '/en' || pathname.startsWith('/en/')
   const tabs = [
     { id: 'resumen', label: t('tabSummary'), icon: BarChart3 },
     { id: 'productos', label: t('tabListings'), icon: Package },
     { id: 'visitas', label: t('tabVisits'), icon: CalendarCheck },
+    { id: 'analitica', label: isEnPath ? 'Funnel' : 'Embudo', icon: TrendingUp },
     { id: 'equipo', label: t('tabTeam'), icon: Users },
     { id: 'creditos', label: t('tabCredits'), icon: CreditCard },
     { id: 'favoritos', label: t('tabFavorites'), icon: Heart },
@@ -377,6 +380,12 @@ export default function DashboardPage() {
           {activeTab === 'visitas' && (
             <TabVisitasLeads onToast={data.setToast} onStatusChange={data.refreshAll} />
           )}
+          {activeTab === 'analitica' && (
+            <TabAnaliticaEmbudo
+              onGoToTab={setActiveTab}
+              onDestacar={setDestacadoTarget}
+            />
+          )}
           {activeTab === 'equipo' && (
             <TabEquipo
               userId={user!.id}
@@ -398,6 +407,7 @@ export default function DashboardPage() {
           {activeTab === 'verificacion' && <SolicitarVerificacion />}
           {activeTab === 'reputacion' && (
             <TabReputacion
+              userId={user!.id}
               verificado={data.verificado}
               nivelConfianza={data.nivelConfianza}
               badgesAuto={data.badgesAuto}
@@ -407,6 +417,7 @@ export default function DashboardPage() {
               numPubsVendidas={numPubsVendidas}
               creadoEn={data.creadoEn}
               ultimaActividad={data.ultimaActividad}
+              onToast={data.setToast}
             />
           )}
           {activeTab === 'perfil' && (

@@ -27,6 +27,7 @@ export async function POST(req: NextRequest) {
 
     const id = String(body?.id || '')
     if (!isValidUUID(id)) return new NextResponse(null, { status: 204 })
+    const sessionId = typeof body?.sessionId === 'string' ? body.sessionId.slice(0, 64) : null
 
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -36,6 +37,7 @@ export async function POST(req: NextRequest) {
       void registrarEvento('vista_inmueble', {
         ruta: sanitizeRuta(`/inmueble/${id}`),
         meta: { inmueble_id: id },
+        sessionId,
         userId: userIdDesdeCookie(req),
         req,
       })
