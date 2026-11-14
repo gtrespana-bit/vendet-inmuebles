@@ -212,6 +212,37 @@ try {
       assert.notEqual(pair.enSlug, pair.esSlug, `La traducción de "${pair.esSlug}" reutiliza el slug español`)
     }
 
+    // Catálogo: una sola URL indexable (`/catalogo` a secas), canonical siempre sin query.
+    const catalogoRes = await fetch(`${BASE}/catalogo`)
+    assert.equal(catalogoRes.status, 200, 'GET /catalogo debe devolver 200')
+    const catalogoHtml = await catalogoRes.text()
+    assert.match(
+      catalogoHtml,
+      /rel="canonical"[^>]*href="https:\/\/venezuela-inmuebles\.online\/catalogo"/,
+      '/catalogo debe tener canonical propio sin parámetros'
+    )
+    assert.match(
+      catalogoHtml,
+      /name="robots"[^>]*content="index, follow"/,
+      'La vista canónica del catálogo debe indexarse'
+    )
+
+    for (const query of ['?pagina=2', '?orden=precio-asc', '?operacion=venta', '?estado=carabobo&ciudad=valencia']) {
+      const filteredRes = await fetch(`${BASE}/catalogo${query}`)
+      assert.equal(filteredRes.status, 200, `GET /catalogo${query} debe devolver 200`)
+      const filteredHtml = await filteredRes.text()
+      assert.match(
+        filteredHtml,
+        /name="robots"[^>]*content="noindex, follow"/,
+        `/catalogo${query} debe declarar noindex, follow`
+      )
+      assert.match(
+        filteredHtml,
+        /rel="canonical"[^>]*href="https:\/\/venezuela-inmuebles\.online\/catalogo"/,
+        `/catalogo${query} debe canonicalizar a /catalogo sin parámetros`
+      )
+    }
+
     // Portada: sin doble "| Venezuela Inmuebles | Venezuela Inmuebles" y canonical exacto sin barra final
     const homeRes = await fetch(`${BASE}/`)
     assert.equal(homeRes.status, 200)

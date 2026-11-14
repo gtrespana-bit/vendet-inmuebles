@@ -6,9 +6,14 @@ import CatalogoClient from './CatalogoPage'
 import type { CatalogPropertyRecord } from '@/types/property'
 import { buildPageAlternates } from '@/lib/seo-metadata'
 import { sortCatalogProperties } from '@/lib/catalog-sort'
+import { catalogRobots, type CatalogSearchParams } from '@/lib/catalog-seo'
 
-export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
-  const { locale } = await params
+export async function generateMetadata(props: {
+  params: Promise<{ locale: string }>
+  searchParams: Promise<CatalogSearchParams>
+}): Promise<Metadata> {
+  const { locale } = await props.params
+  const searchParams = await props.searchParams
   const t = await getTranslations({ locale, namespace: 'catalog' })
   const english = locale === 'en'
 
@@ -17,7 +22,10 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
     description: english
       ? 'Explore properties for sale and rent in Venezuela. Filter by listing type, property type, neighborhood, amenities and price.'
       : 'Explora inmuebles en venta y alquiler en Venezuela. Filtra por operación, tipo de propiedad, urbanización, servicios y precio.',
+    // Canonical siempre a `/catalogo` a secas: ninguna variante con filtros compite con la
+    // vista principal. Solo esa vista se indexa; el resto, `noindex, follow`.
     alternates: buildPageAlternates(locale, '/catalogo'),
+    robots: catalogRobots(searchParams),
   }
 }
 
