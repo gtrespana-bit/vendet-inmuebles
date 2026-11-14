@@ -6,7 +6,7 @@
  */
 import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
-import { cpSync, existsSync } from 'node:fs'
+import { cpSync, existsSync, readdirSync } from 'node:fs'
 import path from 'node:path'
 
 const ROOT = process.cwd()
@@ -152,6 +152,32 @@ try {
       for (const dis of disallowPrefixes) {
         assert.ok(!p.startsWith(dis), `URL ${p} en sitemap.xml choca con Disallow: ${dis}`)
       }
+    }
+
+    // Los artículos del blog deben aparecer en el sitemap servido por HTTP, en ambos idiomas.
+    // AVISO: esta comprobación por sí sola NO acredita la corrección del rastreo de archivos.
+    // El servidor standalone arranca con cwd `.next/standalone`, donde los Markdown también
+    // acaban copiados por el rastreo global del servidor (las páginas del blog los leen al
+    // compilar), así que el fallo de empaquetado de la función aislada queda enmascarado en
+    // local. La prueba concluyente de ese punto es `scripts/verify-sitemap-tracing.mjs`, que
+    // inspecciona el `.nft.json` propio de `/sitemap.xml`. Esta verificación HTTP cubre el
+    // contrato de extremo a extremo (que el XML publicado contenga realmente las guías).
+    const blogSlugs = readdirSync(path.join(ROOT, 'src', 'content', 'blog'))
+      .filter((file) => file.endsWith('.md'))
+      .map((file) => file.replace(/\.md$/, ''))
+      .sort()
+
+    assert.ok(blogSlugs.length >= 6, `Se esperaban al menos 6 guías en src/content/blog, encontradas ${blogSlugs.length}`)
+
+    for (const slug of blogSlugs) {
+      assert.ok(
+        locs.includes(`https://venezuela-inmuebles.online/blog/${slug}`),
+        `sitemap.xml debe incluir /blog/${slug}`
+      )
+      assert.ok(
+        locs.includes(`https://venezuela-inmuebles.online/en/blog/${slug}`),
+        `sitemap.xml debe incluir /en/blog/${slug} (par hreflang)`
+      )
     }
 
     // Portada: sin doble "| Venezuela Inmuebles | Venezuela Inmuebles" y canonical exacto sin barra final
