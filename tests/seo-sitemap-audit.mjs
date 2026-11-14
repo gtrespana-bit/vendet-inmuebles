@@ -109,6 +109,33 @@ test('Autoridad temática del blog: 100% inmobiliario, metadata exportada y 404 
   assert.match(blogSlugPage, /if \(!post\) notFound\(\)/)
 })
 
+test('Rastreo de archivos: la función aislada de /sitemap.xml se publica con los Markdown del blog', () => {
+  const config = readFileSync('next.config.js', 'utf8')
+  assert.match(config, /outputFileTracingIncludes\s*:/, 'next.config.js debe declarar `outputFileTracingIncludes`')
+  assert.match(
+    config,
+    /['"]\/sitemap\.xml['"]\s*:\s*\[[^\]]*['"](?:\.\/)?src\/content\/blog\/\*\.md['"]/s,
+    "next.config.js debe incluir '/sitemap.xml': ['./src/content/blog/*.md'] en `outputFileTracingIncludes`"
+  )
+
+  // `src/app/sitemap.ts` lee el directorio en tiempo de ejecución; sin la entrada anterior
+  // el rastreo estático no detecta los Markdown y las guías desaparecen de producción.
+  const sitemapRoute = readFileSync('src/app/sitemap.ts', 'utf8')
+  assert.match(sitemapRoute, /readdirSync/, 'El sitemap sigue dependiendo de una lectura dinámica del directorio')
+
+  // Coherencia: cada Markdown del disco produce su par es/en en el sitemap.
+  const slugs = readdirSync('src/content/blog')
+    .filter((f) => f.endsWith('.md'))
+    .map((f) => f.replace(/\.md$/, ''))
+  assert.ok(slugs.length >= 6, `Se esperaban al menos 6 guías, encontradas ${slugs.length}`)
+
+  const urls = buildSitemapEntries({ properties: [], blogPosts: slugs.map((slug) => ({ slug })) }).map((e) => e.url)
+  for (const slug of slugs) {
+    assert.ok(urls.includes(`https://venezuela-inmuebles.online/blog/${slug}`), `Falta /blog/${slug} en el sitemap`)
+    assert.ok(urls.includes(`https://venezuela-inmuebles.online/en/blog/${slug}`), `Falta /en/blog/${slug} en el sitemap`)
+  }
+})
+
 test('Higiene SEO global: sin títulos duplicados de marca, sin /es/ forzado en tarjetas, JSON-LD en fichas y redirecciones 308', () => {
   const home = readFileSync('src/app/[locale]/page.tsx', 'utf8')
   assert.match(home, /title:\s*\{\s*absolute:\s*t\('metaTitle'\)\s*\}/)
