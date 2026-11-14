@@ -6,7 +6,7 @@
  */
 import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
-import { cpSync, existsSync, readdirSync } from 'node:fs'
+import { cpSync, existsSync, readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 
 const ROOT = process.cwd()
@@ -154,30 +154,62 @@ try {
       }
     }
 
-    // Los artículos del blog deben aparecer en el sitemap servido por HTTP, en ambos idiomas.
+    // Los artículos del blog deben aparecer en el sitemap servido por HTTP, **cada idioma
+    // con su propio slug**: `/blog/<slug-es>` y `/en/blog/<slug-en>`.
     // AVISO: esta comprobación por sí sola NO acredita la corrección del rastreo de archivos.
     // El servidor standalone arranca con cwd `.next/standalone`, donde los Markdown también
     // acaban copiados por el rastreo global del servidor (las páginas del blog los leen al
     // compilar), así que el fallo de empaquetado de la función aislada queda enmascarado en
     // local. La prueba concluyente de ese punto es `scripts/verify-sitemap-tracing.mjs`, que
-    // inspecciona el `.nft.json` propio de `/sitemap.xml`. Esta verificación HTTP cubre el
-    // contrato de extremo a extremo (que el XML publicado contenga realmente las guías).
-    const blogSlugs = readdirSync(path.join(ROOT, 'src', 'content', 'blog'))
-      .filter((file) => file.endsWith('.md'))
-      .map((file) => file.replace(/\.md$/, ''))
-      .sort()
+    // inspecciona el `.nft.json` propio de `/sitemap.xml`.
+    const blogRoot = path.join(ROOT, 'src', 'content', 'blog')
+    const blogEnDir = path.join(blogRoot, 'en')
 
-    assert.ok(blogSlugs.length >= 6, `Se esperaban al menos 6 guías en src/content/blog, encontradas ${blogSlugs.length}`)
+    const esSlugs = readdirSync(blogRoot).filter((f) => f.endsWith('.md')).map((f) => f.replace(/\.md$/, '')).sort()
+    const enSlugs = readdirSync(blogEnDir).filter((f) => f.endsWith('.md')).map((f) => f.replace(/\.md$/, '')).sort()
 
-    for (const slug of blogSlugs) {
+    assert.ok(esSlugs.length >= 6, `Se esperaban al menos 6 guías en español, encontradas ${esSlugs.length}`)
+    assert.equal(enSlugs.length, esSlugs.length, 'Cada guía en español debe tener su traducción al inglés')
+
+    for (const slug of esSlugs) {
       assert.ok(
         locs.includes(`https://venezuela-inmuebles.online/blog/${slug}`),
-        `sitemap.xml debe incluir /blog/${slug}`
+        `sitemap.xml debe incluir /blog/${slug} (español)`
       )
+    }
+    for (const slug of enSlugs) {
       assert.ok(
         locs.includes(`https://venezuela-inmuebles.online/en/blog/${slug}`),
-        `sitemap.xml debe incluir /en/blog/${slug} (par hreflang)`
+        `sitemap.xml debe incluir /en/blog/${slug} (inglés, slug traducido)`
       )
+      assert.ok(
+        !locs.includes(`https://venezuela-inmuebles.online/blog/${slug}`),
+        `El slug inglés ${slug} no debe publicarse bajo /blog/ (español)`
+      )
+    }
+
+    // Emparejar es/en por `translationKey` para verificar contenido y redirecciones.
+    const frontmatterValue = (file, field) =>
+      readFileSync(file, 'utf8').match(new RegExp(`^${field}:\\s*(.+)$`, 'm'))?.[1]?.trim() ?? ''
+
+    const blogPairs = esSlugs.map((esSlug) => {
+      const esFile = path.join(blogRoot, `${esSlug}.md`)
+      const key = frontmatterValue(esFile, 'translationKey')
+      const enSlug = enSlugs.find(
+        (candidate) => frontmatterValue(path.join(blogEnDir, `${candidate}.md`), 'translationKey') === key
+      )
+      return {
+        key,
+        esSlug,
+        enSlug,
+        esTitle: frontmatterValue(esFile, 'title'),
+        enTitle: frontmatterValue(path.join(blogEnDir, `${enSlug}.md`), 'title'),
+      }
+    })
+
+    for (const pair of blogPairs) {
+      assert.ok(pair.enSlug, `La guía "${pair.esSlug}" no tiene traducción al inglés`)
+      assert.notEqual(pair.enSlug, pair.esSlug, `La traducción de "${pair.esSlug}" reutiliza el slug español`)
     }
 
     // Portada: sin doble "| Venezuela Inmuebles | Venezuela Inmuebles" y canonical exacto sin barra final
@@ -197,6 +229,39 @@ try {
 
     const missingPostRes = await fetch(`${BASE}/blog/articulo-inexistente-auditoria-seo`)
     assert.equal(missingPostRes.status, 404, 'Artículo de blog inexistente debe devolver 404 real (no soft-404)')
+
+    // Cada guía se sirve íntegramente en su idioma, con su propio slug, y la URL antigua
+    // en inglés (que reutilizaba el slug español) redirige 308 a la traducida.
+    for (const pair of blogPairs) {
+      const esRes = await fetch(`${BASE}/blog/${pair.esSlug}`)
+      assert.equal(esRes.status, 200, `GET /blog/${pair.esSlug} debe devolver 200`)
+      const esHtml = await esRes.text()
+      assert.match(esHtml, /<html[^>]*\blang="es"/, `/blog/${pair.esSlug} debe servirse en español`)
+      assert.ok(esHtml.includes(pair.esTitle), `/blog/${pair.esSlug} debe mostrar su título en español`)
+
+      const enRes = await fetch(`${BASE}/en/blog/${pair.enSlug}`)
+      assert.equal(enRes.status, 200, `GET /en/blog/${pair.enSlug} debe devolver 200`)
+      const enHtml = await enRes.text()
+      assert.match(enHtml, /<html[^>]*\blang="en"/, `/en/blog/${pair.enSlug} debe servirse en inglés`)
+      assert.ok(enHtml.includes(pair.enTitle), `/en/blog/${pair.enSlug} debe mostrar su título en inglés`)
+      assert.ok(
+        !enHtml.includes(pair.esTitle),
+        `/en/blog/${pair.enSlug} no debe incluir el título en español: "${pair.esTitle}"`
+      )
+      assert.match(
+        enHtml,
+        /"inLanguage":"en-US"/,
+        `El JSON-LD de /en/blog/${pair.enSlug} debe declarar "inLanguage":"en-US"`
+      )
+
+      const legacyRes = await fetch(`${BASE}/en/blog/${pair.esSlug}`, { redirect: 'manual' })
+      assert.equal(legacyRes.status, 308, `GET /en/blog/${pair.esSlug} (slug antiguo) debe devolver 308`)
+      assert.match(
+        legacyRes.headers.get('location') || '',
+        new RegExp(`/en/blog/${pair.enSlug}$`),
+        `El slug antiguo /en/blog/${pair.esSlug} debe redirigir a /en/blog/${pair.enSlug}`
+      )
+    }
 
     // /propiedades redirige permanentemente (308) a /propiedades/venta
     const propRedirect = await fetch(`${BASE}/propiedades`, { redirect: 'manual' })

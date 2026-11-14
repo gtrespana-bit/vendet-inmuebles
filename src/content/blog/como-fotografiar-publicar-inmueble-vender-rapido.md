@@ -5,6 +5,8 @@ date: 2026-10-14
 readTime: 5 min
 tags: publicar inmueble gratis,fotos inmobiliarias,vender apartamento rápido,consejos corredores inmobiliarios
 category: Guía para Propietarios
+translationKey: listing-photography
+icon: 🏠
 featured: false
 ---
 

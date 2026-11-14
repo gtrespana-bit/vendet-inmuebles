@@ -1,81 +1,35 @@
 import type { Metadata } from 'next'
-import { notFound } from 'next/navigation'
+import { notFound, permanentRedirect } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
 import LocalLink from '@/components/LocalLink'
-import fs from 'fs'
-import path from 'path'
 import { ArrowLeft, Calendar, Clock, Tag, ArrowRight, ChevronRight } from 'lucide-react'
 import { routing } from '@/i18n/routing'
-import { buildPageAlternates, SITE_URL } from '@/lib/seo-metadata'
-
-interface Post {
-  slug: string
-  title: string
-  excerpt: string
-  date: string
-  readTime: string
-  tags: string[]
-  category: string
-  content: string
-  ogImage?: string
-}
-
-function cleanFrontmatterValue(raw: string | undefined, fallback = ''): string {
-  if (!raw) return fallback
-  return raw.trim().replace(/^["']|["']$/g, '').trim()
-}
-
-function getPostBySlug(slug: string): Post | null {
-  if (!slug || !/^[a-z0-9-]+$/.test(slug)) return null
-  const filePath = path.join(process.cwd(), 'src/content/blog', `${slug}.md`)
-  if (!fs.existsSync(filePath)) return null
-
-  const raw = fs.readFileSync(filePath, 'utf-8')
-  const parts = raw.split('---\n')
-  if (parts.length < 3) return null
-  const frontmatterRaw = parts[1]
-  const contentRaw = parts.slice(2).join('---\n').trim()
-
-  const lines = frontmatterRaw.split('\n').filter(l => !l.startsWith('#'))
-  const frontmatter: Record<string, string> = {}
-  lines.forEach(line => {
-    const colonIndex = line.indexOf(':')
-    if (colonIndex > 0) {
-      const key = line.substring(0, colonIndex).trim()
-      const value = cleanFrontmatterValue(line.substring(colonIndex + 1))
-      frontmatter[key] = value
-    }
-  })
-
-  return {
-    slug,
-    title: frontmatter.title || slug,
-    excerpt: frontmatter.excerpt || '',
-    date: frontmatter.date || '',
-    readTime: frontmatter.readTime || '6 min',
-    tags: frontmatter.tags ? frontmatter.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
-    category: frontmatter.category || 'Guía Inmobiliaria',
-    content: contentRaw,
-    ogImage: frontmatter.ogImage,
-  }
-}
-
-function getAllSlugs(): string[] {
-  const dir = path.join(process.cwd(), 'src/content/blog')
-  if (!fs.existsSync(dir)) return []
-  return fs.readdirSync(dir).filter(f => f.endsWith('.md')).map(f => f.replace('.md', ''))
-}
+import { SITE_URL } from '@/lib/seo-metadata'
+import {
+  buildBlogPostAlternates,
+  listBlogStaticSlugs,
+  localePrefix,
+  readBlogPost,
+  resolveLegacyBlogSlug,
+  type BlogPost,
+} from '@/lib/blog'
 
 export const dynamicParams = false
 
+/**
+ * En inglés se generan también los slugs antiguos (heredados del español) para poder
+ * servir una redirección 308 permanente a la nueva URL traducida, en lugar de un 404
+ * que tiraría a la basura la indexación ya conseguida de esas páginas.
+ */
 export function generateStaticParams(): Array<{ locale: string; slug: string }> {
-  const slugs = getAllSlugs()
-  return routing.locales.flatMap((locale) => slugs.map((slug) => ({ locale, slug })))
+  return routing.locales.flatMap((locale) =>
+    listBlogStaticSlugs(locale).map((slug) => ({ locale, slug }))
+  )
 }
 
 export async function generateMetadata(props: { params: Promise<{ slug: string; locale: string }> }): Promise<Metadata> {
   const { slug, locale } = await props.params
-  const post = getPostBySlug(slug)
+  const post = readBlogPost(slug, locale)
   if (!post) {
     return {
       title: locale === 'en' ? 'Article not found' : 'Artículo no encontrado',
@@ -83,7 +37,7 @@ export async function generateMetadata(props: { params: Promise<{ slug: string; 
     }
   }
 
-  const alternates = buildPageAlternates(locale, `/blog/${post.slug}`)
+  const alternates = buildBlogPostAlternates(post, locale)
   const imageUrl = post.ogImage || `${SITE_URL}/og-image.png`
 
   return {
@@ -103,8 +57,8 @@ export async function generateMetadata(props: { params: Promise<{ slug: string; 
   }
 }
 
-function generateArticleSchema(post: Post, locale: string) {
-  const prefix = locale === 'en' ? '/en' : ''
+function generateArticleSchema(post: BlogPost, locale: string) {
+  const prefix = localePrefix(locale)
   const articleUrl = `${SITE_URL}${prefix}/blog/${post.slug}`
   return {
     '@context': 'https://schema.org',
@@ -136,7 +90,7 @@ function generateArticleSchema(post: Post, locale: string) {
         },
         articleSection: post.category,
         keywords: post.tags.join(', '),
-        inLanguage: 'es-VE',
+        inLanguage: locale === 'en' ? 'en-US' : 'es-VE',
       },
       {
         '@type': 'BreadcrumbList',
@@ -258,19 +212,19 @@ function renderMarkdown(content: string, locale: string): string {
   return htmlParts.join('\n')
 }
 
-const categoryIcons: Record<string, string> = {
-  'Compra y Legal': '⚖️',
-  'Alquiler': '🔑',
-  'Tasación y Precios': '📐',
-  'Inversión y Zonas': '📍',
-  'Guía para Propietarios': '🏠',
-  'Seguridad Inmobiliaria': '🛡️',
-}
-
 export default async function BlogPost(props: { params: Promise<{ slug: string; locale: string }> }) {
   const { slug, locale } = await props.params
-  const post = getPostBySlug(slug)
-  if (!post) notFound()
+  const post = readBlogPost(slug, locale)
+
+  if (!post) {
+    // Slug antiguo del blog en inglés (heredado del español): redirección permanente
+    // a la URL traducida para no perder la indexación de esas páginas.
+    const translatedSlug = resolveLegacyBlogSlug(slug, locale)
+    if (translatedSlug) {
+      permanentRedirect(`${localePrefix(locale)}/blog/${translatedSlug}`)
+    }
+    notFound()
+  }
 
   const t = await getTranslations('blog')
   const htmlContent = renderMarkdown(post.content, locale)
@@ -301,7 +255,7 @@ export default async function BlogPost(props: { params: Promise<{ slug: string; 
             <ArrowLeft size={16} aria-hidden="true" /> {t('backToBlog')}
           </LocalLink>
           <div className="flex items-center gap-2 mb-4">
-            <span className="text-lg" aria-hidden="true">{categoryIcons[post.category] || '🏠'}</span>
+            <span className="text-lg" aria-hidden="true">{post.icon}</span>
             <span className="text-sm font-semibold text-[var(--gold-text)] bg-brand-accent/20 px-3 py-1 rounded-full">{post.category}</span>
           </div>
           <h1 className="text-2xl md:text-4xl font-black text-white mb-4 leading-tight">{post.title}</h1>

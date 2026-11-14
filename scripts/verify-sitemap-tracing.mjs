@@ -42,9 +42,23 @@ if (!existsSync(BLOG_DIR)) {
   fail(`No existe el directorio del blog: ${BLOG_DIR}`)
 }
 
-const blogFiles = readdirSync(BLOG_DIR)
-  .filter((file) => file.endsWith('.md'))
-  .sort()
+/**
+ * Inventario recursivo relativo a `src/content/blog`: incluye los artículos en español
+ * (`<slug>.md`) y sus traducciones (`en/<slug>.md`). Cada idioma tiene su propio slug.
+ */
+function listMarkdown(dir, base = dir, found = []) {
+  for (const entry of readdirSync(dir)) {
+    const full = path.join(dir, entry)
+    if (statSync(full).isDirectory()) {
+      listMarkdown(full, base, found)
+    } else if (entry.endsWith('.md')) {
+      found.push(path.relative(base, full).replace(/\\/g, '/'))
+    }
+  }
+  return found
+}
+
+const blogFiles = listMarkdown(BLOG_DIR).sort()
 
 if (blogFiles.length === 0) {
   fail(`No hay Markdown en ${BLOG_DIR}; nada que verificar.`)
@@ -66,7 +80,7 @@ assert.match(
 )
 assert.match(
   configSource,
-  /['"]\/sitemap\.xml['"]\s*:\s*\[[^\]]*['"](?:\.\/)?src\/content\/blog\/\*\.md['"]/s,
+  /['"]\/sitemap\.xml['"]\s*:\s*\[[^\]]*['"](?:\.\/)?src\/content\/blog\/\*\*?\/\*\.md['"]/s,
   "next.config.js debe declarar `'/sitemap.xml': ['./src/content/blog/*.md']` en `outputFileTracingIncludes`"
 )
 
@@ -125,15 +139,16 @@ const sitemapTraceFiles = walk(NEXT_DIR, (full) => full.endsWith('.nft.json') &&
 
 // Tanto el rastreo del build (`.next/server/...`) como el de la salida standalone
 // (`.next/standalone/.next/server/...`) son pruebas válidas de que los Markdown viajan.
-const BLOG_PATH_PATTERN = /(?:^|\/)src\/content\/blog\/[^/\\]+\.md$/
+// Se guarda la ruta relativa dentro de `src/content/blog` (`<slug>.md` / `en/<slug>.md`)
+// para compararla con el inventario real de artículos.
+const BLOG_PATH_PATTERN = /(?:^|\/)src\/content\/blog\/(.+)$/
 
 const tracedBlogFiles = new Set()
 for (const tracePath of sitemapTraceFiles) {
   for (const absolute of readTracedFiles(tracePath)) {
     const relative = path.relative(ROOT, absolute).replace(/\\/g, '/')
-    if (BLOG_PATH_PATTERN.test(relative) || BLOG_PATH_PATTERN.test(`/${relative}`)) {
-      tracedBlogFiles.add(path.basename(absolute))
-    }
+    const match = relative.match(BLOG_PATH_PATTERN)
+    if (match) tracedBlogFiles.add(match[1])
   }
 }
 
@@ -147,9 +162,7 @@ for (const tracePath of sitemapTraceFiles) {
 const standaloneBlogDir = path.join(STANDALONE_DIR, 'src', 'content', 'blog')
 const copiedBlogFiles = new Set()
 if (existsSync(standaloneBlogDir)) {
-  for (const file of readdirSync(standaloneBlogDir)) {
-    if (file.endsWith('.md')) copiedBlogFiles.add(file)
-  }
+  for (const file of listMarkdown(standaloneBlogDir)) copiedBlogFiles.add(file)
 }
 
 // ---------------------------------------------------------------------------

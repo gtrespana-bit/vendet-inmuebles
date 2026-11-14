@@ -5,6 +5,8 @@ date: 2026-10-25
 readTime: 6 min
 tags: alquiler Venezuela,arrendamiento vivienda,alquilar local comercial,apartamentos en alquiler Caracas Valencia
 category: Alquiler
+translationKey: renting-guide
+icon: 🔑
 featured: true
 ---
 

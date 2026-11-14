@@ -5,6 +5,8 @@ date: 2026-10-28
 readTime: 7 min
 tags: comprar inmueble Venezuela,SAREN,documentos compraventa,ficha catastral,bienes raíces Venezuela
 category: Compra y Legal
+translationKey: legal-requirements-buy-property
+icon: ⚖️
 featured: true
 ---
 

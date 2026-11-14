@@ -92,11 +92,16 @@ test('Sitemap es autoactualizable (ISR 1h), libre de bloqueos robots.txt, redire
 
 test('Autoridad temática del blog: 100% inmobiliario, metadata exportada y 404 real en slugs inexistentes', () => {
   const blogDir = 'src/content/blog'
-  const files = readdirSync(blogDir).filter((f) => f.endsWith('.md'))
-  assert.ok(files.length >= 5, 'Deben existir guías inmobiliarias en el blog')
+  const enDir = path.join(blogDir, 'en')
+  const esFiles = readdirSync(blogDir).filter((f) => f.endsWith('.md')).map((f) => path.join(blogDir, f))
+  const enFiles = readdirSync(enDir).filter((f) => f.endsWith('.md')).map((f) => path.join(enDir, f))
+  const files = [...esFiles, ...enFiles]
+
+  assert.ok(esFiles.length >= 6, 'Deben existir guías inmobiliarias en español')
+  assert.ok(enFiles.length >= 6, 'Deben existir las guías traducidas al inglés')
 
   for (const file of files) {
-    const content = readFileSync(path.join(blogDir, file), 'utf8')
+    const content = readFileSync(file, 'utf8')
     assert.doesNotMatch(content, /\b(iphone|laptop|smartwatch|ropa usada|side hustle)\b/i, `Contenido ajeno al sector en ${file}`)
     assert.match(content, /^title:\s*.+/m)
     assert.match(content, /^excerpt:\s*.+/m)
@@ -106,7 +111,7 @@ test('Autoridad temática del blog: 100% inmobiliario, metadata exportada y 404 
   const blogSlugPage = readFileSync('src/app/[locale]/blog/[slug]/page.tsx', 'utf8')
   assert.match(blogSlugPage, /export function generateStaticParams/)
   assert.match(blogSlugPage, /export async function generateMetadata/)
-  assert.match(blogSlugPage, /if \(!post\) notFound\(\)/)
+  assert.match(blogSlugPage, /notFound\(\)/, 'Un slug inexistente debe devolver 404 real')
 })
 
 test('Rastreo de archivos: la función aislada de /sitemap.xml se publica con los Markdown del blog', () => {
@@ -114,26 +119,99 @@ test('Rastreo de archivos: la función aislada de /sitemap.xml se publica con lo
   assert.match(config, /outputFileTracingIncludes\s*:/, 'next.config.js debe declarar `outputFileTracingIncludes`')
   assert.match(
     config,
-    /['"]\/sitemap\.xml['"]\s*:\s*\[[^\]]*['"](?:\.\/)?src\/content\/blog\/\*\.md['"]/s,
-    "next.config.js debe incluir '/sitemap.xml': ['./src/content/blog/*.md'] en `outputFileTracingIncludes`"
+    /['"]\/sitemap\.xml['"]\s*:\s*\[[^\]]*['"](?:\.\/)?src\/content\/blog\/\*\*?\/\*\.md['"]/s,
+    "next.config.js debe incluir el glob de `src/content/blog` (recursivo, para cubrir `en/`) en `outputFileTracingIncludes`"
   )
 
-  // `src/app/sitemap.ts` lee el directorio en tiempo de ejecución; sin la entrada anterior
-  // el rastreo estático no detecta los Markdown y las guías desaparecen de producción.
-  const sitemapRoute = readFileSync('src/app/sitemap.ts', 'utf8')
-  assert.match(sitemapRoute, /readdirSync/, 'El sitemap sigue dependiendo de una lectura dinámica del directorio')
+  // El sitemap resuelve los artículos en tiempo de ejecución vía `src/lib/blog.ts`, así que
+  // sin la entrada anterior el rastreo estático no los detecta y desaparecen de producción.
+  const blogLib = readFileSync('src/lib/blog.ts', 'utf8')
+  assert.match(blogLib, /readdirSync/, '`src/lib/blog.ts` lee el directorio en tiempo de ejecución')
 
-  // Coherencia: cada Markdown del disco produce su par es/en en el sitemap.
-  const slugs = readdirSync('src/content/blog')
-    .filter((f) => f.endsWith('.md'))
-    .map((f) => f.replace(/\.md$/, ''))
-  assert.ok(slugs.length >= 6, `Se esperaban al menos 6 guías, encontradas ${slugs.length}`)
+  // Coherencia: cada par es/en produce sus dos URLs, cada una con su propio slug.
+  const pairs = buildSitemapEntries({
+    properties: [],
+    blogPosts: [{ slugEs: 'guia-en-espanol', slugEn: 'english-guide' }],
+  })
+  const urls = pairs.map((e) => e.url)
+  assert.ok(urls.includes('https://venezuela-inmuebles.online/blog/guia-en-espanol'), 'Falta la URL en español')
+  assert.ok(urls.includes('https://venezuela-inmuebles.online/en/blog/english-guide'), 'Falta la URL en inglés')
 
-  const urls = buildSitemapEntries({ properties: [], blogPosts: slugs.map((slug) => ({ slug })) }).map((e) => e.url)
-  for (const slug of slugs) {
-    assert.ok(urls.includes(`https://venezuela-inmuebles.online/blog/${slug}`), `Falta /blog/${slug} en el sitemap`)
-    assert.ok(urls.includes(`https://venezuela-inmuebles.online/en/blog/${slug}`), `Falta /en/blog/${slug} en el sitemap`)
+  // Reciprocidad hreflang con slugs distintos por idioma.
+  const englishEntry = pairs.find((e) => e.url.endsWith('/en/blog/english-guide'))
+  assert.equal(englishEntry.alternates.languages['es-VE'], 'https://venezuela-inmuebles.online/blog/guia-en-espanol')
+  assert.equal(englishEntry.alternates.languages['en-US'], 'https://venezuela-inmuebles.online/en/blog/english-guide')
+  assert.equal(englishEntry.alternates.languages['x-default'], 'https://venezuela-inmuebles.online/blog/guia-en-espanol')
+})
+
+test('Blog bilingüe real: cada guía tiene par es/en, con slug y contenido traducidos', () => {
+  const blogDir = 'src/content/blog'
+  const enDir = path.join(blogDir, 'en')
+
+  const esFiles = readdirSync(blogDir).filter((f) => f.endsWith('.md')).sort()
+  const enFiles = readdirSync(enDir).filter((f) => f.endsWith('.md')).sort()
+
+  assert.ok(esFiles.length >= 6, `Se esperaban al menos 6 guías en español, encontradas ${esFiles.length}`)
+  assert.equal(
+    enFiles.length,
+    esFiles.length,
+    'Cada guía en español debe tener su traducción al inglés (mismo número de artículos)'
+  )
+
+  const keysOf = (dir, files) =>
+    files.map((file) => {
+      const raw = readFileSync(path.join(dir, file), 'utf8')
+      const key = raw.match(/^translationKey:\s*(.+)$/m)
+      assert.ok(key, `Falta translationKey en ${dir}/${file}`)
+      return key[1].trim()
+    })
+
+  const esKeys = keysOf(blogDir, esFiles)
+  const enKeys = keysOf(enDir, enFiles)
+
+  assert.equal(new Set(esKeys).size, esKeys.length, 'Hay `translationKey` duplicados en español')
+  assert.equal(new Set(enKeys).size, enKeys.length, 'Hay `translationKey` duplicados en inglés')
+  assert.deepEqual([...enKeys].sort(), [...esKeys].sort(), 'Las claves de traducción es/en no coinciden')
+
+  // La URL en inglés debe ser inglesa: no puede reutilizar el slug español.
+  for (const file of enFiles) {
+    assert.ok(!esFiles.includes(file), `La traducción reutiliza el slug español: ${file}`)
+    assert.match(file.replace(/\.md$/, ''), /^[a-z0-9-]+$/, `Slug inválido: ${file}`)
   }
+
+  // Vocabulario inequívocamente español que no debe quedar en la versión inglesa.
+  const SPANISH_LEFTOVERS = [
+    'inmueble',
+    'apartamento',
+    'urbanizaci',
+    'habitaciones',
+    'baños',
+    'precio',
+    'propietario',
+    'arrendamiento',
+    'vivienda',
+    'inmobiliari',
+    'dormitorio',
+  ]
+
+  for (const file of enFiles) {
+    const raw = readFileSync(path.join(enDir, file), 'utf8')
+    const title = raw.match(/^title:\s*(.+)$/m)?.[1] ?? ''
+    const excerpt = raw.match(/^excerpt:\s*(.+)$/m)?.[1] ?? ''
+    const body = raw.split(/^---\s*$/m).slice(2).join('\n')
+
+    for (const word of SPANISH_LEFTOVERS) {
+      // Sensible a mayúsculas a propósito: "Venezuela Inmuebles" es el nombre de la marca.
+      assert.doesNotMatch(title, new RegExp(word), `Título sin traducir (${word}) en ${file}`)
+      assert.doesNotMatch(excerpt, new RegExp(word), `Entradilla sin traducir (${word}) en ${file}`)
+      assert.doesNotMatch(body, new RegExp(word), `Cuerpo sin traducir (${word}) en ${file}`)
+    }
+  }
+
+  // El JSON-LD debe declarar el idioma real de la página, no `es-VE` fijo.
+  const slugPage = readFileSync('src/app/[locale]/blog/[slug]/page.tsx', 'utf8')
+  assert.doesNotMatch(slugPage, /inLanguage:\s*'es-VE'/, '`inLanguage` no debe estar fijo en español')
+  assert.match(slugPage, /inLanguage:\s*locale === 'en' \? 'en-US' : 'es-VE'/)
 })
 
 test('Higiene SEO global: sin títulos duplicados de marca, sin /es/ forzado en tarjetas, JSON-LD en fichas y redirecciones 308', () => {
