@@ -5,6 +5,8 @@ date: 2026-10-18
 readTime: 7 min
 tags: inmuebles Caracas,inmuebles Valencia,casas San Diego Carabobo,invertir bienes raíces Venezuela
 category: Inversión y Zonas
+translationKey: best-areas-to-invest
+icon: 📍
 featured: false
 ---
 

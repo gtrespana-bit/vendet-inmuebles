@@ -1,6 +1,4 @@
 import type { MetadataRoute } from 'next'
-import fs from 'fs'
-import path from 'path'
 import { createClient } from '@supabase/supabase-js'
 import {
   buildSitemapEntries,
@@ -8,35 +6,26 @@ import {
   type SitemapPropertyInput,
   type SitemapSellerInput,
 } from '@/lib/seo-sitemap'
+import { getBlogTranslationPairs } from '@/lib/blog'
 
 // Revalidación automática cada hora (ISR): los nuevos inmuebles, ciudades, estados
 // y escaparates entran solos en `/sitemap.xml` sin tener que reenviarlo a Search Console.
 export const revalidate = 3600
 
+/**
+ * Pares es/en del blog. Cada idioma tiene su **propio slug traducido**, así que el
+ * sitemap emite dos rutas distintas por artículo unidas por hreflang recíproco.
+ * Un artículo sin traducción queda fuera para no publicar una URL que daría 404.
+ *
+ * Nota: `src/content/blog/**\/*.md` debe seguir en `outputFileTracingIncludes`
+ * (`next.config.js`); esta lectura es dinámica y el rastreo estático no la detecta.
+ */
 function readBlogPosts(): SitemapBlogInput[] {
-  const blogDirectory = path.join(process.cwd(), 'src/content/blog')
-  if (!fs.existsSync(blogDirectory)) return []
-
-  return fs
-    .readdirSync(blogDirectory)
-    .filter((file) => file.endsWith('.md'))
-    .sort()
-    .map((file) => {
-      const slug = file.replace(/\.md$/, '')
-      let lastModified: Date | undefined
-      try {
-        const raw = fs.readFileSync(path.join(blogDirectory, file), 'utf-8')
-        const dateMatch = raw.match(/^date:\s*(.+)$/m)
-        if (dateMatch) {
-          const clean = dateMatch[1].trim().replace(/^["']|["']$/g, '')
-          const parsed = new Date(clean)
-          if (!Number.isNaN(parsed.getTime())) lastModified = parsed
-        }
-      } catch {
-        // Ignorar fecha si no se puede leer
-      }
-      return { slug, lastModified }
-    })
+  return getBlogTranslationPairs().map((pair) => ({
+    slugEs: pair.es,
+    slugEn: pair.en,
+    lastModified: pair.lastModified,
+  }))
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {

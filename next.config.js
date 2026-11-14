@@ -22,13 +22,14 @@ const nextConfig = withNextIntl({
     '/api/pagos/*/comprobante': ['./node_modules/tesseract.js/**', './node_modules/tesseract.js-core/**', './node_modules/@tesseract.js-data/eng/**'],
 
     // `src/app/sitemap.ts` enumera los artículos del blog leyendo el directorio en
-    // tiempo de ejecución (`fs.readdirSync`), una dependencia que el rastreo de
+    // tiempo de ejecución (vía `src/lib/blog.ts`), una dependencia que el rastreo de
     // archivos de Next no puede detectar de forma estática. Sin esta entrada, la
-    // función aislada de `/sitemap.xml` se publica sin `src/content/blog/*.md`,
-    // `readBlogPosts()` devuelve `[]` y las seis guías desaparecen del sitemap en
-    // producción (comprobado en https://venezuela-inmuebles.online/sitemap.xml).
+    // función aislada de `/sitemap.xml` se publica sin los Markdown del blog,
+    // `getBlogTranslationPairs()` devuelve `[]` y las guías desaparecen del sitemap
+    // en producción (ya ocurrió: https://venezuela-inmuebles.online/sitemap.xml).
+    // El glob `**` cubre también `src/content/blog/en/*.md`, la traducción inglesa.
     // `scripts/verify-sitemap-tracing.mjs` impide que esto vuelva a regresar.
-    '/sitemap.xml': ['./src/content/blog/*.md'],
+    '/sitemap.xml': ['./src/content/blog/**/*.md'],
   },
 
   experimental: {

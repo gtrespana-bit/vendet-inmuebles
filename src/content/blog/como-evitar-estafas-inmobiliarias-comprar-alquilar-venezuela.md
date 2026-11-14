@@ -5,6 +5,8 @@ date: 2026-10-10
 readTime: 6 min
 tags: seguridad inmobiliaria Venezuela,evitar estafas alquiler,verificación propietarios,comprar seguro
 category: Seguridad Inmobiliaria
+translationKey: avoid-scams
+icon: 🛡️
 featured: false
 ---
 

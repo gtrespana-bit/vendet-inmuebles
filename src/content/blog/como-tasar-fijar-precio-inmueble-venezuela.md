@@ -5,6 +5,8 @@ date: 2026-10-22
 readTime: 6 min
 tags: precio metro cuadrado Venezuela,tasar inmueble,vender casa rápido,valoración inmobiliaria
 category: Tasación y Precios
+translationKey: price-per-square-meter
+icon: 📐
 featured: false
 ---
 

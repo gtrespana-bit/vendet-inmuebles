@@ -22,7 +22,12 @@ export interface SitemapSellerInput {
 }
 
 export interface SitemapBlogInput {
-  slug: string
+  /** Slug publicado en español. */
+  slugEs?: string
+  /** Slug publicado en inglés (puede diferir del español: la URL se traduce). */
+  slugEn?: string
+  /** Compatibilidad: slug único cuando ambos idiomas comparten URL. */
+  slug?: string
   lastModified?: Date
 }
 
@@ -43,32 +48,54 @@ function resolveOperationSlug(row: SitemapPropertyInput): 'venta' | 'alquiler' {
   return raw.includes('alquiler') || raw.includes('rent') ? 'alquiler' : 'venta'
 }
 
-export function buildLocalizedPair(
-  pathname: string,
+/**
+ * Construye el par es/en cuando **cada idioma tiene su propia ruta** (p. ej. el blog,
+ * cuyos slugs están traducidos). El hreflang `en-US` apunta a la URL en inglés real y
+ * `x-default` a la española, manteniendo la reciprocidad exigida por Google.
+ */
+export function buildLocalizedPathPair(
+  esPathname: string,
+  enPathname: string,
   priority: number,
   changeFrequency: MetadataRoute.Sitemap[number]['changeFrequency'],
   lastModified?: Date
 ): MetadataRoute.Sitemap {
-  const esAlt = buildPageAlternates('es', pathname)
-  const enAlt = buildPageAlternates('en', pathname)
-  const languages = esAlt.languages as Record<string, string>
+  const esAlt = buildPageAlternates('es', esPathname)
+  const enAlt = buildPageAlternates('en', enPathname)
+  const esUrl = String(esAlt.canonical || SITE_URL)
+  const enUrl = String(enAlt.canonical || `${SITE_URL}/en`)
+  const languages: Record<string, string> = {
+    'es-VE': esUrl,
+    'en-US': enUrl,
+    'x-default': esUrl,
+  }
 
   return [
     {
-      url: String(esAlt.canonical || SITE_URL),
+      url: esUrl,
       ...(lastModified ? { lastModified } : {}),
       changeFrequency,
       priority,
       alternates: { languages },
     },
     {
-      url: String(enAlt.canonical || `${SITE_URL}/en`),
+      url: enUrl,
       ...(lastModified ? { lastModified } : {}),
       changeFrequency,
       priority: priority === 1 ? 0.9 : Math.round(Math.max(0.2, priority - 0.05) * 100) / 100,
       alternates: { languages },
     },
   ]
+}
+
+/** Par es/en para una ruta compartida por ambos idiomas. */
+export function buildLocalizedPair(
+  pathname: string,
+  priority: number,
+  changeFrequency: MetadataRoute.Sitemap[number]['changeFrequency'],
+  lastModified?: Date
+): MetadataRoute.Sitemap {
+  return buildLocalizedPathPair(pathname, pathname, priority, changeFrequency, lastModified)
 }
 
 /**
@@ -171,10 +198,15 @@ export function buildSitemapEntries({
       .flatMap(([citySlug, mod]) => buildLocalizedPair(`/${citySlug}`, 0.85, 'daily', mod)),
   ]
 
-  // 3. Guías inmobiliarias del blog
-  const blogEntries: MetadataRoute.Sitemap = blogPosts.flatMap((post) =>
-    buildLocalizedPair(`/blog/${post.slug}`, 0.7, 'monthly', post.lastModified)
-  )
+  // 3. Guías inmobiliarias del blog. Cada idioma publica su **propio slug traducido**,
+  //    así que el hreflang se construye con las dos rutas reales en lugar de reutilizar
+  //    la misma: `en-US` debe apuntar a la URL en inglés, nunca a una traducida a medias.
+  const blogEntries: MetadataRoute.Sitemap = blogPosts.flatMap((post) => {
+    const esSlug = post.slugEs || post.slug
+    const enSlug = post.slugEn || post.slug
+    if (!esSlug || !enSlug) return []
+    return buildLocalizedPathPair(`/blog/${esSlug}`, `/blog/${enSlug}`, 0.7, 'monthly', post.lastModified)
+  })
 
   // 4. Escaparates públicos verificados / con cartera activa + Directorio (solo si existe al menos 1 perfil activo)
   const sellerEntries: MetadataRoute.Sitemap = [

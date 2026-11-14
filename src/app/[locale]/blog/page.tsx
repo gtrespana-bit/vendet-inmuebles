@@ -1,60 +1,9 @@
 import type { Metadata } from 'next'
 import LocalLink from '@/components/LocalLink'
-import fs from 'fs'
-import path from 'path'
 import { Calendar, ArrowRight, Clock, TrendingUp } from 'lucide-react'
 import { getTranslations } from 'next-intl/server'
 import { buildPageAlternates } from '@/lib/seo-metadata'
-
-interface Post {
-  slug: string
-  title: string
-  excerpt: string
-  date: string
-  readTime: string
-  tags: string[]
-  category: string
-  featured?: boolean
-}
-
-function cleanFrontmatterValue(raw: string | undefined, fallback = ''): string {
-  if (!raw) return fallback
-  return raw.trim().replace(/^["']|["']$/g, '').trim()
-}
-
-function getPosts(): Post[] {
-  const dir = path.join(process.cwd(), 'src/content/blog')
-  if (!fs.existsSync(dir)) return []
-
-  const files = fs.readdirSync(dir).filter(f => f.endsWith('.md'))
-  return files.map(file => {
-    const content = fs.readFileSync(path.join(dir, file), 'utf-8')
-    const slug = file.replace('.md', '')
-
-    const titleMatch = content.match(/^title:\s*(.+)$/m)
-    const excerptMatch = content.match(/^excerpt:\s*(.+)$/m)
-    const dateMatch = content.match(/^date:\s*(.+)$/m)
-    const readTimeMatch = content.match(/^readTime:\s*(.+)$/m)
-    const tagsMatch = content.match(/^tags:\s*(.+)$/m)
-    const categoryMatch = content.match(/^category:\s*(.+)$/m)
-    const featuredMatch = content.match(/^featured:\s*(.+)$/m)
-
-    return {
-      slug,
-      title: cleanFrontmatterValue(titleMatch?.[1], slug),
-      excerpt: cleanFrontmatterValue(excerptMatch?.[1]),
-      date: cleanFrontmatterValue(dateMatch?.[1]),
-      readTime: cleanFrontmatterValue(readTimeMatch?.[1], '6 min'),
-      tags: tagsMatch ? cleanFrontmatterValue(tagsMatch[1]).split(',').map(t => t.trim()).filter(Boolean) : [],
-      category: cleanFrontmatterValue(categoryMatch?.[1], 'Guía Inmobiliaria'),
-      featured: cleanFrontmatterValue(featuredMatch?.[1]) === 'true',
-    }
-  }).sort((a, b) => {
-    if (a.featured && !b.featured) return -1
-    if (!a.featured && b.featured) return 1
-    return b.date.localeCompare(a.date)
-  })
-}
+import { listBlogPosts } from '@/lib/blog'
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params
@@ -79,17 +28,9 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   }
 }
 
-const categoryIcons: Record<string, string> = {
-  'Compra y Legal': '⚖️',
-  'Alquiler': '🔑',
-  'Tasación y Precios': '📐',
-  'Inversión y Zonas': '📍',
-  'Guía para Propietarios': '🏠',
-  'Seguridad Inmobiliaria': '🛡️',
-}
-
-export default async function BlogPage() {
-  const posts = getPosts()
+export default async function BlogPage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params
+  const posts = listBlogPosts(locale)
   const t = await getTranslations('blog')
   const featured = posts.filter(p => p.featured)
   const regular = posts.filter(p => !p.featured)
@@ -126,7 +67,7 @@ export default async function BlogPage() {
                   <div className="bg-gradient-to-r from-brand-primary to-brand-dark p-6 text-white">
                     <div className="flex items-center gap-2 text-xs text-blue-200 mb-3">
                       <span className="bg-white/10 px-2 py-0.5 rounded-full">
-                        {categoryIcons[post.category] || '🏠'} {post.category}
+                        {post.icon} {post.category}
                       </span>
                       <span className="flex items-center gap-1"><Clock size={12} /> {post.readTime}</span>
                     </div>
@@ -162,7 +103,7 @@ export default async function BlogPage() {
               <div>
                 <div className="flex items-center justify-between text-xs text-gray-400 mb-3">
                   <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-medium">
-                    {categoryIcons[post.category] || '🏠'} {post.category}
+                    {post.icon} {post.category}
                   </span>
                   <span className="flex items-center gap-1"><Clock size={11} /> {post.readTime}</span>
                 </div>
